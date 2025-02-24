@@ -5,8 +5,11 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "skipDefaultLibCheck": true,   // Adicionando
     "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "moduleResolution": "node",   // Adicionando
+    "allowJs": true               // Adicionando (opcional)
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
