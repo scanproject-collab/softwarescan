@@ -1,9 +1,9 @@
 import express from 'express';
-import authRoutes from './routes/authRoutes';
-import operatorRoutes from './routes/operatorRoutes';
-import adminRoutes from './routes/adminRoutes';
-import managerRoutes from './routes/managerRoutes';
-import institutionRoutes from './routes/institutionRoutes';
+import authRoutes from './src/routes/authRoutes';
+import operatorRoutes from './src/routes/operatorRoutes';
+import adminRoutes from './src/routes/adminRoutes';
+import managerRoutes from './src/routes/managerRoutes';
+import institutionRoutes from './src/routes/institutionRoutes';
 
 export const app = express();
 
