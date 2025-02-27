@@ -4,8 +4,9 @@ import operatorRoutes from '../src/routes/operatorRoutes';
 import adminRoutes from '../src/routes/adminRoutes';
 import managerRoutes from '../src/routes/managerRoutes';
 import institutionRoutes from '../src/routes/institutionRoutes';
+import chalk from 'chalk';
 
-export const app = express();
+const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -20,5 +21,12 @@ app.use('/institutions', institutionRoutes);
 app.get('/', (_req, res) => {
   res.send('API is working!');
 });
+
+if (process.env.NODE_ENV !== 'production') {
+  const port = 3000;
+  app.listen(port, () => {
+    console.log(chalk.green(`Servidor rodando na porta ${port}`));
+  });
+}
 
 export default app;
