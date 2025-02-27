@@ -1,3 +1,33 @@
-node_modules
-# Keep environment variables out of version control
+# Diretórios de dependências
+node_modules/
+
+# Arquivos de ambiente
 .env
+
+# Logs
+logs/
+*.log
+
+# Diretórios de build
+dist/
+build/
+
+
+# Arquivos de cache
+.cache/
+
+# Arquivos de teste de saída
+coverage/
+
+# Arquivos de IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de lock
+pnpm-lock.yaml
