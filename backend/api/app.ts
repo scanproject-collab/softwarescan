@@ -22,11 +22,10 @@ app.get('/', (_req, res) => {
   res.send('API is working!');
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  const port = 3000;
-  app.listen(port, () => {
-    console.log(chalk.green(`Servidor rodando na porta ${port}`));
-  });
-}
+app.use((err, req, res, next) => {
+  console.error('Error occurred:', err);
+  res.status(500).send('Internal Server Error');
+});
+
 
 export default app;
