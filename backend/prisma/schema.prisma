@@ -1,0 +1,50 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  email          String        @unique
+  password       String
+  name           String?
+  role           Role
+  resetCode      String?
+  institutionId  String?       @db.ObjectId
+  institution    Institution?  @relation(fields: [institutionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  posts          Post[]
+  createdAt      DateTime?     @default(now())
+  updatedAt      DateTime?     @updatedAt
+  authoredInstitutions Institution[] @relation("InstitutionAuthor") // New relation for authored institutions
+}
+
+model Institution {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]   @relation(fields: [], references: [])
+  author    User     @relation("InstitutionAuthor", fields: [authorId], references: [id]) // New author relation
+  authorId  String   @db.ObjectId 
+}
+
+model Post {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  content   String
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String   @db.ObjectId
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+  MANAGER
+}
