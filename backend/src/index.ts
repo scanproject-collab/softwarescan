@@ -1,4 +1,4 @@
-import app from "./api/app";
+import app from "../api/app";
 import chalk from "chalk";
 
 const port = 3000;
