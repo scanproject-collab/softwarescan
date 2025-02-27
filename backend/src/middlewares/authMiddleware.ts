@@ -1,22 +1,36 @@
 import { Request, Response, NextFunction } from 'express';
-import * as admin from 'firebase-admin';
+import jwt from 'jsonwebtoken';
 
-interface CustomRequest extends Request {
-  user?: admin.auth.DecodedIdToken;
+export interface CustomRequest extends Request {
+  user?: any;
 }
 
-export const authMiddleware = async (req: CustomRequest, res: Response, next: NextFunction) => {
-  const token = req.headers['authorization'];
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+
+export const authMiddleware = (req: CustomRequest, res: Response, next: NextFunction): void => {
+  const token = req.headers['authorization']?.split(' ')[1];
 
   if (!token) {
-    return res.status(403).json({ message: 'Authentication token missing' });
+    res.status(403).json({ message: 'Authentication required: No token provided' });
+    return;
   }
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token as string);
-    req.user = decodedToken;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
     next();
   } catch (error) {
     res.status(401).json({ message: 'Invalid or expired token' });
+    return;
   }
+};
+
+export const roleMiddleware = (roles: string[]) => {
+  return (req: CustomRequest, res: Response, next: NextFunction): void => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      res.status(403).json({ message: 'You do not have permission to access this resource' });
+      return;
+    }
+    next();
+  };
 };

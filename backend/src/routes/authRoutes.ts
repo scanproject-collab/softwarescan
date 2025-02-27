@@ -1,10 +1,36 @@
-import { Router } from 'express';
-import { registerController, loginController, verifyEmailController } from '../controllers/authController';
+import { Router, Request, Response, RequestHandler } from 'express';
+import { registerController, loginController } from '../controllers/authController';
+import { generateResetPasswordCode, resetPassword } from '../service/authService';
 
 const router = Router();
 
 router.post('/register', registerController);
 router.post('/login', loginController);
-router.post('/verify-email', verifyEmailController);
+
+router.post('/forgot-password', (async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    const response = await generateResetPasswordCode(email);
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(400).json({ message: (error as Error).message });
+  }
+}) as RequestHandler);
+
+router.post('/reset-password', (async (req: Request, res: Response) => {
+  try {
+    const { email, resetCode, newPassword } = req.body;
+    if (!email || !resetCode || !newPassword) {
+      return res.status(400).json({ message: 'Email, reset code, and new password are required' });
+    }
+    const response = await resetPassword(email, resetCode, newPassword);
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(400).json({ message: (error as Error).message });
+  }
+}) as RequestHandler);
 
 export default router;
