@@ -1,7 +1,25 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import axios from 'axios';
 
 const LoginScreen = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async () => {
+    try {
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/login`, {
+        email,
+        password,
+      });
+
+      console.log(response.data);
+
+    } catch (error) {
+      Alert.alert('Error', 'Login failed, please check your credentials');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Image source={require('../../../assets/images/scan.jpg')} style={styles.logo} />
@@ -10,22 +28,26 @@ const LoginScreen = () => {
         style={styles.input}
         placeholder="E-mail"
         placeholderTextColor="#9E9E9E"
+        value={email}
+        onChangeText={setEmail}
       />
       <TextInput
         style={styles.input}
-        placeholder="Senha"
+        placeholder="Password"
         placeholderTextColor="#9E9E9E"
         secureTextEntry
+        value={password}
+        onChangeText={setPassword}
       />
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Entrar</Text>
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
       <View style={styles.footer}>
         <TouchableOpacity>
-          <Text style={styles.link}>Esqueci a senha</Text>
+          <Text style={styles.link}>Forgot Password</Text>
         </TouchableOpacity>
         <TouchableOpacity>
-          <Text style={styles.link}>Criar conta</Text>
+          <Text style={styles.link}>Create Account</Text>
         </TouchableOpacity>
       </View>
     </View>
