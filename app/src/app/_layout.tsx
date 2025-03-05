@@ -1,6 +1,49 @@
+
 import { Stack } from 'expo-router';
-import '../styles/global.css';
+import { StatusBar } from 'react-native';
+import AppLogo from './components/AppLogo';
+import Icon from 'react-native-vector-icons/MaterialIcons'; 
 
 export default function RootLayout() {
-  return <Stack />;
+  return (
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#007AFF" />
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#007AFF',
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          headerTintColor: '#fff',
+          headerTitleAlign: 'center',
+          headerLeft: () => (
+            <AppLogo />
+          ),
+          headerRight: () => (
+            <Icon 
+              name="person" 
+              size={24} 
+              color="#fff" 
+              style={{ marginRight: 16 }}
+        
+            />
+          ),
+        }}
+      >
+        <Stack.Screen 
+          name="index" 
+          options={{ title: 'Scan' }} 
+        />
+        <Stack.Screen 
+          name="pages/auth/index" 
+          options={{ title: 'Login' }} 
+        />
+        <Stack.Screen 
+          name="pages/home/interaction/[id]" 
+          options={{ title: 'Local' }} 
+        />
+      </Stack>
+    </>
+  );
 }
