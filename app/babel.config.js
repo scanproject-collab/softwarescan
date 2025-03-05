@@ -3,8 +3,24 @@ module.exports = function (api) {
   console.log("Babel config loaded");
   return {
     presets: [
-      ["babel-preset-expo", { jsxImportSource: "nativewind" }],
-      "nativewind/babel",
+      ["babel-preset-expo"],
+    ],
+    plugins: [
+      [
+        "module-resolver",
+        {
+          alias: {
+            "@components": "./src/components",
+            "@screens": "./src/screens",
+            "@utils": "./src/utils",
+            "@assets": "./src/assets",
+            "@config": "./src/config",
+            "@services": "./src/services",
+          },
+        },
+      ],
+      '@babel/plugin-transform-runtime'
+      
     ],
   };
 };
