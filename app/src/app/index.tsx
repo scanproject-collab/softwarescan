@@ -11,7 +11,12 @@ import { router } from 'expo-router';
 import InteractionCard from './components/CardInteraction';
 
 const interactionData = [
-  { id: '1', location: 'Quebrada 01', hasImage: true },
+  { 
+    id: '1', 
+    location: 'Quebrada 01', 
+    hasImage: true, 
+    tags: ['pichação', 'CV'] 
+  },
 ];
 
 export default function Home() {
@@ -23,7 +28,8 @@ export default function Home() {
           <InteractionCard 
             location={item.location} 
             hasImage={item.hasImage}
-            onPress={() => router.push(`/pages/home/interaction/${item.id}`)}
+            tags={item.tags}
+            onPress={() => router.push(`/pages/interaction/${item.id}`)}
           />
         )}
         keyExtractor={item => item.id}
@@ -32,7 +38,7 @@ export default function Home() {
       
       <Pressable 
         style={styles.addButton}
-        onPress={() => router.push('/new-interaction')}
+        onPress={() => router.push('/')}
       >
         <Text style={styles.addButtonText}>+</Text>
       </Pressable>

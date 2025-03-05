@@ -1,10 +1,25 @@
 // components/CardInteraction.tsx
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Image, PressableProps } from 'react-native';
 
-const InteractionCard = ({ location, hasImage, onPress }) => (
+interface InteractionCardProps {
+  location: string;
+  hasImage: boolean;
+  tags: string[];
+  onPress: PressableProps['onPress'];
+}
+
+const InteractionCard: React.FC<InteractionCardProps> = ({ location, hasImage, tags, onPress }) => (
   <Pressable onPress={onPress}>
     <View style={styles.card}>
+      
+      
+      <View style={styles.tagsContainer}>
+        {tags?.map((tag: string, index: number) => (
+          <Text key={index} style={styles.tagText}>{tag}</Text>
+        ))}
+      </View>
+      
       <Text style={styles.locationText}>{location}</Text>
       {hasImage && (
         <Image 
@@ -27,6 +42,24 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  shapesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 8,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  tagText: {
+    fontSize: 14,
+    color: '#007AFF',
+    backgroundColor: '#E0E0E0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginRight: 8,
   },
   locationText: {
     fontSize: 16,

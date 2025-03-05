@@ -12,8 +12,6 @@ export default function RootLayout() {
         screenOptions={{
           headerStyle: {
             backgroundColor: '#007AFF',
-            elevation: 0,
-            shadowOpacity: 0,
           },
           headerTintColor: '#fff',
           headerTitleAlign: 'center',
@@ -40,7 +38,7 @@ export default function RootLayout() {
           options={{ title: 'Login' }} 
         />
         <Stack.Screen 
-          name="pages/home/interaction/[id]" 
+          name="pages/interaction/[id]" 
           options={{ title: 'Local' }} 
         />
       </Stack>
