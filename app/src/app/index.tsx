@@ -1,18 +1,73 @@
-// pages/index.tsx
-import { View, Text, Button } from 'react-native';
-import { useRouter } from 'expo-router';
+// index.tsx
+import React from 'react';
+import { 
+  View, 
+  Pressable, 
+  StyleSheet, 
+  FlatList,
+  Text,
+} from 'react-native';
+import { router } from 'expo-router';
+import InteractionCard from './components/CardInteraction';
 
-export default function Index() {
-  const router = useRouter();
+const interactionData = [
+  { id: '1', location: 'Quebrada 01', hasImage: true },
+];
 
-  const navigateToLogin = () => {
-    router.push('/components/loginScreen'); 
-  };
-
+export default function Home() {
   return (
-    <View>
-      <Text>Home Page</Text>
-      <Button title="Ir para Login" onPress={navigateToLogin} />
+    <View style={styles.container}>
+      <FlatList
+        data={interactionData}
+        renderItem={({ item }) => (
+          <InteractionCard 
+            location={item.location} 
+            hasImage={item.hasImage}
+            onPress={() => router.push(`/pages/home/interaction/${item.id}`)}
+          />
+        )}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.listContent}
+      />
+      
+      <Pressable 
+        style={styles.addButton}
+        onPress={() => router.push('/new-interaction')}
+      >
+        <Text style={styles.addButtonText}>+</Text>
+      </Pressable>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  listContent: {
+    padding: 16,
+    paddingBottom: 60, 
+  },
+  addButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#007AFF',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+});
