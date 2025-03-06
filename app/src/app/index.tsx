@@ -8,7 +8,7 @@ import {
   Text,
 } from 'react-native';
 import { router } from 'expo-router';
-import InteractionCard from './components/CardInteraction';
+import InteractionCard from './components/cardInteraction';
 
 const interactionData = [
   { 
