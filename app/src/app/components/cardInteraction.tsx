@@ -1,4 +1,4 @@
-// components/CardInteraction.tsx
+
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Image, PressableProps } from 'react-native';
 

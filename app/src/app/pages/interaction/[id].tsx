@@ -1,5 +1,4 @@
 // @ts-nocheck
-// app/interaction/[id].tsx
 import React, { useEffect, useState } from 'react';
 import { 
   View, 
