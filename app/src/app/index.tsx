@@ -35,7 +35,7 @@ export default function Home() {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
       />
-
+      
       <Pressable 
         style={styles.addButton}
         onPress={() => router.push('/')}

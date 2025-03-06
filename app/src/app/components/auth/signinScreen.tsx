@@ -1,4 +1,3 @@
-// pages/auth/loginScreen.tsx
 import React, { useState } from 'react';
 import { 
   View, 
