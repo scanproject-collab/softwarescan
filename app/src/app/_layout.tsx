@@ -1,8 +1,9 @@
 
 import { Stack } from 'expo-router';
 import { StatusBar } from 'react-native';
-import AppLogo from './components/AppLogo';
+import AppLogo from './components/appLogo';
 import Icon from 'react-native-vector-icons/MaterialIcons'; 
+import Footer from './components/footer';
 
 export default function RootLayout() {
   return (
@@ -41,7 +42,12 @@ export default function RootLayout() {
           name="pages/interaction/[id]" 
           options={{ title: 'Local' }} 
         />
+          <Stack.Screen 
+          name="pages/auth/signup" 
+          options={{ title: 'Registro' }} 
+        />
       </Stack>
+      <Footer />
     </>
   );
 }
