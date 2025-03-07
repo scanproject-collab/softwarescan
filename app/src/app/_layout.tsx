@@ -50,6 +50,9 @@ export default function RootLayout() {
         <Stack.Screen name="pages/auth/signup" options={{ title: 'Registro' }} />
         <Stack.Screen name="pages/users/interaction/newInteraction" options={{ title: 'Nova Interação' }} />
         <Stack.Screen name="pages/auth/recovery" options={{ title: 'Recuperar Senha' }} />
+        <Stack.Screen name="auth/recoverySuccess" options={{ title: 'Email Enviado com Sucesso' }} />
+
+
       </Stack>
       <Footer />
     </>
