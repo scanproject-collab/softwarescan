@@ -36,9 +36,6 @@ app.use((err, req, res, next) => {
   res.status(500).send('Internal Server Error');
 });
 
-app.listen(3000, () => {
-  console.log(chalk.green('Server is running on port 3000'));
-});
 
 
 export default app;
