@@ -90,7 +90,7 @@ const LoginScreen = () => {
         </Text>
       </TouchableOpacity>
       <View style={styles.footer}>
-        <TouchableOpacity onPress={() => router.push('/forgot-password')}>
+        <TouchableOpacity onPress={() => router.push('/pages/auth/recovery')}>
           <Text style={styles.link}>Esqueceu a Senha?</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/pages/auth/signup')}>
