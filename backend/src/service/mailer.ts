@@ -38,7 +38,7 @@ export const sendResetPasswordEmail = async (email: string, code: string) => {
 
 export const sendWelcomeEmail = async (email: string, name?: string) => {
   try {
-    const displayName = name || email.split('@')[0]; // Fallback to email prefix if no name
+    const displayName = name || email.split('@')[0]; 
     const now = new Date().toLocaleString('pt-BR');
     const mailOptions = {
       from: process.env.EMAIL_USER,
