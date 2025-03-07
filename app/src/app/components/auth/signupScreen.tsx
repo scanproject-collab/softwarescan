@@ -11,7 +11,6 @@ import {
 import axios from 'axios';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message'; 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RegisterScreen = () => {
   const [name, setName] = useState('');
