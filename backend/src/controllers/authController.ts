@@ -30,7 +30,7 @@ export const registerController = async (req: Request, res: Response) => {
         console.log('Notificação enviada com sucesso:', response.data);
       } catch (error) {
         console.error('Erro ao enviar notificação ao OneSignal:', error.response?.data || error.message);
-        // Não interrompe o fluxo, apenas loga o erro
+        
       }
     }
 
