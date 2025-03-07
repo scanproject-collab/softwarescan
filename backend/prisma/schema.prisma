@@ -22,6 +22,7 @@ model User {
   authoredInstitutions Institution[] @relation("InstitutionAuthor") 
   isPending      Boolean       @default(true) 
   expiresAt      DateTime?
+  playerId       String?
 }
 
 model Institution {
