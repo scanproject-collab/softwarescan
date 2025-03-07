@@ -1,19 +1,19 @@
 {
   "expo": {
-    "name": "software-scan",
-    "slug": "software-scan",
+    "name": "softwarescan",
+    "slug": "softwarescan",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/scan-removebg-preview.png",
-    "scheme": "software-scan",
+    "scheme": "softwarescan",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.software-scan"
+      "bundleIdentifier": "com.anonymous.softwarescan"
     },
     "android": {
-      "package": "com.anonymous.software-scan"
+      "package": "com.anonymous.softwarescan"
     },
     "web": {
       "bundler": "metro",
@@ -39,12 +39,35 @@
       ]
     ],
     "extra": {
-      "oneSignalAppId": "EXPO_PUBLIC_ONESIGNAL_APP_ID"
+      "eas": {
+        "projectId": "2ad9aa1c-f80d-4558-8a5a-d02752d160e3",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "OneSignalNotificationServiceExtension",
+                  "bundleIdentifier": "com.anonymous.softwarescan.OneSignalNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.anonymous.softwarescan.onesignal"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "router": {
+        "origin": false
+      }
     },
     "experiments": {
       "typedRoutes": true,
       "rootNavigation": true,
       "deferredPluginLoading": true
-    }
+    },
+    "owner": "softwarescan"
   }
 }
