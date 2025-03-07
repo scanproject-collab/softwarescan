@@ -16,9 +16,10 @@ export const registerUser = async (
 ) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const validRoles: Role[] = ['ADMIN', 'OPERATOR', 'MANAGER'];
     const userRole = validRoles.includes(role as Role) ? role : 'OPERATOR';
+
+    const expiresAt = userRole === 'OPERATOR' ? new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) : null;
 
     const user = await prisma.user.create({
       data: {
@@ -26,10 +27,15 @@ export const registerUser = async (
         email,
         password: hashedPassword,
         role: userRole as Role,
+        isPending: userRole === 'OPERATOR', 
+        expiresAt,
       },
     });
 
-    await sendWelcomeEmail(email, name);
+    if (userRole !== 'OPERATOR') {
+      await sendWelcomeEmail(email, name); 
+    }
+
     return user;
   } catch (error: any) {
     throw new Error(`Error registering user: ${error.message}`);
@@ -44,6 +50,10 @@ export const loginUser = async (email: string, password: string) => {
 
     if (!user) {
       throw new Error('User not found');
+    }
+
+    if (user.isPending) {
+      throw new Error('Account is pending approval');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
