@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet, Pressable, ActivityIndicator } from 'rea
 import WebView from 'react-native-webview';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { validateToken } from '../utils/auth';
+import { validateToken } from '../../../utils/auth';
 
 const mapHtml = (lat: number, lng: number, apiKey: string) => `
   <!DOCTYPE html>
