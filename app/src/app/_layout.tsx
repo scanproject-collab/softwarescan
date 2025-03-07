@@ -4,6 +4,7 @@ import { StatusBar } from 'react-native';
 import AppLogo from './components/appLogo';
 import Icon from 'react-native-vector-icons/MaterialIcons'; 
 import Footer from './components/footer';
+import RecoveryScreen from './components/auth/RecoveryScreen';
 
 export default function RootLayout() {
   return (
@@ -45,6 +46,10 @@ export default function RootLayout() {
           <Stack.Screen 
           name="pages/auth/signup" 
           options={{ title: 'Registro' }} 
+        />
+          <Stack.Screen 
+          name="pages/auth/recovery" 
+          options={{ title: 'Recuperar Senha' }} 
         />
       </Stack>
       <Footer />
