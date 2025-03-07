@@ -8,9 +8,10 @@ import postRoutes from '../src/routes/postRoutes';
 import { deleteExpiredOperators } from '../src/controllers/adminController';
 import chalk from 'chalk';
 import cron from 'node-cron';
-
+import cors from "cors";
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -36,6 +37,9 @@ app.use((err, req, res, next) => {
   res.status(500).send('Internal Server Error');
 });
 
+app.listen(3000, () => {
+  console.log(chalk.green('Server is running on port 3000'));
+});
 
 
 export default app;
