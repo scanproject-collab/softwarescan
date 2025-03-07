@@ -1,25 +1,18 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Image 
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import axios from 'axios';
 import { router } from 'expo-router';
-import Toast from 'react-native-toast-message'; 
+import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false); 
-
+  const [isLoading, setIsLoading] = useState(false);
+  const API_URL = process.env.EXPO_PUBLIC_API_URL;
   const showToast = (type: 'success' | 'error', text1: string, text2: string) => {
     Toast.show({
-      type, 
+      type,
       text1,
       text2,
       position: 'bottom',
@@ -35,24 +28,33 @@ const LoginScreen = () => {
       showToast('error', 'Erro de Login', 'Por favor, preencha todos os campos.');
       return;
     }
-
+  
     setIsLoading(true);
     try {
+      console.log('URL usada:', `${process.env.EXPO_PUBLIC_API_URL}/auth/login`); 
+      console.log('Dados enviados:', { email, password }); // Depuração
       const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/login`, {
         email,
         password,
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
-
-      const { token } = response.data; 
-      console.log('Login successful, token:', token);
-
+  
+      const { token } = response.data;
       await AsyncStorage.setItem('userToken', token);
+      console.log('Token armazenado:', token);
       showToast('success', 'Login Bem-Sucedido', 'Bem-vindo de volta!');
       router.replace('/');
-
+      console.log('Redirecionamento chamado para /');
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || 'Login failed, please check your credentials';
+      const errorMessage =
+        error?.response?.data?.message === 'Account is pending approval'
+          ? 'Sua conta ainda está aguardando aprovação do administrador.'
+          : error?.response?.data?.message || 'Erro ao fazer login, verifique suas credenciais.';
       showToast('error', 'Erro de Login', errorMessage);
+      console.error('Erro no login:', error.response ? error.response.data : error.message); // Depuração detalhada
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +62,7 @@ const LoginScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Toast /> 
+      <Toast />
       <Image source={require('@/assets/images/scan-removebg-preview.png')} style={styles.logo} />
       <Text style={styles.title}>Scan</Text>
       <TextInput
@@ -80,8 +82,8 @@ const LoginScreen = () => {
         value={password}
         onChangeText={setPassword}
       />
-      <TouchableOpacity 
-        style={[styles.button, isLoading && styles.buttonDisabled]} 
+      <TouchableOpacity
+        style={[styles.button, isLoading && styles.buttonDisabled]}
         onPress={handleLogin}
         disabled={isLoading}
       >
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonDisabled: {
-    backgroundColor: '#F56C2E88', 
+    backgroundColor: '#F56C2E88',
     opacity: 0.7,
   },
   buttonText: {

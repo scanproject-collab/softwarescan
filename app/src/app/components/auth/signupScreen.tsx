@@ -1,16 +1,10 @@
 
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Image 
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import axios from 'axios';
 import { router } from 'expo-router';
-import Toast from 'react-native-toast-message'; 
+import Toast from 'react-native-toast-message';
+import { getPlayerId } from '../../utils/oneSignal'; 
 
 const RegisterScreen = () => {
   const [name, setName] = useState('');
@@ -19,10 +13,21 @@ const RegisterScreen = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [playerId, setPlayerId] = useState<string | null>(null);
+
+  
+  useEffect(() => {
+    const fetchPlayerId = async () => {
+      const id = await getPlayerId();
+      setPlayerId(id);
+      console.log('PlayerId capturado:', id);
+    };
+    fetchPlayerId();
+  }, []);
 
   const showToast = (type: 'success' | 'error', text1: string, text2: string) => {
     Toast.show({
-      type, 
+      type,
       text1,
       text2,
       position: 'bottom',
@@ -50,9 +55,14 @@ const RegisterScreen = () => {
         name,
         email,
         password,
+        playerId, // Enviar o Expo Push Token como playerId
       });
 
-      showToast('success', 'Cadastro Bem-Sucedido', 'Sua conta foi criada e está aguardando aprovação!');
+      showToast(
+        'success',
+        'Cadastro Enviado',
+        'Sua conta foi enviada para aprovação. Você será notificado quando for aprovada!'
+      );
       setIsSuccess(true);
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || 'Erro ao criar conta, tente novamente.';
@@ -68,7 +78,9 @@ const RegisterScreen = () => {
         <Toast />
         <Image source={require('@/assets/images/scan-removebg-preview.png')} style={styles.logo} />
         <Text style={styles.title}>Scan</Text>
-        <Text style={styles.successMessage}>Sua conta foi criada e está aguardando aprovação do gestor para liberação de acesso.</Text>
+        <Text style={styles.successMessage}>
+          Sua conta foi enviada com sucesso e está aguardando aprovação do administrador. Você será notificado quando sua conta for liberada.
+        </Text>
         <TouchableOpacity style={styles.button} onPress={() => router.push('/')}>
           <Text style={styles.buttonText}>Voltar</Text>
         </TouchableOpacity>
@@ -99,11 +111,6 @@ const RegisterScreen = () => {
       />
       <TextInput
         style={styles.input}
-        placeholder="Vínculo"
-        placeholderTextColor="#9E9E9E"
-      />
-      <TextInput
-        style={styles.input}
         placeholder="Senha"
         placeholderTextColor="#9E9E9E"
         secureTextEntry
@@ -118,8 +125,8 @@ const RegisterScreen = () => {
         value={confirmPassword}
         onChangeText={setConfirmPassword}
       />
-      <TouchableOpacity 
-        style={[styles.button, isLoading && styles.buttonDisabled]} 
+      <TouchableOpacity
+        style={[styles.button, isLoading && styles.buttonDisabled]}
         onPress={handleRegister}
         disabled={isLoading}
       >
