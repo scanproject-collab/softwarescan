@@ -30,8 +30,17 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
+        }
       ]
     ],
+    "extra": {
+      "oneSignalAppId": "EXPO_PUBLIC_ONESIGNAL_APP_ID"
+    },
     "experiments": {
       "typedRoutes": true,
       "rootNavigation": true,
