@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { PutObjectCommand, ObjectCannedACL } from '@aws-sdk/client-s3';
 import s3Client from '../service/storage/AWSs3';
 import multer from 'multer';
-import axios from 'axios';
+import { sendNotification } from '../utils/oneSignal'; 
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024, 
+    fileSize: 5 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['image/png', 'image/jpg', 'image/jpeg'];
@@ -50,7 +50,7 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999); 
+      todayEnd.setHours(23, 59, 59, 999);
 
       const postsToday = await prisma.post.count({
         where: {
@@ -64,27 +64,11 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
       });
 
       if (postsToday >= 3) {
-       
         if (playerId) {
-          try {
-            await axios.post(
-              'https://onesignal.com/api/v1/notifications',
-              {
-                app_id: process.env.ONESIGNAL_APP_ID,
-                include_player_ids: [playerId], 
-                contents: { en: 'Você atingiu o limite de 3 imagens por dia. Tente novamente amanhã!' },
-              },
-              {
-                headers: {
-                  Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}`,
-                  'Content-Type': 'application/json',
-                },
-              }
-            );
-            console.log(`Notificação enviada ao playerId ${playerId}: Limite de imagens atingido`);
-          } catch (notificationError) {
-            console.error('Erro ao enviar notificação de limite:', notificationError.response?.data || notificationError.message);
-          }
+          await sendNotification(
+            [playerId],
+            'Você atingiu o limite de 3 imagens por dia. Tente novamente amanhã!'
+          );
         }
         return res.status(403).json({ message: 'Limite de 3 imagens por dia atingido. Tente novamente amanhã.' });
       }
