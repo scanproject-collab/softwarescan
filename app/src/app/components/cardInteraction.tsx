@@ -1,19 +1,17 @@
-
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Image, PressableProps } from 'react-native';
 
 interface InteractionCardProps {
   location: string;
+  imageUrl?: string; // Adicionada como prop opcional
   hasImage: boolean;
   tags: string[];
   onPress: PressableProps['onPress'];
 }
 
-const InteractionCard: React.FC<InteractionCardProps> = ({ location, hasImage, tags, onPress }) => (
+const InteractionCard: React.FC<InteractionCardProps> = ({ location, imageUrl, hasImage, tags, onPress }) => (
   <Pressable onPress={onPress}>
     <View style={styles.card}>
-      
-      
       <View style={styles.tagsContainer}>
         {tags?.map((tag: string, index: number) => (
           <Text key={index} style={styles.tagText}>{tag}</Text>
@@ -21,11 +19,17 @@ const InteractionCard: React.FC<InteractionCardProps> = ({ location, hasImage, t
       </View>
       
       <Text style={styles.locationText}>{location}</Text>
-      {hasImage && (
-        <Image 
-          source={require('@/assets/images/sample-image.jpg')} 
+      {hasImage && imageUrl ? (
+        <Image
+          source={{ uri: imageUrl }}
           style={styles.interactionImage}
+          key={imageUrl} // Força recarga da imagem
+          onError={(e) => console.log('Erro ao carregar imagem:', e.nativeEvent.error)}
         />
+      ) : (
+        <View style={styles.placeholderImage}>
+          <Text style={styles.placeholderText}>Sem Imagem</Text>
+        </View>
       )}
     </View>
   </Pressable>
@@ -42,11 +46,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-  },
-  shapesContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 8,
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -71,6 +70,19 @@ const styles = StyleSheet.create({
     height: 150,
     marginTop: 8,
     borderRadius: 4,
+  },
+  placeholderImage: {
+    width: '100%',
+    height: 150,
+    marginTop: 8,
+    borderRadius: 4,
+    backgroundColor: '#ddd',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    color: '#666',
+    fontSize: 16,
   },
 });
 
