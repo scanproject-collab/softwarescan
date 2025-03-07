@@ -12,7 +12,8 @@ export const registerUser = async (
   name: string,
   email: string,
   password: string,
-  role: string = 'OPERATOR'
+  role: string = 'OPERATOR',
+  playerId?: string // Adicionar playerId como parâmetro opcional
 ) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -27,13 +28,14 @@ export const registerUser = async (
         email,
         password: hashedPassword,
         role: userRole as Role,
-        isPending: userRole === 'OPERATOR', 
+        isPending: userRole === 'OPERATOR',
         expiresAt,
+        playerId, 
       },
     });
 
     if (userRole !== 'OPERATOR') {
-      await sendWelcomeEmail(email, name); 
+      await sendWelcomeEmail(email, name);
     }
 
     return user;
@@ -61,8 +63,8 @@ export const loginUser = async (email: string, password: string) => {
       throw new Error('Invalid password');
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
-      expiresIn: '1h',
+    const token = jwt.sign({ name: user.name, id: user.id, role: user.role }, JWT_SECRET, {
+      expiresIn: '1d',
     });
 
     return { user, token };
