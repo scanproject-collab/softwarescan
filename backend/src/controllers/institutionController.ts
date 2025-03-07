@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { CustomRequest } from '../middlewares/authMiddleware'; // Assuming this is where CustomRequest is defined
+import { CustomRequest } from '../middlewares/authMiddleware'; 
 
 const prisma = new PrismaClient();
 

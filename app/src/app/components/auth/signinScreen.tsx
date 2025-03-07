@@ -60,7 +60,7 @@ const LoginScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Toast /> {/* Toast component here */}
+      <Toast /> 
       <Image source={require('@/assets/images/scan-removebg-preview.png')} style={styles.logo} />
       <Text style={styles.title}>Scan</Text>
       <TextInput

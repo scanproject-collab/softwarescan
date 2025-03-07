@@ -1,11 +1,84 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { sendWelcomeEmail } from '../service/mailer';
 
 const prisma = new PrismaClient();
 
+export const listPendingOperators = async (_req: Request, res: Response) => {
+  try {
+    const pendingOperators = await prisma.user.findMany({
+      where: { role: 'OPERATOR', isPending: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        expiresAt: true,
+      },
+    });
+
+    res.status(200).json({
+      message: 'Pending operators listed successfully',
+      operators: pendingOperators.map((op) => ({
+        id: op.id,
+        name: op.name || 'Unnamed',
+        email: op.email,
+        createdAt: op.createdAt?.toISOString() ?? new Date().toISOString(),
+        expiresAt: op.expiresAt?.toISOString() ?? null,
+      })),
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Error listing pending operators: ' + (error as any).message });
+  }
+};
+
+export const approveOperator = async (req: Request, res: Response) => {
+  const { operatorId } = req.params;
+
+  try {
+    const user = await prisma.user.update({
+      where: { id: operatorId, role: 'OPERATOR', isPending: true },
+      data: { isPending: false, expiresAt: null },
+    });
+
+    await sendWelcomeEmail(user.email, user.name || 'User'); 
+    res.status(200).json({ message: 'Operator approved successfully', user });
+  } catch (error) {
+    res.status(400).json({ message: 'Error approving operator: ' + (error as any).message });
+  }
+};
+
+export const rejectOperator = async (req: Request, res: Response) => {
+  const { operatorId } = req.params;
+
+  try {
+    await prisma.user.delete({
+      where: { id: operatorId, role: 'OPERATOR', isPending: true },
+    });
+    res.status(200).json({ message: 'Operator rejected and deleted successfully' });
+  } catch (error) {
+    res.status(400).json({ message: 'Error rejecting operator: ' + (error as any).message });
+  }
+};
+
+export const deleteExpiredOperators = async () => {
+  try {
+    const now = new Date();
+    const deleted = await prisma.user.deleteMany({
+      where: {
+        role: 'OPERATOR',
+        isPending: true,
+        expiresAt: { lte: now },
+      },
+    });
+    console.log(`Deleted ${deleted.count} expired pending operators`);
+  } catch (error) {
+    console.error('Error deleting expired operators:', error);
+  }
+};
+
 export const listAllOperators = async (_req: Request, res: Response) => {
   try {
-    // Fetch all operators with additional details
     const operators = await prisma.user.findMany({
       where: { role: 'OPERATOR' },
       select: {
@@ -14,8 +87,8 @@ export const listAllOperators = async (_req: Request, res: Response) => {
         email: true,
         institutionId: true,
         createdAt: true,
-        updatedAt: true, // Added for more context
-        institution: { // Include institution details if available
+        updatedAt: true, 
+        institution: { 
           select: {
             id: true,
             title: true,
@@ -24,10 +97,9 @@ export const listAllOperators = async (_req: Request, res: Response) => {
       },
     });
 
-    // Calculate total operator count
+
     const totalOperators = operators.length;
 
-    // Group operators by institution for a breakdown
     const institutionBreakdown = operators.reduce((acc, op) => {
       const instId = op.institutionId || 'No Institution';
       const instTitle = op.institution?.title || 'Unassigned';
@@ -36,19 +108,18 @@ export const listAllOperators = async (_req: Request, res: Response) => {
       return acc;
     }, {} as Record<string, { count: number; name: string }>);
 
-    // Calculate recently added operators (e.g., last 7 days)
+  
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const recentOperators = operators.filter(
       (op) => op.createdAt && new Date(op.createdAt) >= sevenDaysAgo
     ).length;
 
-    // Prepare the response
     const response = {
       message: 'Operators listed successfully',
       summary: {
         totalOperators,
-        recentOperators, // Operators added in the last 7 days
+        recentOperators, 
         institutionBreakdown: Object.entries(institutionBreakdown).map(
           ([id, { count, name }]) => ({
             institutionId: id === 'No Institution' ? null : id,
@@ -59,12 +130,12 @@ export const listAllOperators = async (_req: Request, res: Response) => {
       },
       operators: operators.map((op) => ({
         id: op.id,
-        name: op.name || 'Unnamed', // Fallback for null names
+        name: op.name || 'Unnamed', 
         email: op.email,
         institution: op.institution
           ? { id: op.institution.id, title: op.institution.title }
           : null,
-        createdAt: op.createdAt?.toISOString() ?? new Date().toISOString(), // Standardized date format
+        createdAt: op.createdAt?.toISOString() ?? new Date().toISOString(), 
         updatedAt: op.updatedAt?.toISOString() ?? new Date().toISOString(),
       })),
     };

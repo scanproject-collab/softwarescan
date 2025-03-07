@@ -1,7 +1,8 @@
 import { Router, Response } from 'express';
-import { listAllOperators, deleteOperatorByAdmin } from '../controllers/adminController';
+import { listAllOperators, deleteOperatorByAdmin, listPendingOperators, approveOperator, rejectOperator } from '../controllers/adminController';
 import { authMiddleware, roleMiddleware } from '../middlewares/authMiddleware';
-import { CustomRequest } from '../middlewares/authMiddleware'; 
+import { CustomRequest } from '../middlewares/authMiddleware';
+
 const router = Router();
 
 router.get(
@@ -21,5 +22,9 @@ router.delete(
     await deleteOperatorByAdmin(req, res);
   }
 );
+
+router.get('/pending-operators', authMiddleware, roleMiddleware(['ADMIN']), listPendingOperators);
+router.post('/approve-operator/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), approveOperator);
+router.delete('/reject-operator/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), rejectOperator);
 
 export default router;
