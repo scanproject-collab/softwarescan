@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { sendWelcomeEmail } from '../service/mailer';
+import axios from 'axios';
 
 const prisma = new PrismaClient();
 
@@ -41,7 +42,30 @@ export const approveOperator = async (req: Request, res: Response) => {
       data: { isPending: false, expiresAt: null },
     });
 
-    await sendWelcomeEmail(user.email, user.name || 'User'); 
+    await sendWelcomeEmail(user.email, user.name || 'User');
+
+    if (user.playerId) {
+      try {
+        await axios.post(
+          'https://onesignal.com/api/v1/notifications',
+          {
+            app_id: process.env.ONESIGNAL_APP_ID,
+            include_player_ids: [user.playerId],
+            contents: { en: `Parabéns, ${user.name}! Sua conta foi aprovada. Faça login para começar.` },
+          },
+          {
+            headers: {
+              Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        console.log(`Notificação de aprovação enviada ao playerId ${user.playerId}`);
+      } catch (error) {
+        console.error('Erro ao enviar notificação de aprovação:', error.response?.data || error.message);
+      }
+    }
+
     res.status(200).json({ message: 'Operator approved successfully', user });
   } catch (error) {
     res.status(400).json({ message: 'Error approving operator: ' + (error as any).message });
