@@ -19,8 +19,9 @@ export async function initializeOneSignal() {
   }
 
   // Obter o playerId (Expo Push Token)
+  // Usar o projectId do EAS, não o onesignalAppId
   const token = (await Notifications.getExpoPushTokenAsync({
-    projectId: process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID,
+    projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || 'your-eas-project-id-here',
   })).data;
 
   // Armazenar o playerId localmente
