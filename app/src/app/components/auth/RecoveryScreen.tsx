@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { StyleSheet } from 'react-native';
+import 'react-native-gesture-handler';
+import { router } from 'expo-router';
 
 const RecoveryScreen = () => {
   const [email, setEmail] = useState('');
@@ -12,6 +13,8 @@ const RecoveryScreen = () => {
       Alert.alert('Erro', 'Digite um e-mail válido');
       return;
     }
+
+    router.push('/pages/auth/RecoverySuccess');
 
   };
 
