@@ -1,7 +1,6 @@
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'react-native';
 import { useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Navbar from './components/Navbar';
 import Footer from './components/footer';
 import { initializeOneSignal } from './utils/oneSignal';
