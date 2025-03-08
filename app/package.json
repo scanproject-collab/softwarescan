@@ -47,6 +47,7 @@
     "react-native-calendars": "^1.1310.0",
     "react-native-css-interop": "^0.1.22",
     "react-native-gesture-handler": "~2.20.2",
+    "react-native-maps": "^1.20.1",
     "react-native-reanimated": "3.16.2",
     "react-native-safe-area-context": "^5.2.0",
     "react-native-screens": "~4.4.0",
