@@ -10,10 +10,16 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.softwarescan"
+      "bundleIdentifier": "com.anonymous.softwarescan",
+
     },
     "android": {
-      "package": "com.anonymous.softwarescan"
+      "package": "com.anonymous.softwarescan",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBEObd5ylKvfPsZRH2FEze6-lwAeYqL90s"
+        }
+      }
     },
     "web": {
       "bundler": "metro",

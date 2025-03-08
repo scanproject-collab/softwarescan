@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    elevation: 4,
+
   },
   logoContainer: {
     flex: 1,

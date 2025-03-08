@@ -1,65 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import WebView from 'react-native-webview';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { validateToken } from '../../../utils/auth';
 
-const mapHtml = (posts: any[], apiKey: string) => `
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <meta name="viewport" content="initial-scale=1.0, width=device-width">
-      <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
-      <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
-      <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
-      <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
-      <link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
-      <style>
-        html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
-      </style>
-    </head>
-    <body>
-      <div id="map" style="width: 100%; height: 100%;"></div>
-      <script>
-        const platform = new H.service.Platform({ 'apikey': '${apiKey}' });
-        const defaultLayers = platform.createDefaultLayers();
-        const map = new H.Map(document.getElementById('map'),
-          defaultLayers.vector.normal.map, {
-          center: { lat: 0, lng: 0 },
-          zoom: 2,
-          pixelRatio: window.devicePixelRatio || 1
-        });
-        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
-        const ui = H.ui.UI.createDefault(map, defaultLayers);
-
-        const posts = ${JSON.stringify(posts)};
-        posts.forEach(post => {
-          if (post.latitude && post.longitude) {
-            const marker = new H.map.Marker({ lat: post.latitude, lng: post.longitude });
-            map.addObject(marker);
-          }
-        });
-
-        // Ajustar o mapa para incluir todos os marcadores
-        const group = new H.map.Group();
-        posts.forEach(post => {
-          if (post.latitude && post.longitude) {
-            group.addObject(new H.map.Marker({ lat: post.latitude, lng: post.longitude }));
-          }
-        });
-        map.addObject(group);
-        map.getViewModel().setLookAtData({ bounds: group.getBoundingBox() });
-      </script>
-    </body>
-  </html>
-`;
-
 export default function MyPerceptions() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const mapRef = useRef<MapView>(null); // Referência para o MapView
     const router = useRouter();
-    const HERE_API_KEY = process.env.EXPO_PUBLIC_API_KEY_MAP;
     const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
     useEffect(() => {
@@ -95,6 +45,25 @@ export default function MyPerceptions() {
         fetchPosts();
     }, []);
 
+    useEffect(() => {
+        // Ajustar o mapa para incluir todos os marcadores quando os posts forem carregados
+        if (posts.length > 0 && mapRef.current) {
+            const coordinates = posts
+                .filter((post: any) => post.latitude && post.longitude) // Filtra posts com coordenadas válidas
+                .map((post: any) => ({
+                    latitude: post.latitude,
+                    longitude: post.longitude,
+                }));
+
+            if (coordinates.length > 0) {
+                mapRef.current.fitToCoordinates(coordinates, {
+                    edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+                    animated: true,
+                });
+            }
+        }
+    }, [posts]);
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -103,14 +72,41 @@ export default function MyPerceptions() {
         );
     }
 
+    // Filtra os posts que têm coordenadas válidas
+    const postsWithCoordinates = posts.filter(
+        (post: any) => post.latitude && post.longitude
+    );
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Minhas Percepções</Text>
-            <WebView
-                originWhitelist={['*']}
-                source={{ html: mapHtml(posts, HERE_API_KEY) }}
+            <MapView
+                ref={mapRef}
                 style={styles.map}
-            />
+                initialRegion={{
+                    latitude: 0,
+                    longitude: 0,
+                    latitudeDelta: 180,
+                    longitudeDelta: 180,
+                }}
+            >
+                {postsWithCoordinates.map((post: any) => (
+                    <Marker
+                        key={post.id}
+                        coordinate={{
+                            latitude: post.latitude,
+                            longitude: post.longitude,
+                        }}
+                        title={post.title}
+                        description={post.content}
+                    />
+                ))}
+            </MapView>
+            {postsWithCoordinates.length === 0 && (
+                <Text style={styles.noCoordinatesText}>
+                    Nenhum post com localização disponível para exibir no mapa.
+                </Text>
+            )}
             <Pressable style={styles.backButton} onPress={() => router.back()}>
                 <Text style={styles.backButtonText}>Voltar</Text>
             </Pressable>
@@ -139,11 +135,16 @@ const styles = StyleSheet.create({
     },
     map: {
         width: '100%',
-        height: 600, // Mapa completo
+        height: 600, // Mantida a altura do mapa
         borderRadius: 12,
         marginBottom: 16,
         borderWidth: 1,
         borderColor: '#ddd',
+    },
+    noCoordinatesText: {
+        textAlign: 'center',
+        color: '#666',
+        marginBottom: 16,
     },
     backButton: {
         padding: 14,
