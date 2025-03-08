@@ -1,4 +1,8 @@
 {
+  "cli": {
+    "version": ">= 5.0.0",
+    "appVersionSource": "remote"
+  },
   "build": {
     "development": {
       "developmentClient": true,
@@ -6,22 +10,22 @@
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:clean :app:assembleRelease"
-      }
+      },
+      "node": "18.18.2" 
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "node": "18.18.2"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "node": "18.18.2"
     }
   },
   "submit": {
     "production": {}
-  },
-  "cli": {
-    "appVersionSource": "remote"
   }
 }

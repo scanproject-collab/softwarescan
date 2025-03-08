@@ -2,9 +2,7 @@ module.exports = function (api) {
   api.cache(true);
   console.log("Babel config loaded");
   return {
-    presets: [
-      ["babel-preset-expo"],
-    ],
+    presets: [["babel-preset-expo"]],
     plugins: [
       [
         "module-resolver",
@@ -19,8 +17,8 @@ module.exports = function (api) {
           },
         },
       ],
-      '@babel/plugin-transform-runtime'
-      
+      '@babel/plugin-transform-runtime',
+      'react-native-reanimated/plugin' 
     ],
   };
 };
