@@ -2,28 +2,23 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, Image, PressableProps } from 'react-native';
 
 interface InteractionCardProps {
-  location: string;
-  imageUrl?: string; // Adicionada como prop opcional
+  title: string;
+  imageUrl?: string;
   hasImage: boolean;
   tags: string[];
   onPress: PressableProps['onPress'];
 }
 
-const InteractionCard: React.FC<InteractionCardProps> = ({ location, imageUrl, hasImage, tags, onPress }) => (
+const InteractionCard: React.FC<InteractionCardProps> = ({  imageUrl, hasImage, tags, onPress, title }) => (
   <Pressable onPress={onPress}>
     <View style={styles.card}>
-      <View style={styles.tagsContainer}>
-        {tags?.map((tag: string, index: number) => (
-          <Text key={index} style={styles.tagText}>{tag}</Text>
-        ))}
-      </View>
-      
-      <Text style={styles.locationText}>{location}</Text>
+
+      <Text style={styles.locationText}>Titulo: {title}</Text>
       {hasImage && imageUrl ? (
         <Image
           source={{ uri: imageUrl }}
           style={styles.interactionImage}
-          key={imageUrl} // Força recarga da imagem
+          key={imageUrl}
           onError={(e) => console.log('Erro ao carregar imagem:', e.nativeEvent.error)}
         />
       ) : (
@@ -31,6 +26,12 @@ const InteractionCard: React.FC<InteractionCardProps> = ({ location, imageUrl, h
           <Text style={styles.placeholderText}>Sem Imagem</Text>
         </View>
       )}
+      <View style={styles.tagsContainer}>
+        {tags?.map((tag: string, index: number) => (
+            <Text key={index} style={styles.tagText}>{tag}</Text>
+        ))}
+      </View>
+
     </View>
   </Pressable>
 );
@@ -49,6 +50,7 @@ const styles = StyleSheet.create({
   },
   tagsContainer: {
     flexDirection: 'row',
+    marginTop: 10,
     marginBottom: 8,
   },
   tagText: {
