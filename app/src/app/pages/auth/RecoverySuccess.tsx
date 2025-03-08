@@ -11,17 +11,14 @@ const RecoverySuccessScreen = () => {
         style={styles.logo} 
       />
 
-      {/* Nome do app */}
       <Text style={styles.appName}>Scan</Text>
 
-      {/* Mensagem de sucesso */}
       <Text style={styles.message}>
         Um email foi enviado para {'\n'}
         <Text style={styles.emailHighlight}>exemplo@exemplo.com.br</Text> {'\n'}
         com as instruções para redefinir sua senha.
       </Text>
 
-      {/* Botão de voltar */}
       <TouchableOpacity 
         onPress={() => router.push('/components/auth/signinScreen')} 
         style={styles.backButton}
@@ -34,7 +31,6 @@ const RecoverySuccessScreen = () => {
 
 export default RecoverySuccessScreen;
 
-// 🎨 Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
