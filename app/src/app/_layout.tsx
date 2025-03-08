@@ -1,7 +1,7 @@
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'react-native';
 import { useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import Navbar from './components/Navbar';
 import Footer from './components/footer';
 import { initializeOneSignal } from './utils/oneSignal';
@@ -50,7 +50,7 @@ export default function RootLayout() {
         <Stack.Screen name="pages/auth/signup" options={{ title: 'Registro' }} />
         <Stack.Screen name="pages/users/interaction/newInteraction" options={{ title: 'Nova Interação' }} />
         <Stack.Screen name="pages/auth/recovery" options={{ title: 'Recuperar Senha' }} />
-        <Stack.Screen name="pages/auth/recoverySuccess" options={{ title: 'Recuperar Senha' }} />
+          <Stack.Screen name="pages/users/interaction/myPerceptions" options={{ title: 'Minhas Perçepções' }} />
 
       </Stack>
       <Footer />
