@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   dropdownText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#fff',
     fontWeight: '500',
   },
 });
