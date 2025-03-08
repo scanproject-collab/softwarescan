@@ -1,36 +1,71 @@
 import axios from 'axios';
 
-// URL da API de Geocodificação do Google Maps
 const GOOGLE_GEOCODE_URL = 'https://maps.googleapis.com/maps/api/geocode/json';
+const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
 
-// Sua chave da API do Google Maps
-const GOOGLE_API_KEY = 'AIzaSyBEObd5ylKvfPsZRH2FEze6-lwAeYqL90s';
 
-/**
- * Função para geocodificar um endereço e retornar as coordenadas (latitude e longitude)
- * @param address Endereço a ser geocodificado (ex.: "Rua Augusta, São Paulo")
- * @returns Objeto com latitude e longitude
- */
+
 export const geocodeAddress = async (address: string): Promise<{ latitude: number; longitude: number }> => {
     try {
+        console.log('Geocodificando endereço:', address);
         const response = await axios.get(GOOGLE_GEOCODE_URL, {
             params: {
-                address: address, // Endereço a ser geocodificado
-                key: GOOGLE_API_KEY, // Sua chave da API
+                address: address,
+                key: GOOGLE_API_KEY,
             },
         });
+
+        console.log('Resposta da API:', response.data);
+
+        if (response.data.status !== 'OK') {
+            throw new Error(`Erro na API de Geocodificação: ${response.data.status}`);
+        }
 
         const result = response.data.results[0];
         if (!result) {
             throw new Error('Endereço não encontrado');
         }
 
+        const { lat, lng } = result.geometry.location;
+        console.log('Coordenadas encontradas:', { latitude: lat, longitude: lng });
+
         return {
-            latitude: result.geometry.location.lat,
-            longitude: result.geometry.location.lng,
+            latitude: lat,
+            longitude: lng,
         };
     } catch (error) {
         console.error('Erro ao geocodificar endereço:', error);
         throw new Error('Falha ao geocodificar o endereço. Tente novamente ou selecione manualmente no mapa.');
+    }
+};
+
+
+export const reverseGeocode = async (latitude: number, longitude: number): Promise<string> => {
+    try {
+        console.log('Fazendo reverse geocoding para:', { latitude, longitude });
+        const response = await axios.get(GOOGLE_GEOCODE_URL, {
+            params: {
+                latlng: `${latitude},${longitude}`,
+                key: GOOGLE_API_KEY,
+            },
+        });
+
+        console.log('Resposta da API (reverse geocoding):', response.data);
+
+        if (response.data.status !== 'OK') {
+            throw new Error(`Erro na API de Reverse Geocoding: ${response.data.status}`);
+        }
+
+        const result = response.data.results[0];
+        if (!result) {
+            throw new Error('Endereço não encontrado para essas coordenadas');
+        }
+
+        const address = result.formatted_address;
+        console.log('Endereço encontrado:', address);
+        return address;
+    } catch (error) {
+        console.error('Erro ao fazer reverse geocoding:', error);
+        throw new Error('Falha ao obter o endereço. Tente novamente.');
     }
 };
