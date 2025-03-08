@@ -55,7 +55,7 @@ const mapHtml = (posts: any[], apiKey: string) => `
   </html>
 `;
 
-export default function MinhasPercepcoes() {
+export default function MyPerceptions() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
