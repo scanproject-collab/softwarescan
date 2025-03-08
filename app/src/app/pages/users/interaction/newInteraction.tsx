@@ -5,8 +5,10 @@ import { useRouter } from 'expo-router';
 import WebView from 'react-native-webview';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getPlayerId } from '../utils/oneSignal';
-import { validateToken } from '../utils/auth';
+import { getPlayerId } from '../../../utils/oneSignal';
+import { validateToken } from '../../../utils/auth';
+import { Calendar, CalendarList, Agenda } from 'react-native-calendars';
+import { geocodeAddress } from '../../../utils/hereMaps';
 
 const mapHtml = (lat: number, lng: number, apiKey: string) => `
   <!DOCTYPE html>
@@ -56,6 +58,8 @@ export default function NewInteraction() {
   const [coords, setCoords] = useState({ latitude: 0, longitude: 0 });
   const [loading, setLoading] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedTime, setSelectedTime] = useState(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
   const router = useRouter();
   const HERE_API_KEY = process.env.EXPO_PUBLIC_API_KEY_MAP;
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -91,6 +95,16 @@ export default function NewInteraction() {
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+    }
+  };
+
+  const handleAddressChange = async (text: string) => {
+    setLocation(text);
+    try {
+      const coords = await geocodeAddress(text);
+      setCoords(coords);
+    } catch (error) {
+      Alert.alert('Erro', 'Endereço não encontrado. Use o mapa para selecionar uma localização.');
     }
   };
 
@@ -154,82 +168,74 @@ export default function NewInteraction() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.sectionTitle}>Tipo de interação</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Lista de combinação com opções"
-        value={location}
-        onChangeText={setLocation}
-      />
-
-      <Text style={styles.sectionTitle}>Data</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="dd/mm/yyyy (metadados)"
-        value={new Date().toLocaleDateString('pt-BR')}
-        editable={false}
-      />
-
-      <Text style={styles.sectionTitle}>Hora</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="hh:mm (metadados)"
-        value={new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-        editable={false}
-      />
-
-      <Text style={styles.sectionTitle}>Observações</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder="Campo de texto longo"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-      />
-
-      <Text style={styles.sectionTitle}>Local</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Metadados / escolher no mapa"
-        value={location}
-        onChangeText={setLocation}
-      />
-
-      {mapLoaded && coords.latitude !== 0 && coords.longitude !== 0 ? (
-        <WebView
-          originWhitelist={['*']}
-          source={{ html: mapHtml(coords.latitude, coords.longitude, HERE_API_KEY) }}
-          style={styles.map}
-          onMessage={handleMapTap}
+      <ScrollView style={styles.container}>
+        <Text style={styles.sectionTitle}>Data</Text>
+        <Calendar
+            onDayPress={(day) => setSelectedDate(day.dateString)}
+            markedDates={{ [selectedDate]: { selected: true, disableTouchEvent: true, selectedColor: '#007AFF' } }}
+            style={styles.calendar}
         />
-      ) : (
-        <Text style={styles.mapLoading}>Carregando mapa...</Text>
-      )}
+        <Text style={styles.hint}>* Selecione a data em que a foto foi tirada (pode ser diferente do dia atual).</Text>
 
-      <Pressable onPress={pickImage} style={styles.imagePicker}>
-        <Text style={styles.imagePickerText}>
-          {image ? 'Alterar Imagem' : 'Selecionar Imagem'}
-        </Text>
-      </Pressable>
-      {image && <Image source={{ uri: image }} style={styles.imagePreview} />}
+        <Text style={styles.sectionTitle}>Hora</Text>
+        <TextInput
+            style={styles.input}
+            placeholder="hh:mm (ex.: 14:30)"
+            value={selectedTime}
+            onChangeText={setSelectedTime}
+        />
+        <Text style={styles.hint}>* Insira a hora em que a foto foi tirada (pode diferir do horário atual).</Text>
 
-      <View style={styles.buttonContainer}>
-        <Pressable
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          <Text style={styles.submitButtonText}>
-            {loading ? 'Salvando...' : 'Salvar'}
+        <Text style={styles.sectionTitle}>Observações</Text>
+        <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Campo de texto longo"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+        />
+
+        <Text style={styles.sectionTitle}>Local</Text>
+        <TextInput
+            style={styles.input}
+            placeholder="Digite um endereço (ex.: Rua Exemplo, Cidade)"
+            value={location}
+            onChangeText={handleAddressChange}
+        />
+        {mapLoaded && coords.latitude !== 0 && coords.longitude !== 0 ? (
+            <WebView
+                originWhitelist={['*']}
+                source={{ html: mapHtml(coords.latitude, coords.longitude, HERE_API_KEY) }}
+                style={styles.map}
+                onMessage={handleMapTap}
+            />
+        ) : (
+            <Text style={styles.mapLoading}>Carregando mapa...</Text>
+        )}
+
+        <Pressable onPress={pickImage} style={styles.imagePicker}>
+          <Text style={styles.imagePickerText}>
+            {image ? 'Alterar Imagem' : 'Selecionar Imagem'}
           </Text>
         </Pressable>
+        {image && <Image source={{ uri: image }} style={styles.imagePreview} />}
 
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Cancelar</Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+        <View style={styles.buttonContainer}>
+          <Pressable
+              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={loading}
+          >
+            <Text style={styles.submitButtonText}>
+              {loading ? 'Salvando...' : 'Salvar'}
+            </Text>
+          </Pressable>
+
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>Cancelar</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
   );
 }
 
@@ -245,6 +251,12 @@ const styles = StyleSheet.create({
     color: '#333',
     marginTop: 16,
     marginBottom: 8,
+  },
+  calendar: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginBottom: 12,
   },
   input: {
     height: 50,
@@ -262,7 +274,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   map: {
-    width: '100%',
+    width: '100',
     height: 200,
     borderRadius: 8,
     marginBottom: 16,
@@ -327,5 +339,10 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  hint: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 12,
   },
 });

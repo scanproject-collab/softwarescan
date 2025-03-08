@@ -81,51 +81,51 @@ export default function InteractionDetail() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
     );
   }
 
   if (!post) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Post não encontrado.</Text>
-      </View>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Post não encontrado.</Text>
+        </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {post.imageUrl && (
-        <Image source={{ uri: post.imageUrl }} style={styles.interactionImage} />
-      )}
-      <View style={styles.detailsContainer}>
-        <View style={styles.tagsContainer}>
-          {(post.tags || []).map((tag, index) => (
-            <Text key={index} style={styles.tagText}>{tag}</Text>
-          ))}
+      <View style={styles.container}>
+        {post.imageUrl && (
+            <Image source={{ uri: post.imageUrl }} style={styles.interactionImage} />
+        )}
+        <View style={styles.detailsContainer}>
+          <View style={styles.tagsContainer}>
+            {(post.tags || []).map((tag, index) => (
+                <Text key={index} style={styles.tagText}>{tag}</Text>
+            ))}
+          </View>
+          <Text style={styles.detailText}>
+            Data: {new Date(post.createdAt).toLocaleDateString('pt-BR')}
+          </Text>
+          <Text style={styles.detailText}>
+            Hora: {new Date(post.createdAt).toLocaleTimeString('pt-BR')}
+          </Text>
+          <Text style={styles.detailText}>Observações: {post.content || 'Sem descrição'}</Text>
+          <Text style={styles.detailText}>Local: {post.location || 'Não especificado'}</Text>
         </View>
-        <Text style={styles.detailText}>
-          Data: {new Date(post.createdAt).toLocaleDateString('pt-BR')}
-        </Text>
-        <Text style={styles.detailText}>
-          Hora: {new Date(post.createdAt).toLocaleTimeString('pt-BR')}
-        </Text>
-        <Text style={styles.detailText}>Observações: {post.content || 'Sem descrição'}</Text>
-        <Text style={styles.detailText}>Local: {post.location || 'Não especificado'}</Text>
+        {post.latitude && post.longitude && (
+            <WebView
+                originWhitelist={['*']}
+                source={{ html: mapHtml(post.latitude, post.longitude, HERE_API_KEY) }}
+                style={styles.map}
+            />
+        )}
+        <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backButtonText}>Voltar</Text>
+        </Pressable>
       </View>
-      {post.latitude && post.longitude && (
-        <WebView
-          originWhitelist={['*']}
-          source={{ html: mapHtml(post.latitude, post.longitude, HERE_API_KEY) }}
-          style={styles.map}
-        />
-      )}
-      <Pressable style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backButtonText}>Voltar</Text>
-      </Pressable>
-    </View>
   );
 }
 
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 14,
     color: '#007AFF',
-    backgroundColor: '#e6f0ff',
+    backgroundColor: '#e6f9ff',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   map: {
     width: '100%',
-    height: 220,
+    height: 300, // Aumentado para melhor visualização
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 1,
