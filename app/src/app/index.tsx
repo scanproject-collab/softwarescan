@@ -87,6 +87,13 @@ export default function Home() {
       >
         <Text style={styles.addButtonText}>+</Text>
       </Pressable>
+
+      <Pressable
+        onPress={() => router.push('/pages/auth/recovery')}
+      >
+      <Text style={styles.addButtonText}>oiiiiiiiii</Text>
+      </Pressable>
+
     </View>
   );
 }
