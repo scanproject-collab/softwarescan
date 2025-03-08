@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeOneSignal } from './utils/oneSignal';
 import { validateToken } from './utils/auth';
+import React from 'react';
 
 export default function RootLayout() {
     useEffect(() => {

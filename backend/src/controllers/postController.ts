@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { PutObjectCommand, ObjectCannedACL } from '@aws-sdk/client-s3';
+import { PutObjectCommand, ObjectCannedACL, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import s3Client from '../service/storage/AWSs3';
 import multer from 'multer';
 import { sendNotification } from '../utils/oneSignal'; 
@@ -137,5 +137,36 @@ export const getPostById = async (req: Request, res: Response) => {
     res.status(200).json({ message: 'Post retrieved successfully', post });
   } catch (error) {
     res.status(400).json({ message: 'Error retrieving post: ' + (error as Error).message });
+  }
+};
+
+export const deletePost = async (req: Request, res: Response) => {
+  try {
+    const { postId } = req.params;
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post não encontrado' });
+    }
+
+    if (post.imageUrl) {
+      const imageKey = post.imageUrl.split('/').pop();
+      const deleteParams = {
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: imageKey,
+      };
+      await s3Client.send(new DeleteObjectCommand(deleteParams));
+    }
+
+ 
+    await prisma.post.delete({
+      where: { id: postId },
+    });
+
+    res.status(200).json({ message: 'Post excluído com sucesso' });
+  } catch (error) {
+    res.status(400).json({ message: 'Erro ao excluir o post: ' + (error as Error).message });
   }
 };

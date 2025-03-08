@@ -13,6 +13,12 @@
     },
     "android": {
       "package": "com.anonymous.softwarescan",
+      "extraNativeModules": {
+        "expo-modules-core/android": {
+          "package": "host.exp.exponent.modules.api"
+        }
+        
+      },
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyBEObd5ylKvfPsZRH2FEze6-lwAeYqL90s"

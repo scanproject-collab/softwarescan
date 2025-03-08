@@ -1,12 +1,12 @@
 {
-  "cli": {
-    "version": ">= 15.0.14",
-    "appVersionSource": "remote"
-  },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:clean :app:assembleRelease"
+      }
     },
     "preview": {
       "distribution": "internal",
