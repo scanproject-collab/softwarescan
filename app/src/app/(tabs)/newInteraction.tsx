@@ -4,11 +4,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getPlayerId } from '../../../utils/oneSignal';
-import { validateToken } from '../../../utils/auth';
+import { getPlayerId } from '../utils/oneSignal';
+import { validateToken } from '../utils/auth';
 import { Calendar } from 'react-native-calendars';
 import MapView, { Marker } from 'react-native-maps';
-import { geocodeAddress, reverseGeocode } from '../../../utils/googleMaps';
+import { geocodeAddress, reverseGeocode } from '../utils/googleMaps';
 
 export default function NewInteraction() {
   const [title, setTitle] = useState('');

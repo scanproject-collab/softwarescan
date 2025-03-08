@@ -2,16 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { View, Pressable, StyleSheet, FlatList, Text, ActivityIndicator, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import InteractionCard from './components/cardInteraction';
-import { validateToken } from './utils/auth';
+import InteractionCard from '../components/cardInteraction';
+import { validateToken } from '../utils/auth';
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
-  const [filteredPosts, setFilteredPosts] = useState([]); // Posts filtrados
+  const [filteredPosts, setFilteredPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState(''); // Estado para a pesquisa
-  const [selectedTags, setSelectedTags] = useState<string[]>([]); // Tags selecionadas para filtro
-  const [allTags, setAllTags] = useState<string[]>([]); // Todas as tags disponíveis
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
   useEffect(() => {
@@ -45,7 +45,6 @@ export default function Home() {
         const fetchedPosts = data.posts || [];
         setPosts(fetchedPosts);
 
-        // Extrair todas as tags únicas dos posts
         const tagsSet = new Set<string>();
         fetchedPosts.forEach((post: any) => {
           if (post.tags) {
@@ -54,7 +53,6 @@ export default function Home() {
         });
         setAllTags(Array.from(tagsSet));
 
-        // Inicialmente, os posts filtrados são todos os posts
         setFilteredPosts(fetchedPosts);
       } catch (error) {
         console.error('Erro ao buscar posts:', error);
@@ -66,10 +64,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Filtrar os posts com base na pesquisa e nas tags selecionadas
     let filtered = posts;
 
-    // Filtro por pesquisa (título ou conteúdo)
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((post: any) =>
@@ -78,7 +74,6 @@ export default function Home() {
       );
     }
 
-    // Filtro por tags
     if (selectedTags.length > 0) {
       filtered = filtered.filter((post: any) =>
           post.tags && post.tags.some((tag: string) => selectedTags.includes(tag))
@@ -158,6 +153,7 @@ export default function Home() {
                 data={filteredPosts}
                 renderItem={({ item }) => (
                     <InteractionCard
+                        title={item.title || 'Sem Título'} // Passa o título
                         location={item.location || 'Local não especificado'}
                         imageUrl={item.imageUrl}
                         hasImage={!!item.imageUrl}
@@ -169,13 +165,6 @@ export default function Home() {
                 contentContainerStyle={styles.listContent}
             />
         )}
-
-        <Pressable
-            style={styles.addButton}
-            onPress={() => router.push('/pages/users/interaction/newInteraction')}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </Pressable>
       </View>
   );
 }
@@ -206,27 +195,6 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
     paddingBottom: 80,
-  },
-  addButton: {
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
-    backgroundColor: '#007AFF',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 30,
-    fontWeight: 'bold',
   },
   searchInput: {
     height: 50,
