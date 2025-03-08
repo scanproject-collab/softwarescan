@@ -7,6 +7,7 @@
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "build:android": "NODE_ENV=production ./gradlew :app:bundleRelease",
     "web": "expo start --web",
     "test": "jest --watchAll",
     "lint": "expo lint"

@@ -7,7 +7,6 @@
     "icon": "./assets/images/scan-removebg-preview.png",
     "scheme": "softwarescan",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.softwarescan"
@@ -70,9 +69,7 @@
       }
     },
     "experiments": {
-      "typedRoutes": true,
-      "rootNavigation": true,
-      "deferredPluginLoading": true
+      "typedRoutes": true
     },
     "owner": "softwarescan"
   }
