@@ -10,8 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.softwarescan",
-
+      "bundleIdentifier": "com.anonymous.softwarescan"
     },
     "android": {
       "package": "com.anonymous.softwarescan",
@@ -42,7 +41,8 @@
         {
           "mode": "development"
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "extra": {
       "eas": {
