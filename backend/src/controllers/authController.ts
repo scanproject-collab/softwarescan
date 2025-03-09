@@ -7,8 +7,8 @@ dotenv.config();
 
 export const registerController = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, role, playerId } = req.body;
-    const user = await registerUser(name, email, password, role);
+    const { name, email, password, role, playerId, institutionId } = req.body;
+    const user = await registerUser(name, email, password, role, playerId, institutionId);
 
     if (user.role === 'OPERATOR' && user.isPending && playerId) {
       await sendNotification(
@@ -31,8 +31,16 @@ export const loginController = async (req: Request, res: Response) => {
     const { user, token } = await loginUser(email, password);
     res.status(200).json({
       message: 'Login successful',
-      user,
-      token, 
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        institutionId: user.institutionId,
+        createdAt: user.createdAt,
+        institution: user.institution ? { title: user.institution.title } : null,
+      },
+      token,
     });
   } catch (error) {
     res.status(401).json({ message: 'Login failed: ' + (error as Error).message });
