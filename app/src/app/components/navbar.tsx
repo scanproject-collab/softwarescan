@@ -4,6 +4,7 @@ import AppLogo from './appLogo';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import jwt_decode from 'jwt-decode';
+import { Ionicons } from '@expo/vector-icons';
 
 interface DecodedToken {
   name?: string;
@@ -38,6 +39,11 @@ const Navbar = () => {
     router.replace('/pages/auth');
   };
 
+  const handleProfile = () => {
+    setDropdownVisible(false);
+    router.push('/pages/users/profile');
+  };
+
   return (
     <View style={styles.navbar}>
       <View style={styles.logoContainer}>
@@ -53,7 +59,12 @@ const Navbar = () => {
 
         {dropdownVisible && (
           <View style={styles.dropdown}>
+            <TouchableOpacity style={styles.dropdownItem} onPress={handleProfile}>
+              <Ionicons name="person-outline" size={18} color="#fff" style={styles.dropdownIcon} />
+              <Text style={styles.dropdownText}>Perfil</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={18} color="#fff" style={styles.dropdownIcon} />
               <Text style={styles.dropdownText}>Logout</Text>
             </TouchableOpacity>
           </View>
@@ -71,7 +82,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     paddingHorizontal: 16,
     paddingVertical: 10,
-
   },
   logoContainer: {
     flex: 1,
@@ -108,8 +118,13 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 5,
+  },
+  dropdownIcon: {
+    marginRight: 8,
   },
   dropdownText: {
     fontSize: 16,
