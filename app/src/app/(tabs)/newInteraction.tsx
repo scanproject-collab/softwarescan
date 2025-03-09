@@ -9,6 +9,7 @@ import { validateToken } from '../utils/auth';
 import { Calendar } from 'react-native-calendars';
 import MapView, { Marker } from 'react-native-maps';
 import { geocodeAddress, reverseGeocode } from '../utils/googleMaps';
+import { Ionicons } from '@expo/vector-icons'; // Importando ícones
 
 export default function NewInteraction() {
   const [title, setTitle] = useState('');
@@ -65,6 +66,11 @@ export default function NewInteraction() {
   }, []);
 
   const pickImage = async () => {
+    if (image) {
+      Alert.alert('Limite de Imagem', 'Só é permitido uma imagem por postagem.');
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -74,6 +80,21 @@ export default function NewInteraction() {
     if (!result.canceled) {
       setImage(result.assets[0].uri);
     }
+  };
+
+  const removeImage = () => {
+    Alert.alert(
+      'Remover Imagem',
+      'Deseja remover a imagem selecionada?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: () => setImage(null),
+        },
+      ]
+    );
   };
 
   const handleAddTag = () => {
@@ -133,7 +154,6 @@ export default function NewInteraction() {
       }
       formData.append('playerId', playerId || '');
 
-      // Adicionar localização apenas se houver coordenadas válidas
       if (coords.latitude !== 0 && coords.longitude !== 0 && location.trim()) {
         formData.append('location', location);
         formData.append('latitude', coords.latitude.toString());
@@ -170,118 +190,126 @@ export default function NewInteraction() {
   };
 
   return (
-      <ScrollView style={styles.container}>
-        <Text style={styles.sectionTitle}>Título</Text>
+    <ScrollView style={styles.container}>
+      <Text style={styles.sectionTitle}>Título</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Digite o título da interação"
+        value={title}
+        onChangeText={setTitle}
+      />
+
+      <Text style={styles.sectionTitle}>Data</Text>
+      <Calendar
+        onDayPress={(day) => setSelectedDate(day.dateString)}
+        markedDates={{ [selectedDate]: { selected: true, disableTouchEvent: true, selectedColor: '#007AFF' } }}
+        style={styles.calendar}
+      />
+      <Text style={styles.hint}>* Selecione a data em que a foto foi tirada (pode ser diferente do dia atual).</Text>
+
+      <Text style={styles.sectionTitle}>Hora</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="hh:mm (ex.: 14:30)"
+        value={selectedTime}
+        onChangeText={setSelectedTime}
+      />
+      <Text style={styles.hint}>* Insira a hora em que a foto foi tirada (pode diferir do horário atual).</Text>
+
+      <Text style={styles.sectionTitle}>Observações</Text>
+      <TextInput
+        style={[styles.input, styles.textArea]}
+        placeholder="Campo de texto longo"
+        value={description}
+        onChangeText={setDescription}
+        multiline
+      />
+
+      <Text style={styles.sectionTitle}>Tags</Text>
+      <View style={styles.tagInputContainer}>
         <TextInput
-            style={styles.input}
-            placeholder="Digite o título da interação"
-            value={title}
-            onChangeText={setTitle}
+          style={[styles.input, styles.tagInput]}
+          placeholder="Digite as tags (separadas por vírgula)"
+          value={tagInput}
+          onChangeText={setTagInput}
+          onSubmitEditing={handleAddTag}
         />
-
-        <Text style={styles.sectionTitle}>Data</Text>
-        <Calendar
-            onDayPress={(day) => setSelectedDate(day.dateString)}
-            markedDates={{ [selectedDate]: { selected: true, disableTouchEvent: true, selectedColor: '#007AFF' } }}
-            style={styles.calendar}
+        <Pressable onPress={handleAddTag} style={styles.addTagButton}>
+          <Text style={styles.addTagButtonText}>Adicionar</Text>
+        </Pressable>
+      </View>
+      {tags.length > 0 && (
+        <FlatList
+          data={tags}
+          horizontal
+          renderItem={({ item }) => (
+            <View style={styles.tagChip}>
+              <Text style={styles.tagText}>{item}</Text>
+              <Pressable onPress={() => handleRemoveTag(item)}>
+                <Text style={styles.removeTagText}>x</Text>
+              </Pressable>
+            </View>
+          )}
+          keyExtractor={(item) => item}
+          style={styles.tagList}
         />
-        <Text style={styles.hint}>* Selecione a data em que a foto foi tirada (pode ser diferente do dia atual).</Text>
+      )}
 
-        <Text style={styles.sectionTitle}>Hora</Text>
-        <TextInput
-            style={styles.input}
-            placeholder="hh:mm (ex.: 14:30)"
-            value={selectedTime}
-            onChangeText={setSelectedTime}
-        />
-        <Text style={styles.hint}>* Insira a hora em que a foto foi tirada (pode diferir do horário atual).</Text>
+      <Text style={styles.sectionTitle}>Local (Opcional)</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Digite um endereço (ex.: Rua Exemplo, Cidade) ou selecione no mapa"
+        value={location}
+        onChangeText={handleAddressChange}
+      />
+      {mapLoaded && coords.latitude !== 0 && coords.longitude !== 0 ? (
+        <MapView
+          style={styles.map}
+          region={{
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+          onPress={handleMapPress}
+        >
+          <Marker coordinate={{ latitude: coords.latitude, longitude: coords.longitude }} />
+        </MapView>
+      ) : (
+        <Text style={styles.mapLoading}>Carregando mapa...</Text>
+      )}
 
-        <Text style={styles.sectionTitle}>Observações</Text>
-        <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Campo de texto longo"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-        />
-
-        <Text style={styles.sectionTitle}>Tags</Text>
-        <View style={styles.tagInputContainer}>
-          <TextInput
-              style={[styles.input, styles.tagInput]}
-              placeholder="Digite as tags (separadas por vírgula)"
-              value={tagInput}
-              onChangeText={setTagInput}
-              onSubmitEditing={handleAddTag}
-          />
-          <Pressable onPress={handleAddTag} style={styles.addTagButton}>
-            <Text style={styles.addTagButtonText}>Adicionar</Text>
+      <Pressable
+        onPress={pickImage}
+        style={[styles.imagePicker, image && styles.imagePickerDisabled]}
+        disabled={!!image}
+      >
+        <Ionicons name="camera-outline" size={24} color="#fff" />
+      </Pressable>
+      {image && (
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: image }} style={styles.imagePreview} />
+          <Pressable onPress={removeImage} style={styles.removeImageButton}>
+            <Text style={styles.removeImageText}>x</Text>
           </Pressable>
         </View>
-        {tags.length > 0 && (
-            <FlatList
-                data={tags}
-                horizontal
-                renderItem={({ item }) => (
-                    <View style={styles.tagChip}>
-                      <Text style={styles.tagText}>{item}</Text>
-                      <Pressable onPress={() => handleRemoveTag(item)}>
-                        <Text style={styles.removeTagText}>x</Text>
-                      </Pressable>
-                    </View>
-                )}
-                keyExtractor={(item) => item}
-                style={styles.tagList}
-            />
-        )}
+      )}
 
-        <Text style={styles.sectionTitle}>Local (Opcional)</Text>
-        <TextInput
-            style={styles.input}
-            placeholder="Digite um endereço (ex.: Rua Exemplo, Cidade) ou selecione no mapa"
-            value={location}
-            onChangeText={handleAddressChange}
-        />
-        {mapLoaded && coords.latitude !== 0 && coords.longitude !== 0 ? (
-            <MapView
-                style={styles.map}
-                region={{
-                  latitude: coords.latitude,
-                  longitude: coords.longitude,
-                  latitudeDelta: 0.0922,
-                  longitudeDelta: 0.0421,
-                }}
-                onPress={handleMapPress}
-            >
-              <Marker coordinate={{ latitude: coords.latitude, longitude: coords.longitude }} />
-            </MapView>
-        ) : (
-            <Text style={styles.mapLoading}>Carregando mapa...</Text>
-        )}
-
-        <Pressable onPress={pickImage} style={styles.imagePicker}>
-          <Text style={styles.imagePickerText}>
-            {image ? 'Alterar Imagem' : 'Selecionar Imagem'}
+      <View style={styles.buttonContainer}>
+        <Pressable
+          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          <Text style={styles.submitButtonText}>
+            {loading ? 'Salvando...' : 'Salvar'}
           </Text>
         </Pressable>
-        {image && <Image source={{ uri: image }} style={styles.imagePreview} />}
-
-        <View style={styles.buttonContainer}>
-          <Pressable
-              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-              onPress={handleSubmit}
-              disabled={loading}
-          >
-            <Text style={styles.submitButtonText}>
-              {loading ? 'Salvando...' : 'Salvar'}
-            </Text>
-          </Pressable>
-
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>Cancelar</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
+        <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backButtonText}>Cancelar</Text>
+        </Pressable>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -372,28 +400,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   imagePicker: {
-    backgroundColor: '#007AFF',
-    padding: 14,
-    borderRadius: 8,
+    backgroundColor: '#007AFF', 
+    padding: 12,
+    borderRadius: 50, 
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
+    position: 'relative', 
+    marginTop: 20,
+    width: 50,
+    height: 50,
+    elevation: 5, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
-  imagePickerText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  imagePickerDisabled: {
+    backgroundColor: '#99ccff',
+    opacity: 0.6,
+  },
+  imageContainer: {
+    position: 'relative',
+    marginBottom: 16,
+    alignSelf: 'center',
   },
   imagePreview: {
-    width: 120,
-    height: 120,
+    width: 200,
+    height: 200,
     borderRadius: 12,
     marginBottom: 16,
     alignSelf: 'center',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: 'rgba(255, 59, 48, 0.8)',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeImageText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 16,
+    marginBottom: 80,
   },
   submitButton: {
     backgroundColor: '#007AFF',

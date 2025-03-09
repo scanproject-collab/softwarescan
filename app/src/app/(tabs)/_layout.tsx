@@ -29,11 +29,10 @@ export default function TabsLayout() {
                 tabBarStyle: styles.tabBar,
                 tabBarLabelStyle: styles.tabBarLabel,
                 tabBarIconStyle: styles.tabBarIcon,
-                headerShown: true, // Habilitar header para adicionar Navbar
-                header: () => <Navbar />, // Adicionar Navbar
+                headerShown: true,
+                header: () => <Navbar />,
             }}
         >
-            {/* Tab para Index (Home) - Extremidade Esquerda */}
             <Tabs.Screen
                 name="index"
                 options={{
@@ -58,6 +57,7 @@ export default function TabsLayout() {
                     tabBarButton: (props) => (
                         <Pressable {...props} style={styles.addButton} />
                     ),
+                    tabBarStyle: { display: 'none' }, // Remove o tab bar nesta tela
                 }}
             />
 
@@ -124,5 +124,5 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: '50%',
         transform: [{ translateX: -25 }],
-    },
+    }
 });

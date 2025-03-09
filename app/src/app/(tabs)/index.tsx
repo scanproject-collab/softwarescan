@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import InteractionCard from '../components/cardInteraction';
 import { validateToken } from '../utils/auth';
-import { Ionicons } from '@expo/vector-icons'; // Adicionei ícones
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Home() {
   const [posts, setPosts] = useState([]);

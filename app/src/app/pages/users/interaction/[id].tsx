@@ -30,13 +30,19 @@ export default function InteractionDetail() {
         }
 
         const data = await response.json();
+        console.log('Dados recebidos da API:', data); // Para depuração
         if (!response.ok) {
           throw new Error(data.message || 'Erro ao buscar post');
         }
 
-        if (data.post) setPost(data.post);
+        if (data.post) {
+          setPost(data.post);
+        } else {
+          setPost(null); // Garante que post seja null se não houver dados válidos
+        }
       } catch (error) {
         console.error('Erro ao buscar post:', error);
+        setPost(null); // Em caso de erro, define como null para exibir mensagem
       } finally {
         setLoading(false);
       }
@@ -46,60 +52,75 @@ export default function InteractionDetail() {
 
   if (loading) {
     return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-        </View>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
     );
   }
 
   if (!post) {
     return (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Post não encontrado.</Text>
-        </View>
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>Post não encontrado.</Text>
+      </View>
     );
   }
 
+  // Validações para garantir que os dados sejam tratados corretamente
+  const tags = Array.isArray(post.tags) ? post.tags : [];
+  const hasValidCoordinates = typeof post.latitude === 'number' && typeof post.longitude === 'number' && post.latitude !== 0 && post.longitude !== 0;
+  const imageUrl = typeof post.imageUrl === 'string' && post.imageUrl ? post.imageUrl : null;
+
   return (
-      <View style={styles.container}>
-        {post.imageUrl && (
-            <Image source={{ uri: post.imageUrl }} style={styles.interactionImage} />
-        )}
-        <View style={styles.detailsContainer}>
-          <Text style={styles.titleText}>{post.title || 'Sem Título'}</Text> {/* Adiciona o título */}
-          <View style={styles.tagsContainer}>
-            {(post.tags || []).map((tag, index) => (
-                <Text key={index} style={styles.tagText}>{tag}</Text>
-            ))}
-          </View>
-          <Text style={styles.detailText}>
-            Data: {new Date(post.createdAt).toLocaleDateString('pt-BR')}
-          </Text>
-          <Text style={styles.detailText}>
-            Hora: {new Date(post.createdAt).toLocaleTimeString('pt-BR')}
-          </Text>
-          <Text style={styles.detailText}>Observações: {post.content || 'Sem descrição'}</Text>
-          <Text style={styles.detailText}>Local: {post.location || 'Não especificado'}</Text>
+    <View style={styles.container}>
+      {imageUrl && (
+        <Image source={{ uri: imageUrl }} style={styles.interactionImage} />
+      )}
+      <View style={styles.detailsContainer}>
+        <Text style={styles.titleText}>{post.title || 'Sem Título'}</Text>
+        <View style={styles.tagsContainer}>
+          {tags.length > 0 ? (
+            tags.map((tag, index) => (
+              <Text key={index} style={styles.tagText}>{String(tag)}</Text>
+            ))
+          ) : (
+            <Text style={styles.tagText}>Sem tags</Text>
+          )}
         </View>
-        {post.latitude && post.longitude && post.latitude !== 0 && post.longitude !== 0 ? (
-            <MapView
-                style={styles.map}
-                initialRegion={{
-                  latitude: post.latitude,
-                  longitude: post.longitude,
-                  latitudeDelta: 0.0922,
-                  longitudeDelta: 0.0421,
-                }}
-            >
-              <Marker coordinate={{ latitude: post.latitude, longitude: post.longitude }} />
-            </MapView>
-        ) : (
-            <Text style={styles.mapLoading}>Localização não disponível.</Text>
-        )}
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Voltar</Text>
-        </Pressable>
+        <Text style={styles.detailText}>
+          Data: {post.createdAt ? new Date(post.createdAt).toLocaleDateString('pt-BR') : 'Data indisponível'}
+        </Text>
+        <Text style={styles.detailText}>
+          Hora: {post.createdAt ? new Date(post.createdAt).toLocaleTimeString('pt-BR') : 'Hora indisponível'}
+        </Text>
+        <Text style={styles.detailText}>
+          Observações: {post.content || 'Sem descrição'}
+        </Text>
+        <Text style={styles.detailText}>
+          Local: {post.location || 'Não especificado'}
+        </Text>
       </View>
+      {hasValidCoordinates ? (
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            latitude: post.latitude,
+            longitude: post.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+        >
+          <Marker coordinate={{ latitude: post.latitude, longitude: post.longitude }} />
+        </MapView>
+      ) : (
+        <View style={styles.mapPlaceholder}>
+          <Text style={styles.mapLoading}>Localização não disponível.</Text>
+        </View>
+      )}
+      <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Text style={styles.backButtonText}>Voltar</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -178,10 +199,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
-  mapLoading: {
-    textAlign: 'center',
-    color: '#666',
+  mapPlaceholder: {
+    width: '100%',
+    height: 300,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
+  },
+  mapLoading: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
   backButton: {
     padding: 14,
