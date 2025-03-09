@@ -13,7 +13,8 @@ export const registerUser = async (
   email: string,
   password: string,
   role: string = 'OPERATOR',
-  playerId?: string // Adicionar playerId como parâmetro opcional
+  playerId?: string,
+  institutionId?: string 
 ) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -30,7 +31,8 @@ export const registerUser = async (
         role: userRole as Role,
         isPending: userRole === 'OPERATOR',
         expiresAt,
-        playerId, 
+        playerId,
+        institutionId, 
       },
     });
 
@@ -48,6 +50,7 @@ export const loginUser = async (email: string, password: string) => {
   try {
     const user = await prisma.user.findUnique({
       where: { email },
+      include: { institution: true }, // Inclui a instituição, se existir
     });
 
     if (!user) {
@@ -63,9 +66,19 @@ export const loginUser = async (email: string, password: string) => {
       throw new Error('Invalid password');
     }
 
-    const token = jwt.sign({ name: user.name, id: user.id, role: user.role }, JWT_SECRET, {
-      expiresIn: '1d',
-    });
+    const token = jwt.sign(
+      {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        institutionId: user.institutionId,
+        createdAt: user.createdAt,
+        institution: user.institution ? { title: user.institution.title } : null, // Inclui o título da instituição
+      },
+      JWT_SECRET,
+      { expiresIn: '1d' }
+    );
 
     return { user, token };
   } catch (error: any) {
