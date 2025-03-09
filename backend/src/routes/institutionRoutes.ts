@@ -5,7 +5,7 @@ import { CustomRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-router.post('/', authMiddleware, roleMiddleware(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
 	await createInstitution(req as CustomRequest, res);
   } catch (error) {
