@@ -16,6 +16,13 @@ export const createInstitution = async (req: CustomRequest, res: Response) => {
       return res.status(403).json({ message: 'Only admins can create institutions' });
     }
 
+    const authorExists = await prisma.user.findUnique({
+      where: { id: adminId },
+    });
+    if (!authorExists) {
+      return res.status(400).json({ message: 'Invalid author ID' });
+    }
+
     const institution = await prisma.institution.create({
       data: {
         title,
@@ -28,7 +35,6 @@ export const createInstitution = async (req: CustomRequest, res: Response) => {
     res.status(400).json({ message: 'Error creating institution: ' + (error as any).message });
   }
 };
-
 export const updateInstitution = async (req: CustomRequest, res: Response) => {
   try {
     const { institutionId } = req.params;
@@ -82,7 +88,7 @@ export const listInstitutions = async (_req: Request, res: Response) => {
         updatedAt: true,
         author: {
           select: { id: true, name: true, email: true },
-        },
+        }, 
         users: {
           select: { id: true, name: true, email: true, role: true },
         },
@@ -99,7 +105,7 @@ export const listInstitutions = async (_req: Request, res: Response) => {
         title: inst.title,
         createdAt: inst.createdAt?.toISOString(),
         updatedAt: inst.updatedAt?.toISOString(),
-        author: inst.author,
+        author: inst.author || { id: null, name: 'Desconhecido', email: null }, // Tratar null aqui
         userCount: inst.users.length,
         users: inst.users,
       })),
