@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import authRoutes from '../src/routes/authRoutes';
 import operatorRoutes from '../src/routes/operatorRoutes';
 import adminRoutes from '../src/routes/adminRoutes';
@@ -32,12 +32,10 @@ cron.schedule('0 0 * * *', () => {
   deleteExpiredOperators();
 });
 
-app.use((err, req, res, next) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Error occurred:', err);
   res.status(500).send('Internal Server Error');
 });
-
-
 
 
 export default app;
