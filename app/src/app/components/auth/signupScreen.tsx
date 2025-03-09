@@ -1,21 +1,28 @@
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import axios from 'axios';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
-import { getPlayerId } from '../../utils/oneSignal'; 
+import { getPlayerId } from '../../utils/oneSignal';
+import { Picker } from '@react-native-picker/picker';
+
+interface Institution {
+  id: string;
+  title: string;
+  author: { name: string };
+}
 
 const RegisterScreen = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [institutionId, setInstitutionId] = useState<string>(''); 
+  const [institutions, setInstitutions] = useState<Institution[]>([]); 
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [playerId, setPlayerId] = useState<string | null>(null);
 
-  
   useEffect(() => {
     const fetchPlayerId = async () => {
       const id = await getPlayerId();
@@ -23,6 +30,24 @@ const RegisterScreen = () => {
       console.log('PlayerId capturado:', id);
     };
     fetchPlayerId();
+  }, []);
+
+  useEffect(() => {
+    const fetchInstitutions = async () => {
+      try {
+        const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/institutions`);
+        setInstitutions(response.data.institutions);
+      } catch (error) {
+        console.error('Erro ao buscar instituições:', error);
+        Toast.show({
+          type: 'error',
+          text1: 'Erro',
+          text2: 'Não foi possível carregar as instituições.',
+        });
+      }
+    };
+
+    fetchInstitutions();
   }, []);
 
   const showToast = (type: 'success' | 'error', text1: string, text2: string) => {
@@ -55,7 +80,8 @@ const RegisterScreen = () => {
         name,
         email,
         password,
-        playerId, // Enviar o Expo Push Token como playerId
+        playerId,
+        institutionId: institutionId || undefined, 
       });
 
       showToast(
@@ -125,6 +151,23 @@ const RegisterScreen = () => {
         value={confirmPassword}
         onChangeText={setConfirmPassword}
       />
+      <View style={styles.pickerContainer}>
+        <Text style={styles.label}>Vínculo (Opcional)</Text>
+        <Picker
+          selectedValue={institutionId}
+          onValueChange={(itemValue) => setInstitutionId(itemValue)}
+          style={styles.picker}
+        >
+          <Picker.Item label="Selecione uma instituição" value="" />
+          {institutions.map((institution) => (
+            <Picker.Item
+              key={institution.id}
+              label={`${institution.title} (Criado por: ${institution.author.name || 'Desconhecido'})`}
+              value={institution.id}
+            />
+          ))}
+        </Picker>
+      </View>
       <TouchableOpacity
         style={[styles.button, isLoading && styles.buttonDisabled]}
         onPress={handleRegister}
@@ -171,6 +214,23 @@ const styles = StyleSheet.create({
     paddingLeft: 15,
     marginBottom: 15,
   },
+  pickerContainer: {
+    width: '100%',
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 5,
+  },
+  picker: {
+    width: '100%',
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    backgroundColor: '#fff',
+  },
   button: {
     width: '100%',
     backgroundColor: '#F56C2E',
@@ -179,7 +239,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonDisabled: {
-    backgroundColor: '#F56C2E88', 
+    backgroundColor: '#F56C2E88',
     opacity: 0.7,
   },
   buttonText: {
