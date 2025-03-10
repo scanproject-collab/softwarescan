@@ -2,7 +2,7 @@
   "expo": {
     "name": "softwarescan",
     "slug": "softwarescan",
-    "version": "2.0.0",
+    "version": "2.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/scan-removebg-preview.png",
     "scheme": "softwarescan",
@@ -27,7 +27,7 @@
       "package": "com.anonymous.softwarescan",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyBEObd5ylKvfPsZRH2FEze6-lwAeYqL90s"
+          "apiKey": "AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE"
         }
       }
     },
