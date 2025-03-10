@@ -36,7 +36,6 @@ router.delete('/:postId', authMiddleware, roleMiddleware(['OPERATOR']), async (r
   }
 });
 
-router.get("/all", authMiddleware, roleMiddleware(["ADMIN"]), listAllPosts);
 
 
 export default router;
