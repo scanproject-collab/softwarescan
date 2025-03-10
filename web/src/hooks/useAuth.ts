@@ -5,26 +5,14 @@ export const useAuth = () => {
   const [token, setToken] = useState<string | null>(localStorage.getItem("userToken"));
   const navigate = useNavigate();
 
+
   useEffect(() => {
-    const handleStorageChange = () => {
-      const newToken = localStorage.getItem("userToken");
-      setToken(newToken);
-
-      console.log("Token mudou:", newToken);
-      console.log("Token atual:", token);
-      if (!newToken) {
-        navigate("/login");
-      }
-    };
-
-
+    console.log("Token atualizado:", token);
     if (!token) {
+      console.log("Nenhum token encontrado, redirecionando para /login...");
       navigate("/login");
     }
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [navigate, token]);
+  }, [token, navigate]);
 
   const setAuthToken = (newToken: string | null) => {
     if (newToken) {
@@ -35,5 +23,5 @@ export const useAuth = () => {
     setToken(newToken);
   };
 
-  return { token, setAuthToken };
+  return { token, setAuthToken, user: null };
 };
