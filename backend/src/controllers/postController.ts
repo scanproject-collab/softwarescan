@@ -59,7 +59,7 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
             gte: todayStart,
             lte: todayEnd,
           },
-          imageUrl: { not: null }, // Conta apenas posts com imagem
+          imageUrl: { not: null },
         },
       });
 
@@ -89,6 +89,7 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
         authorId: req.user.id,
+        ranking: ranking || "Baixo"
       },
     });
 

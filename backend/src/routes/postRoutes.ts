@@ -1,10 +1,10 @@
 import { Router, Response, NextFunction } from 'express';
-import { createPost, listUserPosts, getPostById, uploadImage, deletePost, listAllPosts } from '../controllers/postController';
+import { createPost, listUserPosts, getPostById, uploadImage, deletePost } from '../controllers/postController';
 import { authMiddleware, roleMiddleware, CustomRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-router.post('/create', authMiddleware, roleMiddleware(['OPERATOR']), uploadImage, async (req: CustomRequest, res: Response, next: NextFunction) => {
+router.post('/create', authMiddleware, roleMiddleware(['OPERATOR, ADMIN']), uploadImage, async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     await createPost(req, res);
   } catch (err) {
@@ -20,7 +20,7 @@ router.get('/my-posts', authMiddleware, roleMiddleware(['OPERATOR']), async (req
   }
 });
 
-router.get('/:postId', authMiddleware, roleMiddleware(['OPERATOR']), async (req: CustomRequest, res: Response, next: NextFunction) => {
+router.get('/:postId', authMiddleware, roleMiddleware(['OPERATOR, ADMIN']), async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     await getPostById(req, res);
   } catch (err) {
@@ -28,7 +28,7 @@ router.get('/:postId', authMiddleware, roleMiddleware(['OPERATOR']), async (req:
   }
 });
 
-router.delete('/:postId', authMiddleware, roleMiddleware(['OPERATOR']), async (req: CustomRequest, res: Response, next: NextFunction) => {
+router.delete('/:postId', authMiddleware, roleMiddleware(['OPERATOR, ADMIN']), async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     await deletePost(req, res);
   } catch (err) {
