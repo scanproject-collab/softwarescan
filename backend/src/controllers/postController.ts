@@ -170,3 +170,16 @@ export const deletePost = async (req: Request, res: Response) => {
     res.status(400).json({ message: 'Erro ao excluir o post: ' + (error as Error).message });
   }
 };
+
+
+export const listAllPosts = async (_req: Request, res: Response) => {
+  try {
+    const posts = await prisma.post.findMany({
+      include: { author: { select: { name: true, email: true, institution: { select: { title: true } } } } },
+      orderBy: { createdAt: "desc" },
+    });
+    res.status(200).json({ message: "Posts retrieved successfully", posts });
+  } catch (error) {
+    res.status(400).json({ message: "Error listing posts: " + (error as Error).message });
+  }
+};
