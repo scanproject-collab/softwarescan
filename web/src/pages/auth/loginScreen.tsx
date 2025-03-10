@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../service/api"; // Ajuste o caminho conforme necessário
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast"; // Adicionando Toaster para renderizar os toasts
 import logo from "/scan-removebg-preview.png";
 
 const Login = () => {
@@ -24,12 +24,22 @@ const Login = () => {
       });
 
       const { token, user } = response.data;
-      const role = user.role; 
+      const role = user.role;
       console.log("Token:", token);
       console.log("Role:", role);
 
       if (role !== "ADMIN") {
-        toast.error("Acesso negado. Apenas usuários ADMIN podem fazer login na plataforma web.");
+        toast.error(
+          `Acesso negado! Apenas usuários ADMIN podem fazer login nesta plataforma. Seu role: ${role}.`,
+          {
+            duration: 5000, // Dura 5 segundos
+            style: {
+              background: "#f8d7da",
+              color: "#721c24",
+              border: "1px solid #f5c6cb",
+            },
+          }
+        );
         return;
       }
 
@@ -48,6 +58,7 @@ const Login = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white px-8">
+      <Toaster position="top-right" /> {/* Adiciona o Toaster para exibir os toasts */}
       <div className="flex w-full max-w-md flex-col items-center">
         <img src={logo} alt="Scan Logo" className="mb-5 h-24 w-24" />
         <h1 className="mb-8 text-4xl font-bold text-orange-400">Scan</h1>
