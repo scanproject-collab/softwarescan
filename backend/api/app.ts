@@ -5,6 +5,7 @@ import adminRoutes from '../src/routes/adminRoutes';
 import managerRoutes from '../src/routes/managerRoutes';
 import institutionRoutes from '../src/routes/institutionRoutes';
 import postRoutes from '../src/routes/postRoutes';
+import tagRoutes from '../src/routes/tagRoutes';
 import { deleteExpiredOperators } from '../src/controllers/adminController';
 import chalk from 'chalk';
 import cron from 'node-cron';
@@ -22,6 +23,7 @@ app.use('/admin', adminRoutes);
 app.use('/manager', managerRoutes);
 app.use('/institutions', institutionRoutes);
 app.use('/posts', postRoutes);
+app.use('/tags', tagRoutes);
 
 app.get('/', (_req, res) => {
   res.send('API is working!');
