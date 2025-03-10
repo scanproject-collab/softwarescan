@@ -1,9 +1,8 @@
 import axios from 'axios';
 
 const GOOGLE_GEOCODE_URL = 'https://maps.googleapis.com/maps/api/geocode/json';
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
-
-
+const GOOGLE_PLACES_URL = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
+const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE';
 
 export const geocodeAddress = async (address: string): Promise<{ latitude: number; longitude: number }> => {
     try {
@@ -12,6 +11,7 @@ export const geocodeAddress = async (address: string): Promise<{ latitude: numbe
             params: {
                 address: address,
                 key: GOOGLE_API_KEY,
+                region: 'br', // Focar no Brasil
             },
         });
 
@@ -39,7 +39,6 @@ export const geocodeAddress = async (address: string): Promise<{ latitude: numbe
     }
 };
 
-
 export const reverseGeocode = async (latitude: number, longitude: number): Promise<string> => {
     try {
         console.log('Fazendo reverse geocoding para:', { latitude, longitude });
@@ -47,6 +46,7 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
             params: {
                 latlng: `${latitude},${longitude}`,
                 key: GOOGLE_API_KEY,
+                region: 'br', // Focar no Brasil
             },
         });
 
@@ -67,5 +67,32 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
     } catch (error) {
         console.error('Erro ao fazer reverse geocoding:', error);
         throw new Error('Falha ao obter o endereço. Tente novamente.');
+    }
+};
+
+// Nova função para autocomplete
+export const getPlaceSuggestions = async (input: string): Promise<string[]> => {
+    try {
+        console.log('Buscando sugestões para:', input);
+        const response = await axios.get(GOOGLE_PLACES_URL, {
+            params: {
+                input: input,
+                key: GOOGLE_API_KEY,
+                region: 'br', // Focar no Brasil
+                types: 'geocode', // Limitar a endereços
+                language: 'pt-BR', // Resultados em português
+            },
+        });
+
+        console.log('Resposta da Places API:', response.data);
+
+        if (response.data.status !== 'OK') {
+            throw new Error(`Erro na Places API: ${response.data.status}`);
+        }
+
+        return response.data.predictions.map((prediction: any) => prediction.description);
+    } catch (error) {
+        console.error('Erro ao buscar sugestões:', error);
+        return [];
     }
 };
