@@ -1,16 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../service/api"; // Ajuste o caminho conforme necessário
 import toast from "react-hot-toast";
-import logo from "/scan-removebg-preview.png"; 
+import logo from "/scan-removebg-preview.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000"; // Variável de ambiente
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -20,23 +18,25 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, {
+      const response = await api.post("/auth/login", {
         email,
         password,
       });
 
-      const { token, role } = response.data; // Verifica se o role está retornando
+      const { token, user } = response.data;
+      const role = user.role; 
+      console.log("Token:", token);
+      console.log("Role:", role);
 
-      // Verifica se o usuário tem a role ADMIN
       if (role !== "ADMIN") {
         toast.error("Acesso negado. Apenas usuários ADMIN podem fazer login na plataforma web.");
         return;
       }
 
-      // Armazenar o token
+      // Salva o token e redireciona
       localStorage.setItem("userToken", token);
       toast.success("Bem-vindo de volta!");
-      navigate("/"); // Redireciona para o dashboard
+      navigate("/");
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || "Erro ao fazer login, verifique suas credenciais.";
       toast.error(errorMessage);
@@ -50,7 +50,7 @@ const Login = () => {
     <div className="flex min-h-screen items-center justify-center bg-white px-8">
       <div className="flex w-full max-w-md flex-col items-center">
         <img src={logo} alt="Scan Logo" className="mb-5 h-24 w-24" />
-        <h1 className="mb-8 text-4xl font-bold text-orange-400">Scan</h1> {/* Título em laranja clara */}
+        <h1 className="mb-8 text-4xl font-bold text-orange-400">Scan</h1>
 
         <input
           type="email"
