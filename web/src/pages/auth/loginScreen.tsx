@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../service/api"; // Ajuste o caminho conforme necessário
-import toast, { Toaster } from "react-hot-toast"; // Adicionando Toaster para renderizar os toasts
+import api from "../../services/api";
+import toast, { Toaster } from "react-hot-toast";
 import logo from "/scan-removebg-preview.png";
 
 const Login = () => {
@@ -32,7 +32,7 @@ const Login = () => {
         toast.error(
           `Acesso negado! Apenas usuários ADMIN podem fazer login nesta plataforma. Seu role: ${role}.`,
           {
-            duration: 5000, // Dura 5 segundos
+            duration: 5000,
             style: {
               background: "#f8d7da",
               color: "#721c24",
@@ -43,7 +43,6 @@ const Login = () => {
         return;
       }
 
-      // Salva o token e redireciona
       localStorage.setItem("userToken", token);
       toast.success("Bem-vindo de volta!");
       navigate("/");
@@ -58,7 +57,7 @@ const Login = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white px-8">
-      <Toaster position="top-right" /> {/* Adiciona o Toaster para exibir os toasts */}
+      <Toaster position="top-right" />
       <div className="flex w-full max-w-md flex-col items-center">
         <img src={logo} alt="Scan Logo" className="mb-5 h-24 w-24" />
         <h1 className="mb-8 text-4xl font-bold text-orange-400">Scan</h1>
