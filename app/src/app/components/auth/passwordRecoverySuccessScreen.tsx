@@ -3,8 +3,8 @@ import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Toast from 'react-native-toast-message';
 
-const RecoverySuccessScreen = () => {
-  const { email } = useLocalSearchParams(); // Recupera o email dos parâmetros
+const PasswordRecoverySuccessScreen = () => {
+  const { email } = useLocalSearchParams();
 
   return (
       <View style={styles.container}>
@@ -16,10 +16,10 @@ const RecoverySuccessScreen = () => {
           com as instruções para redefinir sua senha.
         </Text>
         <TouchableOpacity
-            onPress={() => router.push({ pathname: '/components/auth/CodeVerificationScreen', params: { email } })}
+            onPress={() => router.push({ pathname: '/components/auth/password-reset-code-verification', params: { email } })}
             style={styles.submitButton}
         >
-          <Text style={styles.submitButtonText}>Verificar Código</Text>
+          <Text style={styles.submitButtonText}>Prosseguir</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backButtonText}>Voltar</Text>
@@ -29,7 +29,7 @@ const RecoverySuccessScreen = () => {
   );
 };
 
-export default RecoverySuccessScreen;
+export default PasswordRecoverySuccessScreen;
 
 const styles = StyleSheet.create({
   container: {

@@ -5,39 +5,28 @@ import Toast from 'react-native-toast-message';
 import axios from 'axios';
 import Spinner from 'react-native-loading-spinner-overlay';
 
-const ResetPasswordScreen = () => {
-    const { email, resetCode } = useLocalSearchParams();
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+const PasswordResetCodeVerificationScreen = () => {
+    const { email } = useLocalSearchParams();
+    const [code, setCode] = useState('');
     const [loading, setLoading] = useState(false);
     const navigation = useRouter();
 
     const handleSubmit = async () => {
-        if (!newPassword || !confirmPassword) {
+        if (code.length !== 6 || !/^[0-9a-fA-F]+$/.test(code)) {
             Toast.show({
                 type: 'error',
                 text1: 'Erro',
-                text2: 'Preencha todos os campos',
+                text2: 'Digite um código de 6 dígitos válido',
                 position: 'top',
             });
             return;
         }
 
-        if (newPassword !== confirmPassword) {
+        if (!email) {
             Toast.show({
                 type: 'error',
                 text1: 'Erro',
-                text2: 'As senhas não coincidem',
-                position: 'top',
-            });
-            return;
-        }
-
-        if (!email || !resetCode) {
-            Toast.show({
-                type: 'error',
-                text1: 'Erro',
-                text2: 'Dados de e-mail ou código não encontrados. Tente novamente.',
+                text2: 'E-mail não fornecido. Tente novamente.',
                 position: 'top',
             });
             return;
@@ -45,25 +34,24 @@ const ResetPasswordScreen = () => {
 
         setLoading(true);
         try {
-            const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/reset-password`, {
+            const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/password-recovery/verify-code`, {
                 email: email as string,
-                resetCode: resetCode as string,
-                newPassword,
+                resetCode: code,
             });
             if (response.status === 200) {
                 Toast.show({
                     type: 'success',
                     text1: 'Sucesso',
-                    text2: 'Senha redefinida com sucesso! Redirecionando para login.',
+                    text2: 'Código verificado! Redirecionando para redefinir a senha.',
                     position: 'top',
                 });
-                navigation.push('/pages/auth');
+                navigation.push({ pathname: '/components/auth/password-reset', params: { email: email as string, resetCode: code } });
             }
         } catch (error) {
             Toast.show({
                 type: 'error',
                 text1: 'Erro',
-                text2: error.response?.data?.message || 'Erro ao redefinir a senha',
+                text2: error.response?.data?.message || 'Código inválido ou expirado',
                 position: 'top',
             });
         } finally {
@@ -73,28 +61,22 @@ const ResetPasswordScreen = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Redefinir Senha</Text>
+            <Text style={styles.title}>Verificação de Código</Text>
             <Text style={styles.instruction}>
-                Digite sua nova senha e confirme-a:
+                Digite o código de 6 dígitos enviado para {'\n'}
+                <Text style={styles.emailHighlight}>{email || 'seu e-mail'}</Text>.
             </Text>
             <TextInput
                 style={styles.input}
-                placeholder="Nova senha"
+                placeholder="Código de 6 dígitos"
                 placeholderTextColor="#9E9E9E"
-                value={newPassword}
-                onChangeText={setNewPassword}
-                secureTextEntry
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Confirmar senha"
-                placeholderTextColor="#9E9E9E"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
+                value={code}
+                onChangeText={setCode}
+                keyboardType="default"
+                maxLength={6}
             />
             <TouchableOpacity onPress={handleSubmit} activeOpacity={0.8} style={styles.submitButton} disabled={loading}>
-                <Text style={styles.submitButtonText}>{loading ? 'Salvando...' : 'Salvar nova senha'}</Text>
+                <Text style={styles.submitButtonText}>{loading ? 'Verificando...' : 'Verificar Código'}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.back()} activeOpacity={0.8} style={styles.backButton} disabled={loading}>
                 <Text style={styles.backButtonText}>Voltar</Text>
@@ -105,7 +87,7 @@ const ResetPasswordScreen = () => {
     );
 };
 
-export default ResetPasswordScreen;
+export default PasswordResetCodeVerificationScreen;
 
 const styles = StyleSheet.create({
     container: {
@@ -127,8 +109,12 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         color: '#333',
     },
+    emailHighlight: {
+        color: '#00A86B',
+        fontWeight: 'bold',
+    },
     input: {
-        width: '100%', // Corrigido para '100%'
+        width: '100%',
         height: 50,
         borderWidth: 1,
         borderColor: '#ccc',
@@ -137,7 +123,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     submitButton: {
-        width: '100%', // Corrigido para '100%'
+        width: '100%',
         backgroundColor: '#F56C2E',
         padding: 15,
         borderRadius: 5,
@@ -149,7 +135,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     backButton: {
-        width: '100%', // Corrigido para '100%'
+        width: '100%',
         backgroundColor: '#ccc',
         padding: 15,
         borderRadius: 5,

@@ -5,28 +5,49 @@ import Toast from 'react-native-toast-message';
 import axios from 'axios';
 import Spinner from 'react-native-loading-spinner-overlay';
 
-const CodeVerificationScreen = () => {
-    const { email } = useLocalSearchParams();
-    const [code, setCode] = useState('');
+const PasswordResetScreen = () => {
+    const { email, resetCode } = useLocalSearchParams();
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const navigation = useRouter();
 
     const handleSubmit = async () => {
-        if (code.length !== 6 || !/^[0-9a-fA-F]+$/.test(code)) {
+        if (!newPassword || !confirmPassword) {
             Toast.show({
                 type: 'error',
                 text1: 'Erro',
-                text2: 'Digite um código de 6 dígitos válido',
+                text2: 'Preencha todos os campos',
                 position: 'top',
             });
             return;
         }
 
-        if (!email) {
+        if (newPassword.length < 8) {
             Toast.show({
                 type: 'error',
                 text1: 'Erro',
-                text2: 'E-mail não fornecido. Tente novamente.',
+                text2: 'A senha deve ter pelo menos 8 caracteres',
+                position: 'top',
+            });
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            Toast.show({
+                type: 'error',
+                text1: 'Erro',
+                text2: 'As senhas não coincidem',
+                position: 'top',
+            });
+            return;
+        }
+
+        if (!email || !resetCode) {
+            Toast.show({
+                type: 'error',
+                text1: 'Erro',
+                text2: 'Dados de e-mail ou código não encontrados. Tente novamente.',
                 position: 'top',
             });
             return;
@@ -34,26 +55,25 @@ const CodeVerificationScreen = () => {
 
         setLoading(true);
         try {
-            // Verificação inicial para garantir que o código é válido
-            const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/reset-password`, {
+            const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/password-recovery/reset`, {
                 email: email as string,
-                resetCode: code,
-                newPassword: 'temp', // Apenas para validação do código
+                resetCode: resetCode as string,
+                newPassword,
             });
             if (response.status === 200) {
                 Toast.show({
                     type: 'success',
                     text1: 'Sucesso',
-                    text2: 'Código verificado! Redirecionando para redefinir a senha.',
+                    text2: 'Senha redefinida com sucesso! Redirecionando para login.',
                     position: 'top',
                 });
-                navigation.push('/components/auth/ResetPasswordScreen', { params: { email: email as string, resetCode: code } });
+                navigation.push('/pages/auth');
             }
         } catch (error) {
             Toast.show({
                 type: 'error',
                 text1: 'Erro',
-                text2: error.response?.data?.message || 'Código inválido ou erro na verificação',
+                text2: error.response?.data?.message || 'Erro ao redefinir a senha',
                 position: 'top',
             });
         } finally {
@@ -63,22 +83,28 @@ const CodeVerificationScreen = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Verificação de Código</Text>
+            <Text style={styles.title}>Redefinir Senha</Text>
             <Text style={styles.instruction}>
-                Digite o código de 6 dígitos enviado para {'\n'}
-                <Text style={styles.emailHighlight}>{email || 'seu e-mail'}</Text>.
+                Digite sua nova senha e confirme-a:
             </Text>
             <TextInput
                 style={styles.input}
-                placeholder="Código de 6 dígitos"
+                placeholder="Nova senha"
                 placeholderTextColor="#9E9E9E"
-                value={code}
-                onChangeText={setCode}
-                keyboardType="default"
-                maxLength={6}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry
+            />
+            <TextInput
+                style={styles.input}
+                placeholder="Confirmar senha"
+                placeholderTextColor="#9E9E9E"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
             />
             <TouchableOpacity onPress={handleSubmit} activeOpacity={0.8} style={styles.submitButton} disabled={loading}>
-                <Text style={styles.submitButtonText}>{loading ? 'Verificando...' : 'Verificar Código'}</Text>
+                <Text style={styles.submitButtonText}>{loading ? 'Salvando...' : 'Salvar nova senha'}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.back()} activeOpacity={0.8} style={styles.backButton} disabled={loading}>
                 <Text style={styles.backButtonText}>Voltar</Text>
@@ -89,7 +115,7 @@ const CodeVerificationScreen = () => {
     );
 };
 
-export default CodeVerificationScreen;
+export default PasswordResetScreen;
 
 const styles = StyleSheet.create({
     container: {
@@ -111,12 +137,8 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         color: '#333',
     },
-    emailHighlight: {
-        color: '#00A86B',
-        fontWeight: 'bold',
-    },
     input: {
-        width: '100%', // Corrigido para '100%'
+        width: '100%',
         height: 50,
         borderWidth: 1,
         borderColor: '#ccc',
@@ -125,7 +147,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     submitButton: {
-        width: '100%', // Corrigido para '100%'
+        width: '100%',
         backgroundColor: '#F56C2E',
         padding: 15,
         borderRadius: 5,
@@ -137,7 +159,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     backButton: {
-        width: '100%', // Corrigido para '100%'
+        width: '100%',
         backgroundColor: '#ccc',
         padding: 15,
         borderRadius: 5,

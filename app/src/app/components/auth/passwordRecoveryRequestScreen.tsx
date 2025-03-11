@@ -4,13 +4,14 @@ import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import axios from 'axios';
 import Spinner from 'react-native-loading-spinner-overlay';
+import debounce from 'lodash/debounce';
 
-const RecoveryScreen = () => {
+const PasswordRecoveryRequestScreen = () => {
   const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false); // Estado para o carregamento
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async () => {
+  const handleSubmit = debounce(async () => {
     if (!email.includes('@')) {
       Toast.show({
         type: 'error',
@@ -23,15 +24,15 @@ const RecoveryScreen = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/forgot-password`, { email });
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/password-recovery/request`, { email });
       if (response.status === 200) {
         Toast.show({
           type: 'success',
           text1: 'Sucesso',
-          text2: 'Um e-mail de recuperação foi enviado para ' + email,
+          text2: `Um e-mail de recuperação foi enviado para ${email}`,
           position: 'top',
         });
-        router.push({ pathname: '/pages/auth/recoverySuccess', params: { email } });
+        router.push({ pathname: '/pages/auth/password-recovery-success', params: { email } });
       }
     } catch (error) {
       Toast.show({
@@ -41,9 +42,9 @@ const RecoveryScreen = () => {
         position: 'top',
       });
     } finally {
-      setLoading(false); // Para o carregamento, independentemente do resultado
+      setLoading(false);
     }
-  };
+  }, 300);
 
   return (
       <View style={styles.container}>
@@ -62,7 +63,7 @@ const RecoveryScreen = () => {
             autoCapitalize="none"
         />
         <TouchableOpacity onPress={handleSubmit} activeOpacity={0.8} style={styles.submitButton} disabled={loading}>
-          <Text style={styles.submitButtonText}>{loading ? 'Enviando...' : 'Enviar email de recuperação de senha'}</Text>
+          <Text style={styles.submitButtonText}>{loading ? 'Enviando...' : 'Enviar email de recuperação'}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8} style={styles.backButton} disabled={loading}>
           <Text style={styles.backButtonText}>Voltar</Text>
@@ -73,7 +74,7 @@ const RecoveryScreen = () => {
   );
 };
 
-export default RecoveryScreen;
+export default PasswordRecoveryRequestScreen;
 
 const styles = StyleSheet.create({
   container: {
