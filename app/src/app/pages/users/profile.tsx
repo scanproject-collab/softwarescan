@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import jwt_decode from 'jwt-decode';
 
@@ -16,28 +16,31 @@ interface DecodedToken {
 const ProfileScreen = () => {
   const [user, setUser] = useState<DecodedToken | null>(null);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const token = await AsyncStorage.getItem('userToken');
-      if (token) {
-        try {
-          const decoded = jwt_decode<DecodedToken>(token);
-          setUser(decoded);
-        } catch (error) {
-          console.error('Error decoding token:', error);
-          setUser(null);
-        }
+  const fetchUserData = useCallback(async () => {
+    const token = await AsyncStorage.getItem('userToken');
+    if (token) {
+      try {
+        const decoded = jwt_decode<DecodedToken>(token);
+        setUser(decoded);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        setUser(null);
       }
-    };
-
-    fetchUserData();
+    }
   }, []);
+
+  // Atualiza os dados do usuário sempre que a tela for focada
+  useFocusEffect(
+      useCallback(() => {
+        fetchUserData();
+      }, [fetchUserData])
+  );
 
   if (!user) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Carregando...</Text>
-      </View>
+        <View style={styles.container}>
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
     );
   }
 
@@ -46,25 +49,28 @@ const ProfileScreen = () => {
   const createdAt = user.createdAt ? new Date(user.createdAt).toLocaleDateString('pt-BR') : 'Data não disponível';
 
   return (
-    <View style={styles.container}>
-      <View style={styles.profileHeader}>
-        <View style={styles.userCircle}>
-          <Text style={styles.userInitial}>{initial}</Text>
+      <View style={styles.container}>
+        <View style={styles.profileHeader}>
+          <View style={styles.userCircle}>
+            <Text style={styles.userInitial}>{initial}</Text>
+          </View>
+          <Text style={styles.name}>{user.name || 'Usuário'}</Text>
         </View>
-        <Text style={styles.name}>{user.name || 'Usuário'}</Text>
+        <View style={styles.infoContainer}>
+          <Text style={styles.label}>Email:</Text>
+          <Text style={styles.value}>{user.email || 'Não informado'}</Text>
+          <Text style={styles.label}>Instituição:</Text>
+          <Text style={styles.value}>{institution}</Text>
+          <Text style={styles.label}>Data de Criação:</Text>
+          <Text style={styles.value}>{createdAt}</Text>
+        </View>
+        <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => router.push({ pathname: '/pages/users/profileEdit', params: { id: user.id } })}
+        >
+          <Text style={styles.editButtonText}>Editar Perfil</Text>
+        </TouchableOpacity>
       </View>
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Email:</Text>
-        <Text style={styles.value}>{user.email || 'Não informado'}</Text>
-        <Text style={styles.label}>Instituição:</Text>
-        <Text style={styles.value}>{institution}</Text>
-        <Text style={styles.label}>Data de Criação:</Text>
-        <Text style={styles.value}>{createdAt}</Text>
-      </View>
-      <TouchableOpacity style={styles.editButton} onPress={() => router.push('/pages/edit-profile')}>
-        <Text style={styles.editButtonText}>Editar Perfil</Text>
-      </TouchableOpacity>
-    </View>
   );
 };
 
