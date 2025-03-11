@@ -13,7 +13,8 @@ model User {
   password             String
   name                 String?
   role                 Role
-  resetCode            String?
+  passwordResetCode    String?       @map("resetCode")
+  resetCodeExpiresAt   DateTime?
   institutionId        String?       @db.ObjectId
   institution          Institution?  @relation(fields: [institutionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   posts                Post[]
@@ -23,6 +24,8 @@ model User {
   isPending            Boolean       @default(true)
   expiresAt            DateTime?
   playerId             String?
+
+  @@index([passwordResetCode])
 }
 
 model Institution {
