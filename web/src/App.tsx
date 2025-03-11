@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
+import  { useEffect } from "react";
 import Navbar from "./components/Navbar";
 import { CheckCircle, XCircle, Trash2, RefreshCw, Loader2 } from "lucide-react";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import { useAuth } from "./hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import Modal from "react-modal";
@@ -30,17 +30,15 @@ const App: React.FC = () => {
     error: pendingOperatorsError,
     handleApproveOperator,
     handleRejectOperator,
-    fetchPendingOperators,
   } = usePendingOperators();
 
   const {
     interactions,
     loading,
     error: interactionsError,
-    fetchInteractions,
     handleRefresh,
     setInteractions,
-    setLoading,
+
   } = useInteractions();
 
   const {
@@ -59,8 +57,7 @@ const App: React.FC = () => {
     isModalOpen,
     openDeleteModal,
     closeDeleteModal,
-    handleDeleteInteraction,
-    postToDelete,
+    handleDeleteInteraction
   } = useDeleteInteractionModal(setInteractions, interactions);
 
   if (loading) {

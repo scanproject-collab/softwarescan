@@ -6,7 +6,6 @@ import { useAuth } from "../../hooks/useAuth";
 export const useDeleteInteractionModal = (setInteractions: (interactions: any[]) => void, interactions: any[]) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [postToDelete, setPostToDelete] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
     const { token } = useAuth();
 
     const openDeleteModal = (postId: string) => {
@@ -29,7 +28,6 @@ export const useDeleteInteractionModal = (setInteractions: (interactions: any[])
             toast.success("Interação excluída com sucesso!");
             closeDeleteModal();
         } catch (err) {
-            setError("Erro ao excluir interação.");
             toast.error("Erro ao excluir interação.");
             console.error(err);
         }

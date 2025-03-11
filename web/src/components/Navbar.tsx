@@ -18,7 +18,7 @@ const Navbar: React.FC = () => {
 
   const handleLogout = () => {
     console.log("Tentando fazer logout...");
-    setAuthToken(null); // Atualiza o token via setAuthToken, que disparará o useEffect
+    setAuthToken(null);
     console.log("Logout iniciado, redirecionamento será gerenciado pelo useAuth");
   };
 
@@ -53,14 +53,12 @@ const Navbar: React.FC = () => {
             >
               Perfil
             </DropdownMenuItem>
-            {user?.role === "ADMIN" && (
-                <DropdownMenuItem
-                    onClick={() => navigate("/tags")}
-                    className="cursor-pointer hover:bg-gray-100"
-                >
-                  Gerenciar Tags
-                </DropdownMenuItem>
-            )}
+            <DropdownMenuItem
+                onClick={() => navigate("/tags")}
+                className="cursor-pointer hover:bg-gray-100"
+            >
+              Gerenciar Tags
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
                 onClick={handleLogout}
@@ -80,9 +78,12 @@ const Navbar: React.FC = () => {
           <h1 className="text-lg font-bold">Scan</h1>
         </div>
 
-        <button className="focus:outline-none">
-          <Bell className="h-6 w-6 text-white" />
-        </button>
+        <div className="flex items-center gap-2">
+          <span>{user?.name || "Usuário"}</span>
+          <button className="focus:outline-none">
+            <Bell className="h-6 w-6 text-white" />
+          </button>
+        </div>
       </nav>
   );
 };
