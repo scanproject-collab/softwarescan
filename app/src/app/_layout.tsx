@@ -22,18 +22,20 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor="#007AFF" />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="pages/auth/index" options={{ title: 'Login' }} />
-        <Stack.Screen name="pages/auth/signup" options={{ title: 'Registro' }} />
-        <Stack.Screen name="pages/auth/recovery" options={{ title: 'Recuperar Senha' }} />
-        <Stack.Screen name="pages/auth/recoverySucess" options={{title: "Recuperação Sucesso"}} />
-
-        <Stack.Screen name="pages/users/interaction/[id]" options={{ title: 'Local' }} />
-        <Stack.Screen name="pages/users/profile" options={{ title: 'Perfil' }} />
-      </Stack>
-    </>
+      <>
+        <StatusBar barStyle="light-content" backgroundColor="#007AFF" />
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="pages/auth/index" options={{ title: 'Login' }} />
+          <Stack.Screen name="pages/auth/signup" options={{ title: 'Registro' }} />
+          <Stack.Screen name="pages/auth/recovery" options={{ title: 'Recuperar Senha' }} />
+          <Stack.Screen name="components/auth/passwordRecoverySuccessScreen" options={{ title: 'Recuperação Bem-Sucedida' }} />
+          <Stack.Screen name="components/auth/passwordResetCodeVerificationScreen" options={{ title: 'Verificar Código' }} />
+          <Stack.Screen name="components/auth/passwordResetScreen" options={{ title: 'Redefinir Senha' }} />
+          <Stack.Screen name="pages/users/interaction/[id]" options={{ title: 'Local' }} />
+          <Stack.Screen name="pages/users/profile" options={{ title: 'Perfil' }} />
+          <Stack.Screen name="pages/users/profileEdit" options={{ title: 'Editar Perfil' }} />
+        </Stack>
+      </>
   );
 }
