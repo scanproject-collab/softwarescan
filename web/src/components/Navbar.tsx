@@ -37,7 +37,7 @@ const Navbar: React.FC = () => {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56 ml-10">
-            <DropdownMenuLabel>Menu</DropdownMenuLabel>
+            <DropdownMenuLabel>Olá, {user?.name || "Usuário"}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {pathname !== "/" && (
                 <DropdownMenuItem
@@ -79,7 +79,6 @@ const Navbar: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <span>{user?.name || "Usuário"}</span>
           <button className="focus:outline-none">
             <Bell className="h-6 w-6 text-white" />
           </button>

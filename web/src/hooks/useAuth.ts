@@ -3,12 +3,15 @@ import { useNavigate } from "react-router-dom";
 
 interface User {
   name: string;
-
+  role?: string;
 }
 
 export const useAuth = () => {
   const [token, setToken] = useState<string | null>(localStorage.getItem("userToken"));
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = localStorage.getItem("userData");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,7 +21,6 @@ export const useAuth = () => {
       setUser(null);
       navigate("/login");
     }
-
   }, [token, navigate]);
 
   const setAuthToken = (newToken: string | null, userData?: User) => {
