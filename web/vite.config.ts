@@ -8,4 +8,8 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@rollup/rollup-linux-x64-gnu'],
   },
+  build: {
+    outDir: 'dist',
+  },
+  base: '/'
 })

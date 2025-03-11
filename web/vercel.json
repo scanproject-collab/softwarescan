@@ -2,8 +2,8 @@
   "version": 2,
   "builds": [
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
+      "src": "index.html",
+      "use": "@vercel/vite",
       "config": {
         "distDir": "dist"
       }
@@ -16,7 +16,7 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://softwarescan.vercel.app", 
+    "VITE_API_URL": "https://softwarescan.vercel.app",
     "NODE_ENV": "production"
   }
 }
