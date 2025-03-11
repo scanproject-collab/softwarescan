@@ -54,7 +54,7 @@ const Navbar: React.FC = () => {
               Perfil
             </DropdownMenuItem>
             <DropdownMenuItem
-                onClick={() => navigate("/tags")}
+                onClick={() => navigate("/admin/tags")}
                 className="cursor-pointer hover:bg-gray-100"
             >
               Gerenciar Tags
