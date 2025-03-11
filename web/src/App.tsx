@@ -223,7 +223,7 @@ const App: React.FC = () => {
                           <img
                               src={interaction.imageUrl}
                               alt="Imagem da interação"
-                              className="mb-4 h-24 w-full object-cover rounded"
+                              className="mb-4 h-40 w-full object-cover rounded"
                           />
                       ) : (
                           <div className="mb-4 h-24 rounded bg-gray-200" />
