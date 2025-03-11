@@ -32,7 +32,7 @@ const PasswordRecoveryRequestScreen = () => {
           text2: `Um e-mail de recuperação foi enviado para ${email}`,
           position: 'top',
         });
-        router.push({ pathname: '/pages/auth/password-recovery-success', params: { email } });
+        router.push({ pathname: '/components/auth/passwordRecoverySuccessScreen', params: { email } });
       }
     } catch (error) {
       Toast.show({

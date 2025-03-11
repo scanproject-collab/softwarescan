@@ -45,7 +45,7 @@ const PasswordResetCodeVerificationScreen = () => {
                     text2: 'Código verificado! Redirecionando para redefinir a senha.',
                     position: 'top',
                 });
-                navigation.push({ pathname: '/components/auth/password-reset', params: { email: email as string, resetCode: code } });
+                navigation.push({ pathname: '/components/auth/passwordResetScreen', params: { email: email as string, resetCode: code } });
             }
         } catch (error) {
             Toast.show({

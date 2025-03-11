@@ -1,6 +1,6 @@
 import React from "react";
-import RecoveryScreen from "../../components/auth/RecoveryScreen";
+import PasswordRecoveryRequestScreen from "../../components/auth/passwordRecoveryRequestScreen";
 
 export default function RecoveryPage() {
-  return <RecoveryScreen />;
+  return <PasswordRecoveryRequestScreen />;
 }
