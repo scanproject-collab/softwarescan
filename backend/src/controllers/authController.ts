@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { registerUser, loginUser } from '../service/authService';
+import { registerUser, loginUser, verifyResetCode } from '../service/authService';
 import { sendNotification } from '../utils/oneSignal';
 
 import dotenv from 'dotenv';
@@ -12,9 +12,9 @@ export const registerController = async (req: Request, res: Response) => {
 
     if (user.role === 'OPERATOR' && user.isPending && playerId) {
       await sendNotification(
-        [playerId],
-        `Seu pedido de cadastro foi enviado: ${name} (${email}). Aguarde aprovação.`,
-        { userId: user.id, email }
+          [playerId],
+          `Seu pedido de cadastro foi enviado: ${name} (${email}). Aguarde aprovação.`,
+          { userId: user.id, email }
       );
     }
 
@@ -44,5 +44,18 @@ export const loginController = async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(401).json({ message: 'Login failed: ' + (error as Error).message });
+  }
+};
+
+export const verifyResetCodeController = async (req: Request, res: Response) => {
+  try {
+    const { email, resetCode } = req.body;
+    if (!email || !resetCode) {
+      return res.status(400).json({ message: 'Email and reset code are required' });
+    }
+    const response = await verifyResetCode(email, resetCode);
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(400).json({ message: (error as Error).message });
   }
 };

@@ -9,12 +9,12 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
 export const registerUser = async (
-  name: string,
-  email: string,
-  password: string,
-  role: string = 'OPERATOR',
-  playerId?: string,
-  institutionId?: string 
+    name: string,
+    email: string,
+    password: string,
+    role: string = 'OPERATOR',
+    playerId?: string,
+    institutionId?: string
 ) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -32,7 +32,7 @@ export const registerUser = async (
         isPending: userRole === 'OPERATOR',
         expiresAt,
         playerId,
-        institutionId, 
+        institutionId,
       },
     });
 
@@ -50,7 +50,7 @@ export const loginUser = async (email: string, password: string) => {
   try {
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { institution: true }, // Inclui a instituição, se existir
+      include: { institution: true },
     });
 
     if (!user) {
@@ -67,17 +67,17 @@ export const loginUser = async (email: string, password: string) => {
     }
 
     const token = jwt.sign(
-      {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        institutionId: user.institutionId,
-        createdAt: user.createdAt,
-        institution: user.institution ? { title: user.institution.title } : null, // Inclui o título da instituição
-      },
-      JWT_SECRET,
-      { expiresIn: '1d' }
+        {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          institutionId: user.institutionId,
+          createdAt: user.createdAt,
+          institution: user.institution ? { title: user.institution.title } : null,
+        },
+        JWT_SECRET,
+        { expiresIn: '1d' }
     );
 
     return { user, token };
@@ -94,10 +94,11 @@ export const generateResetPasswordCode = async (email: string) => {
     }
 
     const resetCode = crypto.randomBytes(3).toString('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // Expira em 15 minutos
 
     await prisma.user.update({
       where: { email },
-      data: { resetCode },
+      data: { passwordResetCode: resetCode, resetCodeExpiresAt: expiresAt },
     });
 
     await sendResetPasswordEmail(email, resetCode);
@@ -108,21 +109,45 @@ export const generateResetPasswordCode = async (email: string) => {
   }
 };
 
+export const verifyResetCode = async (email: string, resetCode: string) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+    if (user.passwordResetCode !== resetCode) {
+      throw new Error('Invalid reset code');
+    }
+    if (user.resetCodeExpiresAt && user.resetCodeExpiresAt < new Date()) {
+      throw new Error('Reset code has expired');
+    }
+    return { message: 'Reset code verified' };
+  } catch (error: any) {
+    throw new Error(`Error verifying reset code: ${error.message}`);
+  }
+};
+
 export const resetPassword = async (email: string, resetCode: string, newPassword: string) => {
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       throw new Error('User not found');
     }
-    if (user.resetCode !== resetCode) {
+    if (user.passwordResetCode !== resetCode) {
       throw new Error('Invalid reset code');
+    }
+    if (user.resetCodeExpiresAt && user.resetCodeExpiresAt < new Date()) {
+      throw new Error('Reset code has expired');
+    }
+    if (newPassword.length < 8) {
+      throw new Error('Password must be at least 8 characters long');
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await prisma.user.update({
       where: { email },
-      data: { password: hashedPassword, resetCode: null },
+      data: { password: hashedPassword, passwordResetCode: null, resetCodeExpiresAt: null },
     });
 
     return { message: 'Password successfully reset' };
