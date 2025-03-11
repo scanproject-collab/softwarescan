@@ -45,7 +45,7 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { title, content, tags, location, latitude, longitude, playerId } = req.body;
+    const { title, content, tags, location, latitude, longitude, playerId, ranking } = req.body;
     if (req.file) {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
@@ -66,8 +66,8 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
       if (postsToday >= 3) {
         if (playerId) {
           await sendNotification(
-            [playerId],
-            'Você atingiu o limite de 3 imagens por dia. Tente novamente amanhã!'
+              [playerId],
+              'Você atingiu o limite de 3 imagens por dia. Tente novamente amanhã!'
           );
         }
         return res.status(403).json({ message: 'Limite de 3 imagens por dia atingido. Tente novamente amanhã.' });
@@ -89,7 +89,7 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
         authorId: req.user.id,
-        ranking: ranking || "Baixo"
+        ranking: ranking || "Baixo",
       },
     });
 
