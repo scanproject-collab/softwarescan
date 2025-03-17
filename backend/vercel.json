@@ -18,10 +18,7 @@
   "crons": [
     {
       "path": "/admin/delete-expired-operators",
-      "schedule": "0 0 */5 * *",
-      "headers": {
-        "x-cron-secret": "6QJqfafr5Qdzjyq"
-      }
+      "schedule": "0 0 */5 * *"
     }
   ]
 }
