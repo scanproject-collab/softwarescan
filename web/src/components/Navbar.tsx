@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, Menu } from 'lucide-react';
+import { useState } from 'react';
+import { Menu } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +16,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { setAuthToken, user } = useAuth();
-  const [notificationCount, setNotificationCount] = useState(0);
+  const [_notificationCount, setNotificationCount] = useState(0);
 
   const handleLogout = () => {
     console.log('Tentando fazer logout...');
