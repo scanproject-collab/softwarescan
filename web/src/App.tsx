@@ -1,6 +1,6 @@
-import  { useEffect } from "react";
+import { useEffect } from "react";
 import Navbar from "./components/Navbar";
-import { CheckCircle, XCircle, Trash2, RefreshCw, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Trash2, RefreshCw, Loader2, MapPin } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import { useAuth } from "./hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -9,6 +9,8 @@ import { usePendingOperators } from "./components/admin/usePendingOperators";
 import { useInteractions } from "./components/admin/useInteractions";
 import { useInteractionFilters } from "./components/admin/useInteractionFilters";
 import { useDeleteInteractionModal } from "./components/admin/useDeleteInteractionModal";
+import { useMapModal } from "./components/admin/useMapModal";
+import MapModal from "./components/MapModal";
 
 Modal.setAppElement("#root");
 
@@ -20,7 +22,6 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!token && pathname !== "/login") {
       console.log("Token não encontrado, redirecionando para /login...");
-      navigate("/login");
       navigate("/login");
     }
   }, [token, pathname, navigate]);
@@ -38,7 +39,6 @@ const App: React.FC = () => {
     error: interactionsError,
     handleRefresh,
     setInteractions,
-
   } = useInteractions();
 
   const {
@@ -48,17 +48,27 @@ const App: React.FC = () => {
     setSelectedTag,
     selectedRanking,
     setSelectedRanking,
+    selectedInstitution,
+    setSelectedInstitution,
     filteredInteractions,
     uniqueTags,
     uniqueRankings,
+    uniqueInstitutions,
   } = useInteractionFilters(interactions);
 
   const {
     isModalOpen,
     openDeleteModal,
     closeDeleteModal,
-    handleDeleteInteraction
+    handleDeleteInteraction,
   } = useDeleteInteractionModal(setInteractions, interactions);
+
+  const {
+    isMapModalOpen,
+    selectedInteraction,
+    openMapModal,
+    closeMapModal,
+  } = useMapModal();
 
   if (loading) {
     return (
@@ -144,9 +154,6 @@ const App: React.FC = () => {
                     </div>
                 ))}
               </div>
-              <button className="mt-4 w-full rounded border border-blue-600 px-4 py-2 text-blue-600 hover:bg-blue-50">
-                Ver no mapa
-              </button>
             </div>
             <div className="col-span-2">
               <div className="mb-4 flex items-center justify-between">
@@ -195,58 +202,78 @@ const App: React.FC = () => {
                       </option>
                   ))}
                 </select>
+                <select
+                    value={selectedInstitution || ""}
+                    onChange={(e) => setSelectedInstitution(e.target.value || null)}
+                    className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                >
+                  <option value="">Todas as Instituições</option>
+                  {uniqueInstitutions.map((institution: any) => (
+                      <option key={institution.id} value={institution.id}>
+                        {institution.title}
+                      </option>
+                  ))}
+                </select>
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredInteractions.map((interaction, index) => (
-                    <div
-                        key={index}
-                        className="rounded-lg bg-white p-4 shadow relative"
-                    >
-                      <button
-                          onClick={() => openDeleteModal(interaction.id)}
-                          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                      <div className="mb-4 flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 text-center leading-8 text-blue-600">
-                          {interaction.author.name?.[0] || "A"}
+                {filteredInteractions.length > 0 ? (
+                    filteredInteractions.map((interaction, index) => (
+                        <div key={index} className="rounded-lg bg-white p-4 shadow relative">
+                          <button
+                              onClick={() => openDeleteModal(interaction.id)}
+                              className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                          <div className="mb-4 flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-blue-100 text-center leading-8 text-blue-600">
+                              {interaction.author.name?.[0] || "A"}
+                            </div>
+                            <p className="font-medium">{interaction.title || "Interação"}</p>
+                          </div>
+                          {interaction.imageUrl ? (
+                              <img
+                                  src={interaction.imageUrl}
+                                  alt="Imagem da interação"
+                                  className="mb-4 h-40 w-full object-cover rounded"
+                              />
+                          ) : (
+                              <div className="mb-4 h-24 rounded bg-gray-200" />
+                          )}
+                          <p className="text-sm text-gray-600">
+                            Data e hora: {new Date(interaction.createdAt).toLocaleString()}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Tipo: {interaction.tags?.join(", ") || "Sem tipo"}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Ranking: {interaction.ranking || "Não definido"}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Observações: {interaction.content || "Sem observações"}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Autor: {interaction.author.name || "Unnamed"} ({interaction.author.email})
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Instituição: {interaction.author.institution?.title || "Sem instituição"}
+                          </p>
+                          {interaction.latitude && interaction.longitude && (
+                              <button
+                                  onClick={() => openMapModal(interaction)}
+                                  className="mt-2 flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+                              >
+                                <MapPin className="h-4 w-4" />
+                                Localizar no Mapa
+                              </button>
+                          )}
                         </div>
-                        <p className="font-medium">
-                          {interaction.title || "Interação"}
-                        </p>
-                      </div>
-                      {interaction.imageUrl ? (
-                          <img
-                              src={interaction.imageUrl}
-                              alt="Imagem da interação"
-                              className="mb-4 h-40 w-full object-cover rounded"
-                          />
-                      ) : (
-                          <div className="mb-4 h-24 rounded bg-gray-200" />
-                      )}
-                      <p className="text-sm text-gray-600">
-                        Data e hora: {new Date(interaction.createdAt).toLocaleString()}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Tipo: {interaction.tags?.join(", ") || "Sem tipo"}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Ranking: {interaction.ranking || "Não definido"}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Observações: {interaction.content || "Sem observações"}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Autor: {interaction.author.name || "Unnamed"} (
-                        {interaction.author.email})
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Instituição:{" "}
-                        {interaction.author.institution?.title || "Sem instituição"}
-                      </p>
-                    </div>
-                ))}
+                    ))
+                ) : (
+                    <p className="text-gray-600 text-center col-span-full">
+                      Nenhuma interação encontrada para os filtros selecionados.
+                    </p>
+                )}
               </div>
             </div>
           </div>
@@ -256,15 +283,12 @@ const App: React.FC = () => {
             isOpen={isModalOpen}
             onRequestClose={closeDeleteModal}
             className="fixed inset-0 flex items-center justify-center p-4"
-            overlayClassName="fixed inset-0"
+            overlayClassName="fixed inset-0 bg-black bg-opacity-50"
         >
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">
-              Confirmar Exclusão
-            </h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">Confirmar Exclusão</h2>
             <p className="text-gray-600 mb-6">
-              Tem certeza que deseja excluir esta interação? Esta ação não pode
-              ser desfeita.
+              Tem certeza que deseja excluir esta interação? Esta ação não pode ser desfeita.
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -278,6 +302,32 @@ const App: React.FC = () => {
                   className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
               >
                 Excluir
+              </button>
+            </div>
+          </div>
+        </Modal>
+
+        <Modal
+            isOpen={isMapModalOpen}
+            onRequestClose={closeMapModal}
+            className="fixed inset-0 flex items-center justify-center p-4"
+            overlayClassName="fixed inset-0 bg-black bg-opacity-50"
+        >
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">Localização da Interação</h2>
+            {selectedInteraction && (
+                <MapModal
+                    latitude={selectedInteraction.latitude}
+                    longitude={selectedInteraction.longitude}
+                    title={selectedInteraction.title || "Interação"}
+                />
+            )}
+            <div className="flex justify-end mt-4">
+              <button
+                  onClick={closeMapModal}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition"
+              >
+                Fechar
               </button>
             </div>
           </div>

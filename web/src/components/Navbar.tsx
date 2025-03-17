@@ -1,5 +1,5 @@
-import React from "react";
-import { Bell, Menu } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Bell, Menu } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,25 +7,31 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu.tsx";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth.ts";
+} from './ui/dropdown-menu.tsx';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.ts';
+import NotificationModal from './NotificationModal.tsx';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { setAuthToken, user } = useAuth();
+  const [notificationCount, setNotificationCount] = useState(0);
 
   const handleLogout = () => {
-    console.log("Tentando fazer logout...");
+    console.log('Tentando fazer logout...');
     setAuthToken(null);
-    console.log("Logout iniciado, redirecionamento será gerenciado pelo useAuth");
+    console.log('Logout iniciado, redirecionamento será gerenciado pelo useAuth');
   };
 
   const handleHomeClick = () => {
-    if (pathname !== "/") {
-      navigate("/");
+    if (pathname !== '/') {
+      navigate('/');
     }
+  };
+
+  const resetNotificationCount = () => {
+    setNotificationCount(0);
   };
 
   return (
@@ -37,9 +43,9 @@ const Navbar: React.FC = () => {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56 ml-10">
-            <DropdownMenuLabel>Olá, {user?.name || "Usuário"}</DropdownMenuLabel>
+            <DropdownMenuLabel>Olá, {user?.name || 'Usuário'}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {pathname !== "/" && (
+            {pathname !== '/' && (
                 <DropdownMenuItem
                     onClick={handleHomeClick}
                     className="cursor-pointer hover:bg-gray-100"
@@ -48,13 +54,13 @@ const Navbar: React.FC = () => {
                 </DropdownMenuItem>
             )}
             <DropdownMenuItem
-                onClick={() => navigate("/profile")}
+                onClick={() => navigate('/profile')}
                 className="cursor-pointer hover:bg-gray-100"
             >
               Perfil
             </DropdownMenuItem>
             <DropdownMenuItem
-                onClick={() => navigate("/admin/tags")}
+                onClick={() => navigate('/admin/tags')}
                 className="cursor-pointer hover:bg-gray-100"
             >
               Gerenciar Tags
@@ -79,9 +85,7 @@ const Navbar: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="focus:outline-none">
-            <Bell className="h-6 w-6 text-white" />
-          </button>
+          <NotificationModal onOpen={resetNotificationCount} />
         </div>
       </nav>
   );
