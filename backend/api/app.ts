@@ -8,10 +8,8 @@ import institutionRoutes from '../src/routes/institutionRoutes';
 import postRoutes from '../src/routes/postRoutes';
 import tagRoutes from '../src/routes/tagRoutes';
 
-import { deleteExpiredOperators } from '../src/controllers/adminController';
-
 import chalk from 'chalk';
-import schedule from 'node-schedule';
+
 import cors from "cors";
 
 const app = express();
@@ -33,9 +31,8 @@ app.get('/', (_req, res) => {
   res.send('API is working!');
 });
 
-schedule.scheduleJob('0 * * * *', async () => {
-  console.log('Verificando operadores expirados...');
-  await deleteExpiredOperators();
+app.use((_req: Request, res: Response) => {
+  res.status(404).send('Not found');
 });
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
@@ -43,6 +40,8 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).send('Internal Server Error');
 });
 
+app.listen(3001, () => {
+  console.log(chalk.green('Server is running on port 3001'));})
 
 
 export default app;
