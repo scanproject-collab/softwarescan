@@ -6,7 +6,7 @@ import App from './App.tsx';
 import Login from './pages/auth/loginScreen.tsx';
 
 import TagManagement from "./pages/admin/TagManagement.tsx";
-
+import 'leaflet/dist/leaflet.css';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Router>
