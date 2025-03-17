@@ -2,7 +2,7 @@
   "expo": {
     "name": "Softwarescan",
     "slug": "softwarescan",
-    "version": "2.3.2",
+    "version": "2.3.3",
     "orientation": "portrait",
     "icon": "./assets/images/scan-removebg-preview.png",
     "scheme": "softwarescan",
