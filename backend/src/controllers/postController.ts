@@ -176,11 +176,58 @@ export const deletePost = async (req: Request, res: Response) => {
 export const listAllPosts = async (_req: Request, res: Response) => {
   try {
     const posts = await prisma.post.findMany({
-      include: { author: { select: { name: true, email: true, institution: { select: { title: true } } } } },
       orderBy: { createdAt: "desc" },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            institution: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
     });
-    res.status(200).json({ message: "Posts retrieved successfully", posts });
+
+    const response = {
+      message: "Posts retrieved successfully",
+      posts: posts.map((post) => {
+        console.log("Post Author Institution:", post.author.institution); // Log para depuração
+        return {
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          imageUrl: post.imageUrl,
+          tags: post.tags,
+          location: post.location,
+          latitude: post.latitude,
+          longitude: post.longitude,
+          createdAt: post.createdAt.toISOString(),
+          updatedAt: post.updatedAt.toISOString(),
+          authorId: post.authorId,
+          ranking: post.ranking,
+          author: {
+            id: post.author.id,
+            name: post.author.name || "Unnamed",
+            email: post.author.email,
+            institution: post.author.institution
+                ? {
+                  id: post.author.institution.id,
+                  title: post.author.institution.title,
+                }
+                : null,
+          },
+        };
+      }),
+    };
+
+    res.status(200).json(response);
   } catch (error) {
-    res.status(400).json({ message: "Error listing posts: " + (error as Error).message });
+    res.status(400).json({ message: "Error listing posts: " + (error as any).message });
   }
 };
