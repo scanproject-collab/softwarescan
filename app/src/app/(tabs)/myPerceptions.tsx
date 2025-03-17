@@ -8,7 +8,7 @@ import { validateToken } from '../utils/auth';
 export default function MyPerceptions() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const mapRef = useRef<MapView>(null); // Referência para o MapView
+    const mapRef = useRef<MapView>(null);
     const router = useRouter();
     const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -46,10 +46,10 @@ export default function MyPerceptions() {
     }, []);
 
     useEffect(() => {
-        // Ajustar o mapa para incluir todos os marcadores quando os posts forem carregados
+
         if (posts.length > 0 && mapRef.current) {
             const coordinates = posts
-                .filter((post: any) => post.latitude && post.longitude) // Filtra posts com coordenadas válidas
+                .filter((post: any) => post.latitude && post.longitude)
                 .map((post: any) => ({
                     latitude: post.latitude,
                     longitude: post.longitude,
@@ -72,7 +72,7 @@ export default function MyPerceptions() {
         );
     }
 
-    // Filtra os posts que têm coordenadas válidas
+
     const postsWithCoordinates = posts.filter(
         (post: any) => post.latitude && post.longitude
     );

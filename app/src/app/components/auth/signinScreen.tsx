@@ -9,7 +9,6 @@ const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const API_URL = process.env.EXPO_PUBLIC_API_URL;
   const showToast = (type: 'success' | 'error', text1: string, text2: string) => {
     Toast.show({
       type,
@@ -32,7 +31,7 @@ const LoginScreen = () => {
     setIsLoading(true);
     try {
       console.log('URL usada:', `${process.env.EXPO_PUBLIC_API_URL}/auth/login`); 
-      console.log('Dados enviados:', { email, password }); // Depuração
+      console.log('Dados enviados:', { email, password });
       const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/login`, {
         email,
         password,

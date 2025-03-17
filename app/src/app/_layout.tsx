@@ -1,7 +1,7 @@
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'react-native';
 import { useEffect } from 'react';
-import { initializeOneSignal } from './utils/oneSignal';
+import { initializeExpoNotification } from './utils/expoNotifications';
 import { validateToken } from './utils/auth';
 import React from 'react';
 
@@ -16,7 +16,7 @@ export default function RootLayout() {
     };
 
     checkToken();
-    initializeOneSignal().catch((error) => {
+    initializeExpoNotification().catch((error) => {
       console.error('Erro ao inicializar o OneSignal:', error);
     });
   }, []);

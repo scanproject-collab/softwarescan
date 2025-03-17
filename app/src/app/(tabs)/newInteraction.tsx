@@ -13,14 +13,13 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getPlayerId } from "../utils/oneSignal";
+import { getPlayerId } from "../utils/expoNotifications";
 import { validateToken } from "../utils/auth";
 import { Calendar } from "react-native-calendars";
 import MapView, { Marker } from "react-native-maps";
 import { geocodeAddress, reverseGeocode, getPlaceSuggestions } from "../utils/googleMaps";
 import { Ionicons } from "@expo/vector-icons";
-import moment from "moment";
-import "moment/locale/pt-br";
+
 
 const rankings = ["Urgente", "Mediano", "Baixo"];
 

@@ -1,8 +1,8 @@
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export async function initializeOneSignal() {
-  // Configurar comportamento das notificações
+export async function initializeExpoNotification() {
+
   await Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -11,20 +11,18 @@ export async function initializeOneSignal() {
     }),
   });
 
-  // Solicitar permissões
+
   const { status } = await Notifications.requestPermissionsAsync();
   if (status !== 'granted') {
     console.log('Permissões de notificação não concedidas');
     return null;
   }
 
-  // Obter o playerId (Expo Push Token)
-  // Usar o projectId do EAS, não o onesignalAppId
   const token = (await Notifications.getExpoPushTokenAsync({
-    projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || 'your-eas-project-id-here',
+    projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || '2ad9aa1c-f80d-4558-8a5a-d02752d160e3',
   })).data;
 
-  // Armazenar o playerId localmente
+
   await AsyncStorage.setItem('playerId', token);
   console.log('PlayerId registrado:', token);
   return token;
