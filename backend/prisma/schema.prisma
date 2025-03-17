@@ -8,22 +8,23 @@ generator client {
 }
 
 model User {
-  id                   String        @id @default(auto()) @map("_id") @db.ObjectId
-  email                String        @unique
+  id                   String         @id @default(auto()) @map("_id") @db.ObjectId
+  email                String         @unique
   password             String
   name                 String?
   role                 Role
-  passwordResetCode    String?       @map("resetCode")
+  passwordResetCode    String?        @map("resetCode")
   resetCodeExpiresAt   DateTime?
-  institutionId        String?       @db.ObjectId
-  institution          Institution?  @relation(fields: [institutionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  institutionId        String?        @db.ObjectId
+  institution          Institution?   @relation(fields: [institutionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   posts                Post[]
-  createdAt            DateTime?     @default(now())
-  updatedAt            DateTime?     @updatedAt
-  authoredInstitutions Institution[] @relation("InstitutionAuthor")
-  isPending            Boolean       @default(true)
+  createdAt            DateTime?      @default(now())
+  updatedAt            DateTime?      @updatedAt
+  authoredInstitutions Institution[]  @relation("InstitutionAuthor")
+  isPending            Boolean        @default(true)
   expiresAt            DateTime?
   playerId             String?
+  notifications        Notification[] @relation("UserNotifications")
 
   @@index([passwordResetCode])
 }
@@ -59,6 +60,15 @@ model Tag {
   name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  type      String
+  message   String
+  userId    String   @db.ObjectId
+  user      User     @relation("UserNotifications", fields: [userId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 enum Role {
