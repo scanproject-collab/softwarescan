@@ -105,7 +105,7 @@ export const listInstitutions = async (_req: Request, res: Response) => {
         title: inst.title,
         createdAt: inst.createdAt?.toISOString(),
         updatedAt: inst.updatedAt?.toISOString(),
-        author: inst.author || { id: null, name: 'Desconhecido', email: null }, // Tratar null aqui
+        author: inst.author || { id: null, name: 'Desconhecido', email: null },
         userCount: inst.users.length,
         users: inst.users,
       })),
