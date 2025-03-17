@@ -15,11 +15,29 @@ import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getPlayerId } from "../utils/expoNotifications";
 import { validateToken } from "../utils/auth";
-import { Calendar } from "react-native-calendars";
+import { Calendar, LocaleConfig } from "react-native-calendars";
 import MapView, { Marker } from "react-native-maps";
 import { geocodeAddress, reverseGeocode, getPlaceSuggestions } from "../utils/googleMaps";
 import { Ionicons } from "@expo/vector-icons";
+import moment from "moment";
+import "moment/locale/pt-br";
 
+moment.locale("pt-br");
+
+LocaleConfig.locales["pt-br"] = {
+  monthNames: [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  ],
+  monthNamesShort: [
+    "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+    "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+  ],
+  dayNames: ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"],
+  dayNamesShort: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
+};
+
+LocaleConfig.defaultLocale = "pt-br";
 
 const rankings = ["Urgente", "Mediano", "Baixo"];
 
@@ -41,7 +59,6 @@ export default function NewInteraction() {
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
   useEffect(() => {
-    // Configura o locale do moment para português
     moment.locale("pt-br");
 
     const initialize = async () => {
@@ -64,7 +81,6 @@ export default function NewInteraction() {
         Alert.alert("Erro", "Falha ao carregar tags.");
       }
 
-      // Pedir permissão de localização
       console.log("Solicitando permissão de localização...");
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
@@ -235,6 +251,7 @@ export default function NewInteraction() {
       );
     }
     if (item === "date") {
+      console.log(moment().calendar());
       return (
           <>
             <Text style={styles.sectionTitle}>Data</Text>
@@ -242,39 +259,7 @@ export default function NewInteraction() {
                 onDayPress={(day) => setSelectedDate(day.dateString)}
                 markedDates={{ [selectedDate]: { selected: true, disableTouchEvent: true, selectedColor: "#007AFF" } }}
                 style={styles.calendar}
-
-                monthNames={[
-                  "Janeiro",
-                  "Fevereiro",
-                  "Março",
-                  "Abril",
-                  "Maio",
-                  "Junho",
-                  "Julho",
-                  "Agosto",
-                  "Setembro",
-                  "Outubro",
-                  "Novembro",
-                  "Dezembro",
-                ]}
-                monthNamesShort={[
-                  "Jan",
-                  "Fev",
-                  "Mar",
-                  "Abr",
-                  "Mai",
-                  "Jun",
-                  "Jul",
-                  "Ago",
-                  "Set",
-                  "Out",
-                  "Nov",
-                  "Dez",
-                ]}
-                dayNames={["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]}
-                dayNamesShort={["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]}
                 firstDay={1}
-                locale="pt-BR"
                 theme={{
                   calendarBackground: "#fff",
                   textSectionTitleColor: "#333",
