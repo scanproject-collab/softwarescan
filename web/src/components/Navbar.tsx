@@ -54,7 +54,7 @@ const Navbar: React.FC = () => {
                 </DropdownMenuItem>
             )}
             <DropdownMenuItem
-                onClick={() => navigate('/profile')}
+                onClick={() => navigate('/admin/profile')}
                 className="cursor-pointer hover:bg-gray-100"
             >
               Perfil
