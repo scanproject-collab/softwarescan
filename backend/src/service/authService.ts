@@ -2,7 +2,8 @@ import bcrypt from 'bcryptjs';
 import { PrismaClient, Role } from '@prisma/client';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { sendResetPasswordEmail, sendWelcomeEmail } from './mailer';
+import { sendResetPasswordEmail, sendWelcomeEmail, sendPendingApprovalEmail } from './mailer';
+import { sendExpoPushNotification } from './expoNotification';
 
 const prisma = new PrismaClient();
 
@@ -36,7 +37,26 @@ export const registerUser = async (
       },
     });
 
-    if (userRole !== 'OPERATOR') {
+    if (userRole === 'OPERATOR' && expiresAt) {
+
+      await prisma.notification.create({
+        data: {
+          type: 'pending',
+          message: `${user.name || 'Usuário'} está aguardando aprovação.`,
+          userId: user.id,
+        },
+      });
+
+      await sendPendingApprovalEmail(email, name, expiresAt);
+      if (playerId) {
+        await sendExpoPushNotification(
+            playerId,
+            'Conta Pendente de Aprovação',
+            `Olá, ${name}! Sua conta foi registrada e está aguardando aprovação. Você será notificado quando for aprovada.`,
+            { type: 'pending_account' }
+        );
+      }
+    } else {
       await sendWelcomeEmail(email, name);
     }
 
@@ -94,7 +114,7 @@ export const generateResetPasswordCode = async (email: string) => {
     }
 
     const resetCode = crypto.randomBytes(3).toString('hex');
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // Expira em 15 minutos
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await prisma.user.update({
       where: { email },
