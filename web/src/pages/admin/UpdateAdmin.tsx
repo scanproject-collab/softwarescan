@@ -53,7 +53,7 @@ const UpdateAdminScreen = () => {
       <div className="flex items-center justify-center bg-white px-8 py-21"> 
         <Toaster position="top-right" />
         <div className="flex w-full max-w-md flex-col items-center">
-          <h1 className="mb-8 text-4xl font-bold text-orange-400">Editar Perfil Admin</h1>
+          <h1 className="mb-8 text-4xl font-bold text-blue-500">Editar Perfil Admin</h1>
 
 
           <input
@@ -88,7 +88,7 @@ const UpdateAdminScreen = () => {
           <button
             onClick={handleUpdate}
             disabled={loading}
-            className={`w-full rounded-md bg-orange-400 py-3 text-lg font-bold text-white transition-opacity ${
+            className={`w-full rounded-md bg-blue-500 py-3 text-lg font-bold text-white transition-opacity ${
               loading ? "opacity-70" : "hover:opacity-90"
             }`}
           >
@@ -99,13 +99,13 @@ const UpdateAdminScreen = () => {
 
           <button
             onClick={() => navigate("/")}
-            className="text-orange-400 hover:underline"
+            className="text-bg-blue-400 hover:underline"
             >
               Ir para Home</button>
 
             <button
               onClick={() => navigate("/admin/Profile")}
-              className="text-orange-400 hover:underline"
+              className="text-bg-blue-400 hover:underline"
             >
               Voltar
             </button>
