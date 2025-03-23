@@ -65,6 +65,12 @@ const Navbar: React.FC = () => {
             >
               Gerenciar Tags
             </DropdownMenuItem>
+            <DropdownMenuItem
+                onClick={() => navigate('/admin/polygons')}
+                className="cursor-pointer hover:bg-gray-100"
+            >
+              Gerenciar Polígonos
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
                 onClick={handleLogout}
