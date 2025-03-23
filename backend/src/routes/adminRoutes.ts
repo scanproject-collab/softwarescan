@@ -1,5 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
-import { listAllOperators, deleteOperatorByAdmin, listPendingOperators, approveOperator, rejectOperator, updateAdminAccount, listNotifications, deleteExpiredOperators } from '../controllers/adminController';
+import { listAllOperators, deleteOperatorByAdmin, listPendingOperators, approveOperator, rejectOperator, updateAdminAccount, listNotifications, deleteExpiredOperators, listPolygons, deletePolygon, updatePolygon, createPolygon } from '../controllers/adminController';
 import { authMiddleware, roleMiddleware } from '../middlewares/authMiddleware';
 import { CustomRequest } from '../middlewares/authMiddleware';
 import { listAllPosts } from "../controllers/postController";
@@ -50,6 +50,10 @@ router.post('/approve-operator/:operatorId', authMiddleware, roleMiddleware(['AD
 router.delete('/reject-operator/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), rejectOperator);
 router.get('/listAllPosts', authMiddleware, roleMiddleware(['ADMIN']), listAllPosts);
 router.get('/notifications', authMiddleware, roleMiddleware(['ADMIN']), listNotifications);
+router.post('/polygons/create', authMiddleware, roleMiddleware(['ADMIN']), createPolygon);
+router.get('/polygons', authMiddleware, roleMiddleware(['ADMIN']), listPolygons);
+router.put('/polygons/:polygonId', authMiddleware, roleMiddleware(['ADMIN']), updatePolygon);
+router.delete('/polygons/:polygonId', authMiddleware, roleMiddleware(['ADMIN']), deletePolygon);
 
 router.put(
     '/update',
