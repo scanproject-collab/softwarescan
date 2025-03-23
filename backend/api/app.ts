@@ -1,15 +1,9 @@
+// @ts-ignore
 import express, { Request, Response, NextFunction } from 'express';
 
-import authRoutes from '../src/routes/authRoutes';
-import operatorRoutes from '../src/routes/operatorRoutes';
-import adminRoutes from '../src/routes/adminRoutes';
-import managerRoutes from '../src/routes/managerRoutes';
-import institutionRoutes from '../src/routes/institutionRoutes';
-import postRoutes from '../src/routes/postRoutes';
-import tagRoutes from '../src/routes/tagRoutes';
+import { authRoutes, operatorRoutes, postRoutes, tagRoutes, managerRoutes, institutionRoutes, adminRoutes } from "../src/routes/index"
 
-import chalk from 'chalk';
-
+// @ts-ignore
 import cors from "cors";
 
 const app = express();
@@ -17,7 +11,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 
 app.use('/auth', authRoutes);
 app.use('/operator', operatorRoutes);
@@ -27,7 +20,7 @@ app.use('/institutions', institutionRoutes);
 app.use('/posts', postRoutes);
 app.use('/tags', tagRoutes);
 
-app.get('/', (_req, res) => {
+app.get('/', (_req: any, res: { send: (arg0: string) => void; }) => {
   res.send('API is working!');
 });
 
