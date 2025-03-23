@@ -25,6 +25,7 @@ model User {
   expiresAt            DateTime?
   playerId             String?
   notifications        Notification[] @relation("UserNotifications")
+  polygons             Polygon[]      @relation("PolygonAuthor")
 
   @@index([passwordResetCode])
 }
@@ -60,6 +61,17 @@ model Tag {
   name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Polygon {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  points    Json
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  authorId  String   @db.ObjectId
+  author    User     @relation("PolygonAuthor", fields: [authorId], references: [id])
 }
 
 model Notification {
