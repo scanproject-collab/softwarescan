@@ -7,6 +7,8 @@ export const useInteractionFilters = (interactions: any[]) => {
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [selectedRanking, setSelectedRanking] = useState<string | null>(null);
     const [selectedInstitution, setSelectedInstitution] = useState<string | null>(null);
+    const [selectedUser, setSelectedUser] = useState<string | null>(null);
+    const [usersInInstitution, setUsersInInstitution] = useState<any[]>([]);
     const [uniqueInstitutions, setUniqueInstitutions] = useState<any[]>([]);
     const { token } = useAuth();
 
@@ -16,7 +18,6 @@ export const useInteractionFilters = (interactions: any[]) => {
             const response = await api.get("/institutions", {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            console.log("Instituições retornadas pela API:", response.data.institutions);
             if (response.data && response.data.institutions) {
                 const mappedInstitutions = response.data.institutions.map((inst: any) => ({
                     id: inst.id,
@@ -36,33 +37,33 @@ export const useInteractionFilters = (interactions: any[]) => {
         fetchInstitutions();
     }, [token]);
 
-    const filteredInteractions = useMemo(() => {
-        console.log("Filtrando interações...");
-        console.log("selectedInstitution:", selectedInstitution);
-        console.log("Interações recebidas:", interactions);
+    // Atualiza a lista de usuários quando uma instituição é selecionada
+    useEffect(() => {
+        if (selectedInstitution) {
+            const users = interactions
+                .filter((interaction) => interaction.author.institution?.id === selectedInstitution)
+                .map((interaction) => interaction.author)
+                .filter((user, index, self) => self.findIndex((u) => u.id === user.id) === index); // Remove duplicatas
+            setUsersInInstitution(users);
+        } else {
+            setUsersInInstitution([]);
+        }
+        setSelectedUser(null); // Reseta o usuário selecionado ao mudar a instituição
+    }, [selectedInstitution, interactions]);
 
+    const filteredInteractions = useMemo(() => {
         return interactions.filter((interaction) => {
             const matchesAuthor =
                 interaction.author.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
             const matchesTag =
                 !selectedTag || (interaction.tags && interaction.tags.includes(selectedTag));
             const matchesRanking = !selectedRanking || interaction.ranking === selectedRanking;
-
-            const institutionId = interaction.author.institution?.id;
-            console.log(
-                `Interação ID: ${interaction.id}, Autor: ${interaction.author.name}, Instituição ID: ${institutionId}, Completa:`,
-                interaction.author.institution
-            );
-            console.log(
-                `Comparando institution.id (${institutionId}) com selectedInstitution (${selectedInstitution})`
-            );
-
             const matchesInstitution =
-                !selectedInstitution || (institutionId && institutionId === selectedInstitution);
-
-            return matchesAuthor && matchesTag && matchesRanking && matchesInstitution;
+                !selectedInstitution || interaction.author.institution?.id === selectedInstitution;
+            const matchesUser = !selectedUser || interaction.author.id === selectedUser;
+            return matchesAuthor && matchesTag && matchesRanking && matchesInstitution && matchesUser;
         });
-    }, [interactions, searchTerm, selectedTag, selectedRanking, selectedInstitution]);
+    }, [interactions, searchTerm, selectedTag, selectedRanking, selectedInstitution, selectedUser]);
 
     const uniqueTags = useMemo(() => {
         return [...new Set(interactions.flatMap((interaction) => interaction.tags || []))];
@@ -81,6 +82,9 @@ export const useInteractionFilters = (interactions: any[]) => {
         setSelectedRanking,
         selectedInstitution,
         setSelectedInstitution,
+        selectedUser,
+        setSelectedUser,
+        usersInInstitution,
         filteredInteractions,
         uniqueTags,
         uniqueRankings,

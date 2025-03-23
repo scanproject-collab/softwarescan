@@ -3,7 +3,7 @@ import Navbar from "./components/Navbar";
 import { CheckCircle, XCircle, Trash2, RefreshCw, Loader2, MapPin } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import { useAuth } from "./hooks/useAuth";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import Modal from "react-modal";
 import { usePendingOperators } from "./components/admin/usePendingOperators";
 import { useInteractions } from "./components/admin/useInteractions";
@@ -50,6 +50,9 @@ const App: React.FC = () => {
     setSelectedRanking,
     selectedInstitution,
     setSelectedInstitution,
+    selectedUser,
+    setSelectedUser,
+    usersInInstitution,
     filteredInteractions,
     uniqueTags,
     uniqueRankings,
@@ -170,13 +173,13 @@ const App: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="mb-4 flex gap-4">
+              <div className="mb-4 flex gap-4 flex-wrap">
                 <input
                     type="text"
                     placeholder="Buscar por nome do operador..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full sm:w-auto flex-grow rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
                 />
                 <select
                     value={selectedTag || ""}
@@ -214,6 +217,20 @@ const App: React.FC = () => {
                       </option>
                   ))}
                 </select>
+                {selectedInstitution && (
+                    <select
+                        value={selectedUser || ""}
+                        onChange={(e) => setSelectedUser(e.target.value || null)}
+                        className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    >
+                      <option value="">Todos os Usuários</option>
+                      {usersInInstitution.map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.name || "Unnamed"} ({user.email})
+                          </option>
+                      ))}
+                    </select>
+                )}
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filteredInteractions.length > 0 ? (
@@ -267,6 +284,12 @@ const App: React.FC = () => {
                                 Localizar no Mapa
                               </button>
                           )}
+                          <Link
+                              to={`/user/${interaction.author.id}`}
+                              className="mt-2 inline-block text-blue-600 hover:underline"
+                          >
+                            Ver Perfil do Usuário
+                          </Link>
                         </div>
                     ))
                 ) : (
