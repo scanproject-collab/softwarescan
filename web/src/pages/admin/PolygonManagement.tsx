@@ -135,6 +135,10 @@ const PolygonManagement: React.FC = () => {
         return false;
     });
 
+    const onMapLoad = (map: google.maps.Map) => {
+        mapRef.current = map;
+    };
+
     return (
         <div className="flex flex-col h-screen">
             <Navbar />
@@ -155,7 +159,7 @@ const PolygonManagement: React.FC = () => {
                                 center={center}
                                 zoom={13}
                                 onClick={handleMapClick}
-                                onLoad={(map) => (mapRef.current = map)}
+                                onLoad={onMapLoad}
                             >
                                 {filteredPosts.map(
                                     (post) =>
