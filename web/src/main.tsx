@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import App from './App.tsx';
-import Login from './pages/auth/loginScreen.tsx';
+import Login from './pages/auth/LoginScreen.tsx';
 import UpdateAdmin from './pages/admin/UpdateAdmin.tsx';
 import ProfileAdmin from './pages/admin/ProfileAdmin.tsx';
 import TagManagement from "./pages/admin/TagManagement.tsx";
