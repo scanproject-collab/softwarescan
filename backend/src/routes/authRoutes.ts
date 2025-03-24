@@ -1,6 +1,8 @@
 import { Router, Request, Response, RequestHandler } from 'express';
-import { registerController, loginController, verifyResetCodeController } from '../controllers/authController';
+import { registerController, loginController, verifyResetCodeController, verifyTokenController } from '../controllers/authController';
 import { generateResetPasswordCode, resetPassword } from '../service/authService';
+import { authMiddleware } from '../middlewares/authMiddleware';
+
 
 const router = Router();
 
@@ -34,5 +36,7 @@ router.post('/password-recovery/reset', (async (req: Request, res: Response) => 
     res.status(400).json({ message: (error as Error).message });
   }
 }) as RequestHandler);
+
+router.get('/verify-token', authMiddleware, verifyTokenController);
 
 export default router;

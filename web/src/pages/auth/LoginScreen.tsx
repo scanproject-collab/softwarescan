@@ -1,9 +1,10 @@
+// loginScreen.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import toast, { Toaster } from "react-hot-toast";
 import logo from "/scan-removebg-preview.png";
-import { useAuth } from "../../hooks/useAuth.ts";
+import { useAuth } from "../../hooks/useAuth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -42,12 +43,16 @@ const Login = () => {
               },
             }
         );
+        setIsLoading(false);
         return;
       }
 
-      setAuthToken(token, user);
-      toast.success("Bem-vindo de volta!");
-      navigate("/");
+      // Aguarda a configuração e verificação do token
+      const success = await setAuthToken(token, user);
+      if (success) {
+        toast.success("Bem-vindo de volta!");
+        navigate("/"); // Redireciona após a verificação bem-sucedida
+      }
     } catch (error: any) {
       const errorMessage =
           error?.response?.data?.message ||
