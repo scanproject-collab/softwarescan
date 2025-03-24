@@ -17,7 +17,7 @@ const UpdateAdminScreen = () => {
   useEffect(() => {
     const fetchAdmin = async () => {
       try {
-        const { data } = await api.get(`/admins/${id}`);
+        const { data } = await api.get(`/operators`);
         setName(data.name);
         setEmail(data.email);
       } catch (error: any) {
@@ -36,9 +36,9 @@ const UpdateAdminScreen = () => {
 
     setLoading(true);
     try {
-      await api.put(`/admins/${id}`, { name, email, password });
+      await api.put(`/update`, { name, email, password: password || undefined });
       toast.success("Dados atualizados com sucesso!");
-      navigate("/admin/dashboard");
+      navigate("/admin/profile");
     } catch (error: any) {
       console.error("Erro ao atualizar administrador:", error.message);
       toast.error("Erro ao atualizar dados. Tente novamente.");
