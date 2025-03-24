@@ -28,8 +28,8 @@ const Login = () => {
 
       const { token, user } = response.data;
       const role = user.role;
-      console.log("Token:", token);
-      console.log("User:", user);
+      console.log("Token recebido do login:", token);
+      console.log("User recebido do login:", user);
 
       if (role !== "ADMIN") {
         toast.error(
@@ -47,11 +47,14 @@ const Login = () => {
         return;
       }
 
-      // Aguarda a configuração e verificação do token
       const success = await setAuthToken(token, user);
+      console.log("Login bem-sucedido?", success);
       if (success) {
         toast.success("Bem-vindo de volta!");
         navigate("/"); // Redireciona após a verificação bem-sucedida
+      } else {
+        toast.error("Falha ao verificar o token. Tente novamente.");
+        navigate("/login");
       }
     } catch (error: any) {
       const errorMessage =
