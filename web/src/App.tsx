@@ -1,3 +1,4 @@
+// App.tsx
 import { useEffect } from "react";
 import Navbar from "./components/Navbar";
 import { CheckCircle, XCircle, Trash2, RefreshCw, Loader2, MapPin } from "lucide-react";
@@ -15,7 +16,7 @@ import MapModal from "./components/MapModal";
 Modal.setAppElement("#root");
 
 const App: React.FC = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -89,21 +90,27 @@ const App: React.FC = () => {
     );
   }
 
+  const getWeightBadgeColor = (weight: string) => {
+    switch (weight) {
+      case 'Alto':
+        return 'bg-red-500 text-white';
+      case 'Médio':
+        return 'bg-orange-500 text-white';
+      case 'Baixo':
+      default:
+        return 'bg-yellow-500 text-black';
+    }
+  };
+
   return (
       <div className="min-h-screen bg-gray-100">
         <Navbar />
         <Toaster />
         <div className="p-6">
           <div className="mb-6 flex items-center gap-4">
-            <img
-                src="/scan-removebg-preview.png"
-                alt="PMAL Logo"
-                className="h-16 w-16"
-            />
+            <img src="/scan-removebg-preview.png" alt="PMAL Logo" className="h-16 w-16" />
             <div>
-              <h1 className="text-2xl font-bold">
-                Projeto Ações Solidárias - DINT PMAL
-              </h1>
+              <h1 className="text-2xl font-bold">Projeto Ações Solidárias - DINT PMAL</h1>
               <p className="text-gray-600">Descrição do Ações Solidárias...</p>
             </div>
           </div>
@@ -118,8 +125,8 @@ const App: React.FC = () => {
               <div className="mb-4 flex items-center gap-2 rounded bg-blue-50 p-3">
                 <div className="h-10 w-10 rounded-full bg-gray-300" />
                 <div>
-                  <p className="font-medium">Gestor</p>
-                  <p className="text-sm text-gray-600">DINT PMAL</p>
+                  <p className="font-medium">{user?.name || "Gestor"}</p>
+                  <p className="text-sm text-gray-600">{user?.institution?.title || "DINT PMAL"}</p>
                 </div>
               </div>
               <div>
@@ -132,9 +139,7 @@ const App: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-full bg-gray-300" />
                         <div>
-                          <p>
-                            {operator.name || "Unnamed"} - {operator.email}
-                          </p>
+                          <p>{operator.name || "Unnamed"} - {operator.email}</p>
                           <p className="text-sm text-gray-600">
                             Criado em: {new Date(operator.createdAt).toLocaleDateString()}
                           </p>
@@ -205,44 +210,57 @@ const App: React.FC = () => {
                       </option>
                   ))}
                 </select>
-                <select
-                    value={selectedInstitution || ""}
-                    onChange={(e) => setSelectedInstitution(e.target.value || null)}
-                    className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                >
-                  <option value="">Todas as Instituições</option>
-                  {uniqueInstitutions.map((institution: any) => (
-                      <option key={institution.id} value={institution.id}>
-                        {institution.title}
-                      </option>
-                  ))}
-                </select>
-                {selectedInstitution && (
-                    <select
-                        value={selectedUser || ""}
-                        onChange={(e) => setSelectedUser(e.target.value || null)}
-                        className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                    >
-                      <option value="">Todos os Usuários</option>
-                      {usersInInstitution.map((user) => (
-                          <option key={user.id} value={user.id}>
-                            {user.name || "Unnamed"} ({user.email})
-                          </option>
-                      ))}
-                    </select>
+                {user?.role === "ADMIN" && (
+                    <>
+                      <select
+                          value={selectedInstitution || ""}
+                          onChange={(e) => setSelectedInstitution(e.target.value || null)}
+                          className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      >
+                        <option value="">Todas as Instituições</option>
+                        {uniqueInstitutions.map((institution: any) => (
+                            <option key={institution.id} value={institution.id}>
+                              {institution.title}
+                            </option>
+                        ))}
+                      </select>
+                      {selectedInstitution && (
+                          <select
+                              value={selectedUser || ""}
+                              onChange={(e) => setSelectedUser(e.target.value || null)}
+                              className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                          >
+                            <option value="">Todos os Usuários</option>
+                            {usersInInstitution.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                  {user.name || "Unnamed"} ({user.email})
+                                </option>
+                            ))}
+                          </select>
+                      )}
+                    </>
                 )}
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filteredInteractions.length > 0 ? (
                     filteredInteractions.map((interaction, index) => (
                         <div key={index} className="rounded-lg bg-white p-4 shadow relative">
+                          <div className="absolute top-2 left-2">
+                      <span
+                          className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getWeightBadgeColor(
+                              interaction.weight || "Baixo"
+                          )}`}
+                      >
+                        Peso: {interaction.weight || "Baixo"}
+                      </span>
+                          </div>
                           <button
                               onClick={() => openDeleteModal(interaction.id)}
                               className="absolute top-2 right-2 text-red-500 hover:text-red-700"
                           >
                             <Trash2 className="h-5 w-5" />
                           </button>
-                          <div className="mb-4 flex items-center gap-2">
+                          <div className="mt-8 mb-4 flex items-center gap-2">
                             <div className="h-8 w-8 rounded-full bg-blue-100 text-center leading-8 text-blue-600">
                               {interaction.author.name?.[0] || "A"}
                             </div>
