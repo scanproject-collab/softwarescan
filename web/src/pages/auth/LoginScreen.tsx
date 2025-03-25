@@ -1,4 +1,3 @@
-// loginScreen.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
@@ -31,9 +30,9 @@ const Login = () => {
       console.log("Token recebido do login:", token);
       console.log("User recebido do login:", user);
 
-      if (role !== "ADMIN") {
+      if (role !== "ADMIN" && role !== "MANAGER") {
         toast.error(
-            `Acesso negado! Apenas usuários ADMIN podem fazer login nesta plataforma. Seu role: ${role}.`,
+            `Acesso negado! Apenas usuários ADMIN ou MANAGER podem fazer login nesta plataforma. Seu role: ${role}.`,
             {
               duration: 5000,
               style: {
@@ -49,9 +48,10 @@ const Login = () => {
 
       const success = await setAuthToken(token, user);
       console.log("Login bem-sucedido?", success);
+      console.log("Titulo:",  user.institution.title);
       if (success) {
         toast.success("Bem-vindo de volta!");
-        navigate("/"); // Redireciona após a verificação bem-sucedida
+        navigate("/");
       } else {
         toast.error("Falha ao verificar o token. Tente novamente.");
         navigate("/login");
