@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from "express"; 
-import { authRoutes, operatorRoutes, postRoutes, tagRoutes, managerRoutes, institutionRoutes, adminRoutes, polygnosRoutes } from "../src/routes/index.ts"
+import { authRoutes, operatorRoutes, postRoutes, tagRoutes, managerRoutes, institutionRoutes, adminRoutes, polygnosRoutes } from "../src/routes/index"; 
 import dotenv from "dotenv";
 import cors from "cors";
 
@@ -25,7 +25,7 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.get("/google-maps-api-url", (_req: Request, res: Response) => {
-  const apiKey ="AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE";
+  const apiKey = "AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE";
   if (!apiKey) {
     return res.status(500).json({ message: "Google Maps API key not configured" });
   }
@@ -34,13 +34,12 @@ app.get("/google-maps-api-url", (_req: Request, res: Response) => {
 });
 
 app.use((_req: Request, res: Response) => {
-  res.status(404).send("Not found");
+  res.status(500).send("Not found");
 });
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Error occurred:", err);
   res.status(500).send("Internal Server Error");
 });
-
 
 export default app;
