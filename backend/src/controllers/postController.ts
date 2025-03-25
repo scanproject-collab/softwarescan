@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { PutObjectCommand, ObjectCannedACL, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import s3Client from '../service/storage/AWSs3';
 import multer from 'multer';
-import { sendNotification } from '../utils/oneSignal'; 
+import { sendExpoPushNotification } from '../service/expoNotification';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -46,6 +46,19 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
     }
 
     const { title, content, tags, location, latitude, longitude, playerId, ranking } = req.body;
+    let tagsArray = tags ? tags.split(',') : [];
+
+    const tagWeights = await prisma.tag.findMany({
+      where: { name: { in: tagsArray } },
+      select: { weight: true },
+    });
+
+    const weights = tagWeights.map(t => t.weight).filter(Boolean) as string[];
+    let postWeight = 'Baixo'; // Peso padrão
+    if (weights.includes('Alto')) postWeight = 'Alto';
+    else if (weights.includes('Médio')) postWeight = 'Médio';
+    else if (weights.length > 0) postWeight = weights[0];
+
     if (req.file) {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
@@ -65,9 +78,11 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
 
       if (postsToday >= 3) {
         if (playerId) {
-          await sendNotification(
-              [playerId],
-              'Você atingiu o limite de 3 imagens por dia. Tente novamente amanhã!'
+          await sendExpoPushNotification(
+              playerId, // pushToken
+              'Limite de Imagens Atingido', // title
+              'Você atingiu o limite de 3 imagens por dia. Tente novamente amanhã!', // body
+              { type: 'limit_exceeded' } // dados opcionais
           );
         }
         return res.status(403).json({ message: 'Limite de 3 imagens por dia atingido. Tente novamente amanhã.' });
@@ -84,12 +99,13 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
         title,
         content,
         imageUrl,
-        tags: tags ? tags.split(',') : [],
+        tags: tagsArray,
         location,
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
         authorId: req.user.id,
         ranking: ranking || "Baixo",
+        weight: postWeight,
       },
     });
 
@@ -161,7 +177,6 @@ export const deletePost = async (req: Request, res: Response) => {
       await s3Client.send(new DeleteObjectCommand(deleteParams));
     }
 
- 
     await prisma.post.delete({
       where: { id: postId },
     });
@@ -171,7 +186,6 @@ export const deletePost = async (req: Request, res: Response) => {
     res.status(400).json({ message: 'Erro ao excluir o post: ' + (error as Error).message });
   }
 };
-
 
 export const listAllPosts = async (_req: Request, res: Response) => {
   try {
@@ -211,6 +225,7 @@ export const listAllPosts = async (_req: Request, res: Response) => {
           updatedAt: post.updatedAt.toISOString(),
           authorId: post.authorId,
           ranking: post.ranking,
+          weight: post.weight,
           author: {
             id: post.author.id,
             name: post.author.name || "Unnamed",
