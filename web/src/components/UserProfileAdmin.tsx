@@ -5,7 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import Navbar from "./Navbar";
 import { Loader2 } from "lucide-react";
 
-const UserProfile: React.FC = () => {
+const UserProfileAdmin: React.FC = () => {
     const { userId } = useParams<{ userId: string }>();
     const [user, setUser] = useState<any>(null);
     const [posts, setPosts] = useState<any[]>([]);
@@ -112,4 +112,4 @@ const UserProfile: React.FC = () => {
     );
 };
 
-export default UserProfile;
+export default UserProfileAdmin;
