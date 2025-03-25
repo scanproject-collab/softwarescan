@@ -1,7 +1,7 @@
 // @ts-ignore
 import express, { Request, Response, NextFunction } from 'express';
 
-import { authRoutes, operatorRoutes, postRoutes, tagRoutes, managerRoutes, institutionRoutes, adminRoutes } from "../src/routes/index"
+import { authRoutes, operatorRoutes, postRoutes, tagRoutes, managerRoutes, institutionRoutes, adminRoutes, polygnosRoutes } from "../src/routes/index"
 
 // @ts-ignore
 import cors from "cors";
@@ -19,6 +19,7 @@ app.use('/manager', managerRoutes);
 app.use('/institutions', institutionRoutes);
 app.use('/posts', postRoutes);
 app.use('/tags', tagRoutes);
+app.use('/polygons', polygnosRoutes);
 
 app.get('/', (_req: any, res: { send: (arg0: string) => void; }) => {
   res.send('API is working!');
@@ -32,6 +33,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Error occurred:', err);
   res.status(500).send('Internal Server Error');
 });
+
 
 
 export default app;
