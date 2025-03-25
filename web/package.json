@@ -18,9 +18,10 @@
     "axios": "^1.8.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dotenv": "^16.4.7",
     "html2canvas": "^1.4.1",
+    "html2canvas-pro": "^1.5.8",
     "input-otp": "^1.4.2",
+    "jspdf": "^3.0.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.479.0",
     "react": "^19.0.0",
@@ -29,6 +30,7 @@
     "react-leaflet": "^5.0.0",
     "react-modal": "^3.16.3",
     "react-router-dom": "^7.3.0",
+    "socket.io-client": "^4.8.1",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.12",
     "tailwindcss-animate": "^1.0.7",
@@ -55,6 +57,7 @@
   "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
   "pnpm": {
     "onlyBuiltDependencies": [
+      "core-js",
       "esbuild"
     ]
   }
