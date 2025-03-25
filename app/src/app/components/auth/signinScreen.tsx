@@ -53,7 +53,7 @@ const LoginScreen = () => {
           ? 'Sua conta ainda está aguardando aprovação do administrador.'
           : error?.response?.data?.message || 'Erro ao fazer login, verifique suas credenciais.';
       showToast('error', 'Erro de Login', errorMessage);
-      console.error('Erro no login:', error.response ? error.response.data : error.message); // Depuração detalhada
+      console.error('Erro no login:', error.response ? error.response.data : error.message); 
     } finally {
       setIsLoading(false);
     }

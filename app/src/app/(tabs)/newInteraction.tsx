@@ -39,13 +39,24 @@ LocaleConfig.locales["pt-br"] = {
 
 LocaleConfig.defaultLocale = "pt-br";
 
-const rankings = ["Urgente", "Mediano", "Baixo"];
+// Define the weight modifiers
+const weightModifiers: { [key: string]: number } = {
+  "Urgente": 2,
+  "Mediano": 1,
+  "Baixo": 0,
+  "null": 0, // Treat null weights as the lowest modifier
+};
+
+interface Tag {
+  name: string;
+  weight: string | null;
+}
 
 export default function NewInteraction() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [image, setImage] = useState<string | null>(null);
   const [location, setLocation] = useState("");
   const [coords, setCoords] = useState({ latitude: 0, longitude: 0 });
@@ -54,7 +65,6 @@ export default function NewInteraction() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedTime, setSelectedTime] = useState(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
-  const [selectedRanking, setSelectedRanking] = useState<string | null>(null);
   const router = useRouter();
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -85,8 +95,8 @@ export default function NewInteraction() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
-            "Permissão negada",
-            "O Softwarescan precisa de acesso à sua localização para funcionar corretamente. Você pode continuar sem ela, mas alguns recursos estarão limitados."
+          "Permissão negada",
+          "O Softwarescan precisa de acesso à sua localização para funcionar corretamente. Você pode continuar sem ela, mas alguns recursos estarão limitados."
         );
         setMapLoaded(true);
         return;
@@ -142,14 +152,10 @@ export default function NewInteraction() {
     ]);
   };
 
-  const handleToggleTag = (tag: string) => {
+  const handleToggleTag = (tagName: string) => {
     setSelectedTags((prev) =>
-        prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName]
     );
-  };
-
-  const handleSelectRanking = (ranking: string) => {
-    setSelectedRanking(ranking);
   };
 
   const handleAddressChange = async (text: string) => {
@@ -184,6 +190,37 @@ export default function NewInteraction() {
     }
   };
 
+  // Calculate ranking based on the number of tags and their weights
+  const getRankingFromTags = (): string => {
+    if (selectedTags.length === 0) return "Baixo"; // Default ranking if no tags are selected
+
+    // Step 1: Calculate a base score based on the number of tags
+    let baseScore = 0;
+    if (selectedTags.length === 1) {
+      baseScore = 1; // 1 tag -> Start with a low score
+    } else if (selectedTags.length === 2) {
+      baseScore = 2; // 2 tags -> Medium score
+    } else if (selectedTags.length >= 3) {
+      baseScore = 3; // 3+ tags -> High score
+    }
+
+    // Step 2: Add modifiers based on the weights of the selected tags
+    const weightScore = selectedTags.reduce((total, tagName) => {
+      const tag = availableTags.find((t) => t.name === tagName);
+      const weight = tag ? tag.weight : null;
+      const modifier = weightModifiers[weight || "null"];
+      return total + modifier;
+    }, 0);
+
+    // Step 3: Combine the scores
+    const totalScore = baseScore + weightScore;
+
+    // Step 4: Map the total score to a ranking
+    if (totalScore <= 1) return "Baixo";
+    if (totalScore <= 3) return "Mediano";
+    return "Urgente";
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -201,7 +238,8 @@ export default function NewInteraction() {
         formData.append("image", { uri: image, name: "image.jpg", type: "image/jpeg" } as any);
       }
       formData.append("playerId", playerId || "");
-      formData.append("ranking", selectedRanking || "Baixo");
+      const ranking = getRankingFromTags();
+      formData.append("ranking", ranking);
 
       if (coords.latitude !== 0 && coords.longitude !== 0 && location.trim()) {
         formData.append("location", location);
@@ -239,192 +277,192 @@ export default function NewInteraction() {
   const renderItem = ({ item }: { item: string }) => {
     if (item === "title") {
       return (
-          <>
-            <Text style={styles.sectionTitle}>Título</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Digite o título da interação"
-                value={title}
-                onChangeText={setTitle}
-            />
-          </>
+        <>
+          <Text style={styles.sectionTitle}>Título</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Digite o título da interação"
+            value={title}
+            onChangeText={setTitle}
+          />
+        </>
       );
     }
     if (item === "date") {
       console.log(moment().calendar());
       return (
-          <>
-            <Text style={styles.sectionTitle}>Data</Text>
-            <Calendar
-                onDayPress={(day) => setSelectedDate(day.dateString)}
-                markedDates={{ [selectedDate]: { selected: true, disableTouchEvent: true, selectedColor: "#007AFF" } }}
-                style={styles.calendar}
-                firstDay={1}
-                theme={{
-                  calendarBackground: "#fff",
-                  textSectionTitleColor: "#333",
-                  selectedDayBackgroundColor: "#007AFF",
-                  selectedDayTextColor: "#fff",
-                  todayTextColor: "#007AFF",
-                  dayTextColor: "#333",
-                  textDisabledColor: "#d9e1e8",
-                  monthTextColor: "#333",
-                  textMonthFontWeight: "bold",
-                }}
-            />
-            <Text style={styles.hint}>* Selecione a data em que a foto foi tirada (pode ser diferente do dia atual).</Text>
-          </>
+        <>
+          <Text style={styles.sectionTitle}>Data</Text>
+          <Calendar
+            onDayPress={(day) => setSelectedDate(day.dateString)}
+            markedDates={{ [selectedDate]: { selected: true, disableTouchEvent: true, selectedColor: "#007AFF" } }}
+            style={styles.calendar}
+            firstDay={1}
+            theme={{
+              calendarBackground: "#fff",
+              textSectionTitleColor: "#333",
+              selectedDayBackgroundColor: "#007AFF",
+              selectedDayTextColor: "#fff",
+              todayTextColor: "#007AFF",
+              dayTextColor: "#333",
+              textDisabledColor: "#d9e1e8",
+              monthTextColor: "#333",
+              textMonthFontWeight: "bold",
+            }}
+          />
+          <Text style={styles.hint}>* Selecione a data em que a foto foi tirada (pode ser diferente do dia atual).</Text>
+        </>
       );
     }
     if (item === "time") {
       return (
-          <>
-            <Text style={styles.sectionTitle}>Hora</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="hh:mm (ex.: 14:30)"
-                value={selectedTime}
-                onChangeText={setSelectedTime}
-            />
-            <Text style={styles.hint}>* Insira a hora em que a foto foi tirada (pode diferir do horário atual).</Text>
-          </>
+        <>
+          <Text style={styles.sectionTitle}>Hora</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="hh:mm (ex.: 14:30)"
+            value={selectedTime}
+            onChangeText={setSelectedTime}
+          />
+          <Text style={styles.hint}>* Insira a hora em que a foto foi tirada (pode diferir do horário atual).</Text>
+        </>
       );
     }
     if (item === "description") {
       return (
-          <>
-            <Text style={styles.sectionTitle}>Observações</Text>
-            <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Campo de texto longo"
-                value={description}
-                onChangeText={setDescription}
-                multiline
-            />
-          </>
+        <>
+          <Text style={styles.sectionTitle}>Observações</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Campo de texto longo"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+          />
+        </>
       );
     }
     if (item === "tags") {
+      const currentRanking = getRankingFromTags();
+
       return (
-          <>
-            <Text style={styles.sectionTitle}>Tags</Text>
-            <View style={styles.tagContainer}>
-              {availableTags.map((tag) => (
-                  <Pressable
-                      key={tag}
-                      style={[styles.tagChip, selectedTags.includes(tag) && styles.tagChipSelected]}
-                      onPress={() => handleToggleTag(tag)}
-                  >
-                    <Text style={[styles.tagText, selectedTags.includes(tag) && styles.tagTextSelected]}>{tag}</Text>
-                  </Pressable>
-              ))}
-            </View>
-          </>
-      );
-    }
-    if (item === "ranking") {
-      return (
-          <>
-            <Text style={styles.sectionTitle}>Ranking</Text>
-            <View style={styles.rankingContainer}>
-              {rankings.map((ranking) => (
-                  <Pressable
-                      key={ranking}
-                      onPress={() => handleSelectRanking(ranking)}
-                      style={[styles.rankingItem, selectedRanking === ranking && styles.rankingItemSelected]}
-                  >
-                    <Text style={[styles.rankingText, selectedRanking === ranking && styles.rankingTextSelected]}>{ranking}</Text>
-                  </Pressable>
-              ))}
-            </View>
-          </>
+        <>
+          <Text style={styles.sectionTitle}>Tags</Text>
+          <View style={styles.tagContainer}>
+            {availableTags.map((tag) => {
+              let tagBackgroundColor = "#e0e0e0";
+              if (tag.weight === "Urgente") tagBackgroundColor = "#ff4d4f";
+              else if (tag.weight === "Mediano") tagBackgroundColor = "#ffeb3b";
+              else if (tag.weight === "Baixo") tagBackgroundColor = "#52c41a";
+
+              return (
+                <Pressable
+                  key={tag.name}
+                  style={[
+                    styles.tagChip,
+                    { backgroundColor: tagBackgroundColor },
+                    selectedTags.includes(tag.name) && styles.tagChipSelected,
+                  ]}
+                  onPress={() => handleToggleTag(tag.name)}
+                >
+                  <Text style={[styles.tagText, selectedTags.includes(tag.name) && styles.tagTextSelected]}>
+                    {tag.weight ? `${tag.name} (${tag.weight})` : tag.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.rankingDisplay}>
+            Prioridade Atual: <Text style={styles.rankingValue}>{currentRanking}</Text>
+          </Text>
+        </>
       );
     }
     if (item === "location") {
       return (
-          <>
-            <Text style={styles.sectionTitle}>Local (Opcional)</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Digite um endereço (ex.: Rua Exemplo, Cidade) ou selecione no mapa"
-                value={location}
-                onChangeText={handleAddressChange}
+        <>
+          <Text style={styles.sectionTitle}>Local (Opcional)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Digite um endereço (ex.: Rua Exemplo, Cidade) ou selecione no mapa"
+            value={location}
+            onChangeText={handleAddressChange}
+          />
+          {suggestions.length > 0 && (
+            <FlatList
+              data={suggestions}
+              renderItem={({ item }) => (
+                <Pressable style={styles.suggestionItem} onPress={() => handleSuggestionSelect(item)}>
+                  <Text>{item}</Text>
+                </Pressable>
+              )}
+              keyExtractor={(item) => item}
+              style={styles.suggestionList}
             />
-            {suggestions.length > 0 && (
-                <FlatList
-                    data={suggestions}
-                    renderItem={({ item }) => (
-                        <Pressable style={styles.suggestionItem} onPress={() => handleSuggestionSelect(item)}>
-                          <Text>{item}</Text>
-                        </Pressable>
-                    )}
-                    keyExtractor={(item) => item}
-                    style={styles.suggestionList}
-                />
-            )}
-            {mapLoaded && coords.latitude !== 0 && coords.longitude !== 0 ? (
-                <MapView
-                    style={styles.map}
-                    region={{ latitude: coords.latitude, longitude: coords.longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }}
-                    onPress={handleMapPress}
-                >
-                  <Marker coordinate={{ latitude: coords.latitude, longitude: coords.longitude }} />
-                </MapView>
-            ) : (
-                <Text style={styles.mapLoading}>Carregando mapa...</Text>
-            )}
-          </>
+          )}
+          {mapLoaded && coords.latitude !== 0 && coords.longitude !== 0 ? (
+            <MapView
+              style={styles.map}
+              region={{ latitude: coords.latitude, longitude: coords.longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }}
+              onPress={handleMapPress}
+            >
+              <Marker coordinate={{ latitude: coords.latitude, longitude: coords.longitude }} />
+            </MapView>
+          ) : (
+            <Text style={styles.mapLoading}>Carregando mapa...</Text>
+          )}
+        </>
       );
     }
     if (item === "image") {
       return (
-          <>
-            <Pressable
-                onPress={pickImage}
-                style={[styles.imagePicker, image && styles.imagePickerDisabled]}
-                disabled={!!image}
-            >
-              <Ionicons name="camera-outline" size={24} color="#fff" />
-            </Pressable>
-            {image && (
-                <View style={styles.imageContainer}>
-                  <Image source={{ uri: image }} style={styles.imagePreview} />
-                  <Pressable onPress={removeImage} style={styles.removeImageButton}>
-                    <Text style={styles.removeImageText}>x</Text>
-                  </Pressable>
-                </View>
-            )}
-          </>
+        <>
+          <Pressable
+            onPress={pickImage}
+            style={[styles.imagePicker, image && styles.imagePickerDisabled]}
+            disabled={!!image}
+          >
+            <Ionicons name="camera-outline" size={24} color="#fff" />
+          </Pressable>
+          {image && (
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: image }} style={styles.imagePreview} />
+              <Pressable onPress={removeImage} style={styles.removeImageButton}>
+                <Text style={styles.removeImageText}>x</Text>
+              </Pressable>
+            </View>
+          )}
+        </>
       );
     }
     if (item === "buttons") {
       return (
-          <View style={styles.buttonContainer}>
-            <Pressable
-                style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-                onPress={handleSubmit}
-                disabled={loading}
-            >
-              <Text style={styles.submitButtonText}>{loading ? "Salvando..." : "Salvar"}</Text>
-            </Pressable>
-            <Pressable style={styles.backButton} onPress={() => router.back()}>
-              <Text style={styles.backButtonText}>Cancelar</Text>
-            </Pressable>
-          </View>
+        <View style={styles.buttonContainer}>
+          <Pressable
+            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            <Text style={styles.submitButtonText}>{loading ? "Salvando..." : "Salvar"}</Text>
+          </Pressable>
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>Cancelar</Text>
+          </Pressable>
+        </View>
       );
     }
     return null;
   };
 
-  const sections = ["title", "date", "time", "description", "tags", "ranking", "location", "image", "buttons"];
+  const sections = ["title", "date", "time", "description", "tags", "location", "image", "buttons"];
 
   return (
-      <FlatList
-          data={sections}
-          renderItem={renderItem}
-          keyExtractor={(item) => item}
-          contentContainerStyle={styles.container}
-      />
+    <FlatList
+      data={sections}
+      renderItem={renderItem}
+      keyExtractor={(item) => item}
+      contentContainerStyle={styles.container}
+    />
   );
 }
 
@@ -439,15 +477,12 @@ const styles = StyleSheet.create({
   suggestionList: { maxHeight: 150, borderWidth: 1, borderColor: "#ddd", borderRadius: 8, marginBottom: 12, backgroundColor: "#fff" },
   suggestionItem: { padding: 10, borderBottomWidth: 1, borderBottomColor: "#ddd" },
   tagContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 12 },
-  tagChip: { backgroundColor: "#e0e0e0", borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8, marginBottom: 8 },
+  tagChip: { borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8, marginBottom: 8 },
   tagChipSelected: { backgroundColor: "#007AFF" },
   tagText: { color: "#333", fontSize: 14 },
   tagTextSelected: { color: "#fff" },
-  rankingContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 12 },
-  rankingItem: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, marginRight: 8, marginBottom: 8, backgroundColor: "#e0e0e0" },
-  rankingItemSelected: { backgroundColor: "#007AFF" },
-  rankingText: { color: "#333", fontSize: 16 },
-  rankingTextSelected: { color: "#fff" },
+  rankingDisplay: { fontSize: 16, color: "#333", marginBottom: 12 },
+  rankingValue: { fontWeight: "bold", color: "#007AFF" },
   imagePicker: { backgroundColor: "#007AFF", padding: 12, borderRadius: 50, alignItems: "center", justifyContent: "center", marginBottom: 16, marginTop: 20, width: 50, height: 50, elevation: 5, shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 5 },
   imagePickerDisabled: { backgroundColor: "#99ccff", opacity: 0.6 },
   imageContainer: { position: "relative", marginBottom: 16, alignSelf: "center" },
