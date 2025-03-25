@@ -25,7 +25,7 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.get("/google-maps-api-url", (_req: Request, res: Response) => {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY || "AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE";
+  const apiKey ="AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE";
   if (!apiKey) {
     return res.status(500).json({ message: "Google Maps API key not configured" });
   }
