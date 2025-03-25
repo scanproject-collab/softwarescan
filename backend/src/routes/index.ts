@@ -5,6 +5,7 @@ import managerRoutes from './managerRoutes';
 import institutionRoutes from './institutionRoutes';
 import postRoutes from './postRoutes';
 import tagRoutes from './tagRoutes';
+import polygnosRoutes from './polygnosRoutes';
 
 export {
     authRoutes,
@@ -13,5 +14,6 @@ export {
     managerRoutes,
     institutionRoutes,
     postRoutes,
-    tagRoutes
+    tagRoutes,
+    polygnosRoutes,
 }
