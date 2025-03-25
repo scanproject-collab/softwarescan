@@ -42,8 +42,5 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).send("Internal Server Error");
 });
 
-app.listen(3000, () => {
-  console.log("Server rodando... Porta: 3000!");
-});
 
 export default app;
