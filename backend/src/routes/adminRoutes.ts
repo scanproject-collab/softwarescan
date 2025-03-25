@@ -50,10 +50,6 @@ router.post('/approve-operator/:operatorId', authMiddleware, roleMiddleware(['AD
 router.delete('/reject-operator/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), rejectOperator);
 router.get('/listAllPosts', authMiddleware, roleMiddleware(['ADMIN']), listAllPosts);
 router.get('/notifications', authMiddleware, roleMiddleware(['ADMIN']), listNotifications);
-router.post('/polygons/create', authMiddleware, roleMiddleware(['ADMIN']), createPolygon);
-router.get('/polygons', authMiddleware, roleMiddleware(['ADMIN']), listPolygons);
-router.put('/polygons/:polygonId', authMiddleware, roleMiddleware(['ADMIN']), updatePolygon);
-router.delete('/polygons/:polygonId', authMiddleware, roleMiddleware(['ADMIN']), deletePolygon);
 
 router.put(
     '/update',
