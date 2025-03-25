@@ -7,7 +7,7 @@
     "start": "ts-node api/app.ts",
     "dev": "nodemon --exec ts-node --transpile-only api/app.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "vercel-build": "prisma generate"
+    "vercel-build": "tsc && prisma generate"
   },
   "keywords": [],
   "author": "",

@@ -5,15 +5,16 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "skipDefaultLibCheck": true, // Adicionando
+    "skipDefaultLibCheck": true, 
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "moduleResolution": "node", // Adicionando
-    "allowJs": true // Adicionando (opcional)
+    "moduleResolution": "node", 
+    "allowJs": true 
   },
   "include": [
     "src/**/*",
     "src/index.ts",
+    "api/**/*",
     "app.ts"
   ],
   "exclude": [
