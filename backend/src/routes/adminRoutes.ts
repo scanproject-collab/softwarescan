@@ -49,7 +49,7 @@ router.get('/pending-operators', authMiddleware, roleMiddleware(['ADMIN']), list
 router.post('/approve-operator/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), approveOperator);
 router.delete('/reject-operator/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), rejectOperator);
 router.get('/listAllPosts', authMiddleware, roleMiddleware(['ADMIN']), listAllPosts);
-router.get('/notifications', authMiddleware, roleMiddleware(['ADMIN']), listNotifications);
+router.get('/notifications', authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), listNotifications);
 
 router.put(
     '/update',
