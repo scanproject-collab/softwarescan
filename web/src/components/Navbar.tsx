@@ -1,4 +1,4 @@
-import { useState } from 'react';
+// Navbar.tsx
 import { Menu } from 'lucide-react';
 import {
   DropdownMenu,
@@ -7,16 +7,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu.tsx';
+} from './ui/dropdown-menu';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth.ts';
-import NotificationModal from './NotificationModal.tsx';
+import { useAuth } from '../hooks/useAuth';
+import NotificationModal from './NotificationModal';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { setAuthToken, user } = useAuth();
-  const [_notificationCount, setNotificationCount] = useState(0);
 
   const handleLogout = () => {
     console.log('Tentando fazer logout...');
@@ -31,8 +30,10 @@ const Navbar: React.FC = () => {
   };
 
   const resetNotificationCount = () => {
-    setNotificationCount(0);
+    // Since notificationCount is not used, this can remain empty or be removed if not needed
   };
+
+  const profilePath = user?.role === "MANAGER" ? "/manager/profile" : "/admin/profile";
 
   return (
       <nav className="flex items-center justify-between bg-blue-900 px-4 py-3 text-white">
@@ -54,19 +55,21 @@ const Navbar: React.FC = () => {
                 </DropdownMenuItem>
             )}
             <DropdownMenuItem
-                onClick={() => navigate('/admin/profile')}
+                onClick={() => navigate(profilePath)}
                 className="cursor-pointer hover:bg-gray-100"
             >
               Perfil
             </DropdownMenuItem>
+            {user?.role === "ADMIN" && (
+                <DropdownMenuItem
+                    onClick={() => navigate('/tags')}
+                    className="cursor-pointer hover:bg-gray-100"
+                >
+                  Gerenciar Tags
+                </DropdownMenuItem>
+            )}
             <DropdownMenuItem
-                onClick={() => navigate('/admin/tags')}
-                className="cursor-pointer hover:bg-gray-100"
-            >
-              Gerenciar Tags
-            </DropdownMenuItem>
-            <DropdownMenuItem
-                onClick={() => navigate('/admin/polygons')}
+                onClick={() => navigate('/polygons')}
                 className="cursor-pointer hover:bg-gray-100"
             >
               Gerenciar Polígonos
@@ -82,11 +85,7 @@ const Navbar: React.FC = () => {
         </DropdownMenu>
 
         <div className="flex items-center gap-2">
-          <img
-              src="/scan-removebg-preview.png"
-              alt="Scan Logo"
-              className="h-12 w-12"
-          />
+          <img src="/scan-removebg-preview.png" alt="Scan Logo" className="h-12 w-12" />
           <h1 className="text-lg font-bold">Scan</h1>
         </div>
 
