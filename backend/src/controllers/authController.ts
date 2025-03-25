@@ -1,28 +1,16 @@
-// authController.ts
 import { Request, Response } from 'express';
 import { registerUser, loginUser, verifyResetCode } from '../service/authService';
-import { sendNotification } from '../utils/oneSignal';
-import { PrismaClient } from '@prisma/client'; // Importe diretamente o PrismaClient
+import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Instancie o PrismaClient
 const prisma = new PrismaClient();
 
 export const registerController = async (req: Request, res: Response) => {
   try {
     const { name, email, password, role, playerId, institutionId } = req.body;
     const user = await registerUser(name, email, password, role, playerId, institutionId);
-
-    if (user.role === 'OPERATOR' && user.isPending && playerId) {
-      await sendNotification(
-          [playerId],
-          `Seu pedido de cadastro foi enviado: ${name} (${email}). Aguarde aprovação.`,
-          { userId: user.id, email }
-      );
-    }
-
     res.status(201).json({ message: 'User registered successfully', user });
   } catch (error) {
     res.status(400).json({ message: (error as Error).message });
@@ -72,7 +60,6 @@ export const verifyTokenController = async (req: Request & { user?: any }, res: 
       return res.status(401).json({ message: "Token inválido ou usuário não encontrado" });
     }
 
-    // Use a instância do PrismaClient
     const existingUser = await prisma.user.findUnique({
       where: { id: user.id },
       select: { id: true, name: true, email: true, role: true },
