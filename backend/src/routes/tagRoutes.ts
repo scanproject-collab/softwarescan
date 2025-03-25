@@ -5,7 +5,7 @@ import { authMiddleware, roleMiddleware, CustomRequest } from "../middlewares/au
 
 const router = Router();
 
-router.get("/", authMiddleware, async (req: CustomRequest, res: Response, next: NextFunction) => {
+router.get("/", async (req: CustomRequest, res: Response, next: NextFunction) => {
     try {
         await listTags(req, res);
     } catch (err) {
