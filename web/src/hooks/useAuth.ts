@@ -4,8 +4,13 @@ import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 interface User {
+  id?: string;
   name: string;
+  email?: string;
   role?: string;
+  institutionId?: string;
+  institution?: { title: string };
+  createdAt?: string;
 }
 
 export const useAuth = () => {
@@ -23,8 +28,6 @@ export const useAuth = () => {
         headers: { Authorization: `Bearer ${currentToken}` },
       });
       console.log("Resposta do verifyToken:", response.data);
-      setUser(response.data.user);
-      localStorage.setItem("userData", JSON.stringify(response.data.user));
       return true;
     } catch (error) {
       console.error("Erro ao verificar token:", error);
@@ -46,10 +49,12 @@ export const useAuth = () => {
     if (newToken) {
       localStorage.setItem("userToken", newToken);
       if (userData) {
-        setUser(userData);
+        console.log("Definindo user inicial com:", userData);
+        setUser(userData); // Define o user com os dados completos do login
         localStorage.setItem("userData", JSON.stringify(userData));
       }
       setToken(newToken);
+
       const isValid = await verifyToken(newToken);
       console.log("Token verificado com sucesso?", isValid);
       if (!isValid) {
