@@ -6,12 +6,14 @@ import { useAuth } from "../../hooks/useAuth";
 export const usePendingOperators = () => {
     const [pendingOperators, setPendingOperators] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const { token } = useAuth();
+    const { token, user } = useAuth();
+
+    const basePath = user?.role === "MANAGER" ? "/manager" : "/admin";
 
     const fetchPendingOperators = async () => {
         if (!token) return;
         try {
-            const response = await api.get("/admin/pending-operators", {
+            const response = await api.get(`${basePath}/pending-operators`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setPendingOperators(response.data.operators);
@@ -26,7 +28,7 @@ export const usePendingOperators = () => {
         if (!token) return;
         try {
             await api.post(
-                `/admin/approve-operator/${operatorId}`,
+                `${basePath}/approve-operator/${operatorId}`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -42,7 +44,7 @@ export const usePendingOperators = () => {
     const handleRejectOperator = async (operatorId: string) => {
         if (!token) return;
         try {
-            await api.delete(`/admin/reject-operator/${operatorId}`, {
+            await api.delete(`${basePath}/reject-operator/${operatorId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             fetchPendingOperators();
@@ -56,7 +58,7 @@ export const usePendingOperators = () => {
 
     useEffect(() => {
         fetchPendingOperators();
-    }, [token]);
+    }, [token, user?.role]);
 
     return {
         pendingOperators,

@@ -7,12 +7,15 @@ export const useInteractions = () => {
     const [interactions, setInteractions] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const { token } = useAuth();
+    const { token, user } = useAuth();
+
+    const basePath = user?.role === "MANAGER" ? "/manager" : "/admin";
 
     const fetchInteractions = async () => {
         if (!token) return;
         try {
-            const response = await api.get("/admin/listAllPosts", {
+
+            const response = await api.get(`${basePath}/listAllPosts`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setInteractions(response.data.posts || []);
@@ -36,7 +39,7 @@ export const useInteractions = () => {
             fetchInteractions();
         }, 10000);
         return () => clearInterval(interval);
-    }, [token]);
+    }, [token, user?.role]);
 
     return {
         interactions,

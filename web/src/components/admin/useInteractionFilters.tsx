@@ -10,10 +10,10 @@ export const useInteractionFilters = (interactions: any[]) => {
     const [selectedUser, setSelectedUser] = useState<string | null>(null);
     const [usersInInstitution, setUsersInInstitution] = useState<any[]>([]);
     const [uniqueInstitutions, setUniqueInstitutions] = useState<any[]>([]);
-    const { token } = useAuth();
+    const { token, user } = useAuth();
 
     const fetchInstitutions = async () => {
-        if (!token) return;
+        if (!token || user?.role !== "ADMIN") return;
         try {
             const response = await api.get("/institutions", {
                 headers: { Authorization: `Bearer ${token}` },
@@ -35,20 +35,19 @@ export const useInteractionFilters = (interactions: any[]) => {
 
     useEffect(() => {
         fetchInstitutions();
-    }, [token]);
+    }, [token, user?.role]);
 
-    // Atualiza a lista de usuários quando uma instituição é selecionada
     useEffect(() => {
         if (selectedInstitution) {
             const users = interactions
                 .filter((interaction) => interaction.author.institution?.id === selectedInstitution)
                 .map((interaction) => interaction.author)
-                .filter((user, index, self) => self.findIndex((u) => u.id === user.id) === index); // Remove duplicatas
+                .filter((user, index, self) => self.findIndex((u) => u.id === user.id) === index);
             setUsersInInstitution(users);
         } else {
             setUsersInInstitution([]);
         }
-        setSelectedUser(null); // Reseta o usuário selecionado ao mudar a instituição
+        setSelectedUser(null);
     }, [selectedInstitution, interactions]);
 
     const filteredInteractions = useMemo(() => {
