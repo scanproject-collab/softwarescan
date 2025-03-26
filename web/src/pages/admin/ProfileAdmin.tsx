@@ -1,32 +1,23 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import api from "../../services/api";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import Navbar from "../../components/Navbar";
+import { useAuth } from "../../hooks/useAuth";
 
 const ProfileScreen = () => {
-  const { id } = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [user, setUser] = useState({ name: "", email: "", institution: "", createdAt: "" });
-
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data } = await api.get(`/users/${id}`);
-        setUser({
-          name: data.name,
-          email: data.email,
-          institution: data.institution || "Instituição Não Informada",
-          createdAt: new Date(data.createdAt).toLocaleDateString("pt-BR"),
-        });
-      } catch (error: any) {
-        console.error("Erro ao buscar dados do usuário:", error.message);
-        toast.error("Erro ao carregar perfil.");
-      }
-    };
-    fetchUser();
-  }, [id]);
+    if (!user) {
+      toast.error("Usuário não autenticado. Redirecionando para login...");
+      navigate("/login");
+    }
+  }, [user, navigate]);
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col bg-gray-100 min-h-screen">
@@ -39,9 +30,9 @@ const ProfileScreen = () => {
         <h1 className="mt-4 text-2xl font-semibold">{user.name}</h1>
 
         <div className="mt-6 w-full max-w-md bg-white shadow-md rounded-lg p-6">
-          <p className="text-gray-700"><strong>Email:</strong> {user.email}</p>
-          <p className="text-gray-700 mt-2"><strong>Instituição:</strong> {user.institution}</p>
-          <p className="text-gray-700 mt-2"><strong>Data de Criação:</strong> {user.createdAt}</p>
+          <p className="text-gray-700"><strong>Email:</strong> {user.email || "Não informado"}</p>
+          <p className="text-gray-700 mt-2"><strong>Instituição:</strong> {user.institution?.title || "Instituição Não Informada"}</p>
+          <p className="text-gray-700 mt-2"><strong>Data de Criação:</strong> {user.createdAt ? new Date(user.createdAt).toLocaleDateString("pt-BR") : "Não disponível"}</p>
         </div>
 
         <button
