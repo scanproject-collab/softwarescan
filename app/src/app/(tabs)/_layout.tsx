@@ -24,7 +24,7 @@ export default function TabsLayout() {
     return (
         <Tabs
             screenOptions={{
-                tabBarActiveTintColor: '#007AFF',
+                tabBarActiveTintColor: '#092B6E',
                 tabBarInactiveTintColor: '#666',
                 tabBarStyle: styles.tabBar,
                 tabBarLabelStyle: styles.tabBarLabel,
@@ -57,7 +57,7 @@ export default function TabsLayout() {
                     tabBarButton: (props) => (
                         <Pressable {...props} style={styles.addButton} />
                     ),
-                    tabBarStyle: { display: 'none' }, // Remove o tab bar nesta tela
+                    tabBarStyle: { display: 'none' }, 
                 }}
             />
 
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
         top: -5,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#007AFF',
+        backgroundColor: '#092B6E',
         width: 50,
         height: 50,
         borderRadius: 25,

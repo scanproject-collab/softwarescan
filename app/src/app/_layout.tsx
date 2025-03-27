@@ -23,7 +23,7 @@ export default function RootLayout() {
 
   return (
       <>
-        <StatusBar barStyle="light-content" backgroundColor="#007AFF" />
+        <StatusBar barStyle="light-content" backgroundColor="#092B6E" />
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="pages/auth/index" options={{ title: 'Login' }} />
