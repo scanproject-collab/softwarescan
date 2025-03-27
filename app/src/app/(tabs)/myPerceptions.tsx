@@ -107,9 +107,6 @@ export default function MyPerceptions() {
                     Nenhum post com localização disponível para exibir no mapa.
                 </Text>
             )}
-            <Pressable style={styles.backButton} onPress={() => router.back()}>
-                <Text style={styles.backButtonText}>Voltar</Text>
-            </Pressable>
         </View>
     );
 }

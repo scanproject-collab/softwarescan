@@ -234,8 +234,6 @@ export default function NewInteraction() {
           location,
           latitude: coords.latitude,
           longitude: coords.longitude,
-          date: selectedDate,
-          time: selectedTime,
           weight: totalWeight.toString(),
           ranking: rankingLabel,
         };
@@ -243,7 +241,7 @@ export default function NewInteraction() {
         const posts = offlinePosts ? JSON.parse(offlinePosts) : [];
         posts.push(offlinePost);
         await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
-        Alert.alert("Offline", "A postagem será enviada quando a conexão for restabelecida.");
+        Alert.alert("Sucesso", "Postagem salva localmente. Ela será enviada quando houver conexão.");
         router.push("/");
         setLoading(false);
         return;
