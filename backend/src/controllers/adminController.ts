@@ -48,7 +48,6 @@ export const approveOperator = async (req: Request, res: Response) => {
       data: { isPending: false, expiresAt: null },
     });
 
-    // Registrar notificação de aprovação
     await prisma.notification.create({
       data: {
         type: 'approved',
@@ -61,10 +60,10 @@ export const approveOperator = async (req: Request, res: Response) => {
 
     if (user.playerId) {
       await sendExpoPushNotification(
-          user.playerId,
-          'Conta Aprovada',
-          `Parabéns, ${user.name}! Sua conta foi aprovada. Faça login para começar.`,
-          { type: 'account_approved' }
+        user.playerId,
+        'Conta Aprovada',
+        `Parabéns, ${user.name}! Sua conta foi aprovada. Faça login para começar.`,
+        { type: 'account_approved' }
       );
     }
 
@@ -87,6 +86,7 @@ export const rejectOperator = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Operator not found or not pending' });
     }
 
+    // Criar a notificação
     await prisma.notification.create({
       data: {
         type: 'rejected',
@@ -95,6 +95,22 @@ export const rejectOperator = async (req: Request, res: Response) => {
       },
     });
 
+    // Deletar posts associados
+    await prisma.post.deleteMany({
+      where: { authorId: operatorId },
+    });
+
+    // Deletar polígonos associados
+    await prisma.polygon.deleteMany({
+      where: { authorId: operatorId },
+    });
+
+    // Deletar notificações associadas
+    await prisma.notification.deleteMany({
+      where: { userId: operatorId },
+    });
+
+    // Deletar o usuário
     await prisma.user.delete({
       where: { id: operatorId },
     });
@@ -103,10 +119,10 @@ export const rejectOperator = async (req: Request, res: Response) => {
 
     if (operator.playerId) {
       await sendExpoPushNotification(
-          operator.playerId,
-          'Conta Rejeitada',
-          `Olá, ${operator.name || 'Usuário'}! Sua solicitação de registro foi rejeitada. Entre em contato com o suporte para mais informações.`,
-          { type: 'account_rejected' }
+        operator.playerId,
+        'Conta Rejeitada',
+        `Olá, ${operator.name || 'Usuário'}! Sua solicitação de registro foi rejeitada. Entre em contato com o suporte para mais informações.`,
+        { type: 'account_rejected' }
       );
     }
 
@@ -129,8 +145,8 @@ export const deleteExpiredOperators = async () => {
     });
 
     if (expiredOperators.length > 0) {
-
       for (const operator of expiredOperators) {
+        // Criar notificação de expiração
         await prisma.notification.create({
           data: {
             type: 'expired',
@@ -138,22 +154,34 @@ export const deleteExpiredOperators = async () => {
             userId: operator.id,
           },
         });
-      }
 
-      await prisma.user.deleteMany({
-        where: {
-          id: { in: expiredOperators.map(op => op.id) },
-        },
-      });
+        // Deletar posts associados
+        await prisma.post.deleteMany({
+          where: { authorId: operator.id },
+        });
 
-      for (const operator of expiredOperators) {
+        // Deletar polígonos associados
+        await prisma.polygon.deleteMany({
+          where: { authorId: operator.id },
+        });
+
+        // Deletar notificações associadas
+        await prisma.notification.deleteMany({
+          where: { userId: operator.id },
+        });
+
+        // Deletar o usuário
+        await prisma.user.delete({
+          where: { id: operator.id },
+        });
+
         await sendExpirationEmail(operator.email, operator.name || 'Usuário');
         if (operator.playerId) {
           await sendExpoPushNotification(
-              operator.playerId,
-              'Conta Expirada',
-              `Olá, ${operator.name || 'Usuário'}! Sua solicitação de registro expirou e foi removida. Entre em contato com o suporte se precisar de ajuda.`,
-              { type: 'account_expired' }
+            operator.playerId,
+            'Conta Expirada',
+            `Olá, ${operator.name || 'Usuário'}! Sua solicitação de registro expirou e foi removida. Entre em contato com o suporte se precisar de ajuda.`,
+            { type: 'account_expired' }
           );
         }
       }
@@ -203,7 +231,7 @@ export const listAllOperators = async (_req: Request, res: Response) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const recentOperators = operators.filter(
-        (op) => op.createdAt && new Date(op.createdAt) >= sevenDaysAgo
+      (op) => op.createdAt && new Date(op.createdAt) >= sevenDaysAgo
     ).length;
 
     const response = {
@@ -212,11 +240,11 @@ export const listAllOperators = async (_req: Request, res: Response) => {
         totalOperators,
         recentOperators,
         institutionBreakdown: Object.entries(institutionBreakdown).map(
-            ([id, { count, name }]) => ({
-              institutionId: id === 'No Institution' ? null : id,
-              institutionName: name,
-              operatorCount: count,
-            })
+          ([id, { count, name }]) => ({
+            institutionId: id === 'No Institution' ? null : id,
+            institutionName: name,
+            operatorCount: count,
+          })
         ),
       },
       operators: operators.map((op) => ({
@@ -224,8 +252,8 @@ export const listAllOperators = async (_req: Request, res: Response) => {
         name: op.name || 'Unnamed',
         email: op.email,
         institution: op.institution
-            ? { id: op.institution.id, title: op.institution.title }
-            : null,
+          ? { id: op.institution.id, title: op.institution.title }
+          : null,
         createdAt: op.createdAt?.toISOString() ?? new Date().toISOString(),
         updatedAt: op.updatedAt?.toISOString() ?? new Date().toISOString(),
       })),
@@ -258,16 +286,16 @@ export const updateAdminAccount = async (req: RequestWithUser, res: Response) =>
     });
 
     const token = jwt.sign(
-        {
-          id: updatedAdmin.id,
-          email: updatedAdmin.email,
-          name: updatedAdmin.name,
-          role: updatedAdmin.role,
-          institutionId: updatedAdmin.institutionId,
-          createdAt: updatedAdmin.createdAt,
-        },
-        process.env.JWT_SECRET || 'your_jwt_secret_key',
-        { expiresIn: '1d' }
+      {
+        id: updatedAdmin.id,
+        email: updatedAdmin.email,
+        name: updatedAdmin.name,
+        role: updatedAdmin.role,
+        institutionId: updatedAdmin.institutionId,
+        createdAt: updatedAdmin.createdAt,
+      },
+      process.env.JWT_SECRET || 'your_jwt_secret_key',
+      { expiresIn: '1d' }
     );
 
     res.status(200).json({ message: 'Admin account updated successfully', user: updatedAdmin, token });
@@ -289,6 +317,7 @@ export const deleteOperatorByAdmin = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Operator not found' });
     }
 
+    // Criar notificação
     await prisma.notification.create({
       data: {
         type: 'deleted',
@@ -297,16 +326,32 @@ export const deleteOperatorByAdmin = async (req: Request, res: Response) => {
       },
     });
 
+    // Deletar posts associados
+    await prisma.post.deleteMany({
+      where: { authorId: operatorId },
+    });
+
+    // Deletar polígonos associados
+    await prisma.polygon.deleteMany({
+      where: { authorId: operatorId },
+    });
+
+    // Deletar notificações associadas
+    await prisma.notification.deleteMany({
+      where: { userId: operatorId },
+    });
+
+    // Deletar o usuário
     await prisma.user.delete({
       where: { id: operatorId },
     });
 
     if (operator.playerId) {
       await sendExpoPushNotification(
-          operator.playerId,
-          'Conta Deletada',
-          `Olá, ${operator.name || 'Usuário'}! Sua conta foi deletada por um administrador. Entre em contato com o suporte para mais informações.`,
-          { type: 'account_deleted' }
+        operator.playerId,
+        'Conta Deletada',
+        `Olá, ${operator.name || 'Usuário'}! Sua conta foi deletada por um administrador. Entre em contato com o suporte para mais informações.`,
+        { type: 'account_deleted' }
       );
     }
 

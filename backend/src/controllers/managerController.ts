@@ -1,4 +1,3 @@
-// managerController.ts
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { sendWelcomeEmail, sendRejectionEmail } from '../service/mailer';
@@ -10,7 +9,6 @@ interface RequestWithUser extends Request {
   user?: { id: string; role: string; institutionId?: string };
 }
 
-// Listar operadores da mesma instituição do manager
 export const listOperatorsForManager = async (req: RequestWithUser, res: Response) => {
   if (!req.user?.institutionId) {
     return res.status(400).json({ message: 'Manager must belong to an institution' });
@@ -39,7 +37,7 @@ export const listOperatorsForManager = async (req: RequestWithUser, res: Respons
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const recentOperators = operators.filter(
-        (op) => op.createdAt && new Date(op.createdAt) >= sevenDaysAgo
+      (op) => op.createdAt && new Date(op.createdAt) >= sevenDaysAgo
     ).length;
 
     const response = {
@@ -63,7 +61,6 @@ export const listOperatorsForManager = async (req: RequestWithUser, res: Respons
   }
 };
 
-// Listar operadores pendentes da mesma instituição do manager
 export const listPendingOperatorsForManager = async (req: RequestWithUser, res: Response) => {
   if (!req.user?.institutionId) {
     return res.status(400).json({ message: 'Manager must belong to an institution' });
@@ -100,7 +97,6 @@ export const listPendingOperatorsForManager = async (req: RequestWithUser, res: 
   }
 };
 
-// Aprovar operador pendente da mesma instituição
 export const approveOperatorForManager = async (req: RequestWithUser, res: Response) => {
   const { operatorId } = req.params;
 
@@ -131,10 +127,10 @@ export const approveOperatorForManager = async (req: RequestWithUser, res: Respo
 
     if (user.playerId) {
       await sendExpoPushNotification(
-          user.playerId,
-          'Conta Aprovada',
-          `Parabéns, ${user.name}! Sua conta foi aprovada pelo manager. Faça login para começar.`,
-          { type: 'account_approved' }
+        user.playerId,
+        'Conta Aprovada',
+        `Parabéns, ${user.name}! Sua conta foi aprovada pelo manager. Faça login para começar.`,
+        { type: 'account_approved' }
       );
     }
 
@@ -144,7 +140,6 @@ export const approveOperatorForManager = async (req: RequestWithUser, res: Respo
   }
 };
 
-// Rejeitar operador pendente da mesma instituição
 export const rejectOperatorForManager = async (req: RequestWithUser, res: Response) => {
   const { operatorId } = req.params;
 
@@ -167,6 +162,7 @@ export const rejectOperatorForManager = async (req: RequestWithUser, res: Respon
       return res.status(404).json({ message: 'Operator not found or not pending in your institution' });
     }
 
+    // Criar a notificação
     await prisma.notification.create({
       data: {
         type: 'rejected',
@@ -175,6 +171,22 @@ export const rejectOperatorForManager = async (req: RequestWithUser, res: Respon
       },
     });
 
+    // Deletar posts associados
+    await prisma.post.deleteMany({
+      where: { authorId: operatorId },
+    });
+
+    // Deletar polígonos associados
+    await prisma.polygon.deleteMany({
+      where: { authorId: operatorId },
+    });
+
+    // Deletar notificações associadas
+    await prisma.notification.deleteMany({
+      where: { userId: operatorId },
+    });
+
+    // Deletar o usuário
     await prisma.user.delete({
       where: { id: operatorId },
     });
@@ -183,10 +195,10 @@ export const rejectOperatorForManager = async (req: RequestWithUser, res: Respon
 
     if (operator.playerId) {
       await sendExpoPushNotification(
-          operator.playerId,
-          'Conta Rejeitada',
-          `Olá, ${operator.name || 'Usuário'}! Sua solicitação foi rejeitada pelo manager. Entre em contato com o suporte para mais informações.`,
-          { type: 'account_rejected' }
+        operator.playerId,
+        'Conta Rejeitada',
+        `Olá, ${operator.name || 'Usuário'}! Sua solicitação foi rejeitada pelo manager. Entre em contato com o suporte para mais informações.`,
+        { type: 'account_rejected' }
       );
     }
 
@@ -196,7 +208,6 @@ export const rejectOperatorForManager = async (req: RequestWithUser, res: Respon
   }
 };
 
-// Listar posts da mesma instituição do manager
 export const listPostsForManager = async (req: RequestWithUser, res: Response) => {
   if (!req.user?.institutionId) {
     return res.status(400).json({ message: 'Manager must belong to an institution' });
@@ -253,7 +264,6 @@ export const listPostsForManager = async (req: RequestWithUser, res: Response) =
   }
 };
 
-// Deletar post da mesma instituição do manager
 export const deletePostForManager = async (req: RequestWithUser, res: Response) => {
   const { postId } = req.params;
 
@@ -293,7 +303,6 @@ export const deletePostForManager = async (req: RequestWithUser, res: Response) 
   }
 };
 
-// Listar notificações relacionadas à instituição do manager
 export const listNotificationsForManager = async (req: RequestWithUser, res: Response) => {
   if (!req.user?.institutionId) {
     return res.status(400).json({ message: 'Manager must belong to an institution' });
