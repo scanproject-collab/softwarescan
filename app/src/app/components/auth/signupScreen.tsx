@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'reac
 import axios from 'axios';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
-import { getPushToken } from '../../utils/expoNotifications'; // Ajustado para o novo nome
+import { getPushToken } from '../../utils/expoNotifications';
 import { Picker } from '@react-native-picker/picker';
 
 interface Institution {
@@ -21,7 +21,9 @@ const RegisterScreen = () => {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [pushToken, setPushToken] = useState<string | null>(null); // Ajustado para pushToken
+  const [pushToken, setPushToken] = useState<string | null>(null);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerificationSent, setIsVerificationSent] = useState(false);
 
   useEffect(() => {
     const fetchPushToken = async () => {
@@ -46,7 +48,6 @@ const RegisterScreen = () => {
         });
       }
     };
-
     fetchInstitutions();
   }, []);
 
@@ -63,9 +64,28 @@ const RegisterScreen = () => {
     });
   };
 
+  const handleSendVerificationCode = async () => {
+    if (!email) {
+      showToast('error', 'Erro', 'Por favor, insira um email válido.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/send-verification-code`, { email });
+      setIsVerificationSent(true);
+      showToast('info', 'Código Enviado', 'Um código de verificação foi enviado para o seu email.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Erro ao enviar código de verificação.';
+      showToast('error', 'Erro', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
-      showToast('error', 'Erro de Cadastro', 'Por favor, preencha todos os campos.');
+    if (!name || !email || !password || !confirmPassword || !verificationCode) {
+      showToast('error', 'Erro de Cadastro', 'Por favor, preencha todos os campos, incluindo o código de verificação.');
       return;
     }
 
@@ -82,12 +102,13 @@ const RegisterScreen = () => {
         password,
         playerId: pushToken,
         institutionId: institutionId || undefined,
+        verificationCode,
       });
 
       showToast(
-          'info',
-          'Cadastro Enviado',
-          'Sua conta está pendente de aprovação. Você receberá uma notificação quando for aprovada!'
+        'info',
+        'Cadastro Enviado',
+        'Sua conta está pendente de aprovação. Você receberá uma notificação quando for aprovada!'
       );
       setIsSuccess(true);
     } catch (error: any) {
@@ -100,89 +121,110 @@ const RegisterScreen = () => {
 
   if (isSuccess) {
     return (
-        <View style={styles.container}>
-          <Toast />
-          <Image source={require('@/assets/images/scan-removebg-preview.png')} style={styles.logo} />
-          <Text style={styles.title}>Scan</Text>
-          <Text style={styles.successMessage}>
-            Sua conta foi enviada com sucesso e está aguardando aprovação do administrador. Você será notificado quando sua conta for liberada.
-          </Text>
-          <TouchableOpacity style={styles.button} onPress={() => router.push('/')}>
-            <Text style={styles.buttonText}>Voltar</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.container}>
+        <Toast />
+        <Image source={require('@/assets/images/scan-removebg-preview.png')} style={styles.logo} />
+        <Text style={styles.title}>Scan</Text>
+        <Text style={styles.successMessage}>
+          Sua conta foi enviada com sucesso e está aguardando aprovação do administrador. Você será notificado quando sua conta for liberada.
+        </Text>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/')}>
+          <Text style={styles.buttonText}>Voltar</Text>
+        </TouchableOpacity>
+      </View>
     );
   }
 
   return (
-      <View style={styles.container}>
-        <Toast />
-        <Image source={require('@/assets/images/scan-removebg-preview.png')} style={styles.logo} />
-        <Text style={styles.title}>Criar conta</Text>
-        <TextInput
+    <View style={styles.container}>
+      <Toast />
+      <Image source={require('@/assets/images/scan-removebg-preview.png')} style={styles.logo} />
+      <Text style={styles.title}>Criar conta</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Nome"
+        placeholderTextColor="#9E9E9E"
+        value={name}
+        onChangeText={setName}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="E-mail"
+        placeholderTextColor="#9E9E9E"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+      {!isVerificationSent ? (
+        <TouchableOpacity
+          style={[styles.button, isLoading && styles.buttonDisabled]}
+          onPress={handleSendVerificationCode}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>
+            {isLoading ? 'Enviando...' : 'Enviar Código de Verificação'}
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <>
+          <TextInput
             style={styles.input}
-            placeholder="Nome"
+            placeholder="Código de Verificação"
             placeholderTextColor="#9E9E9E"
-            value={name}
-            onChangeText={setName}
-        />
-        <TextInput
-            style={styles.input}
-            placeholder="E-mail"
-            placeholderTextColor="#9E9E9E"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-        />
-        <TextInput
+            value={verificationCode}
+            onChangeText={setVerificationCode}
+          />
+          <TextInput
             style={styles.input}
             placeholder="Senha"
             placeholderTextColor="#9E9E9E"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
-        />
-        <TextInput
+          />
+          <TextInput
             style={styles.input}
             placeholder="Confirmar Senha"
             placeholderTextColor="#9E9E9E"
             secureTextEntry
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-        />
-        <View style={styles.pickerContainer}>
-          <Text style={styles.label}>Vínculo (Opcional)</Text>
-          <Picker
+          />
+          <View style={styles.pickerContainer}>
+            <Text style={styles.label}>Vínculo (Opcional)</Text>
+            <Picker
               selectedValue={institutionId}
               onValueChange={(itemValue) => setInstitutionId(itemValue)}
               style={styles.picker}
-          >
-            <Picker.Item label="Selecione uma instituição" value="" />
-            {institutions.map((institution) => (
+            >
+              <Picker.Item label="Selecione uma instituição" value="" />
+              {institutions.map((institution) => (
                 <Picker.Item
-                    key={institution.id}
-                    label={`${institution.title} (Criado por: ${institution.author.name || 'Desconhecido'})`}
-                    value={institution.id}
+                  key={institution.id}
+                  label={`${institution.title} (Criado por: ${institution.author.name || 'Desconhecido'})`}
+                  value={institution.id}
                 />
-            ))}
-          </Picker>
-        </View>
-        <TouchableOpacity
+              ))}
+            </Picker>
+          </View>
+          <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}
             onPress={handleRegister}
             disabled={isLoading}
-        >
-          <Text style={styles.buttonText}>
-            {isLoading ? 'Carregando...' : 'Criar conta'}
-          </Text>
-        </TouchableOpacity>
-        <View style={styles.footer}>
-          <TouchableOpacity onPress={() => router.push('/pages/auth')}>
-            <Text style={styles.link}>Já tem uma conta? Faça login</Text>
+          >
+            <Text style={styles.buttonText}>
+              {isLoading ? 'Carregando...' : 'Criar conta'}
+            </Text>
           </TouchableOpacity>
-        </View>
+        </>
+      )}
+      <View style={styles.footer}>
+        <TouchableOpacity onPress={() => router.push('/pages/auth')}>
+          <Text style={styles.link}>Já tem uma conta? Faça login</Text>
+        </TouchableOpacity>
       </View>
+    </View>
   );
 };
 
