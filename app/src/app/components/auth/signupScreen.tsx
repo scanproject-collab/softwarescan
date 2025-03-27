@@ -192,7 +192,7 @@ const RegisterScreen = () => {
             onChangeText={setConfirmPassword}
           />
           <View style={styles.pickerContainer}>
-            <Text style={styles.label}>Vínculo (Opcional)</Text>
+            <Text style={styles.label}>Vínculo</Text>
             <Picker
               selectedValue={institutionId}
               onValueChange={(itemValue) => setInstitutionId(itemValue)}
