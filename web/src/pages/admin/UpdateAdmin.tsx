@@ -1,42 +1,40 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Pencil } from "lucide-react";
 import api from "../../services/api";
 import toast, { Toaster } from "react-hot-toast";
 import Navbar from "../../components/Navbar";
 
 const UpdateAdminScreen = () => {
-  const { id } = useParams();
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchAdmin = async () => {
-      try {
-        const { data } = await api.get(`/operators`);
-        setName(data.name);
-        setEmail(data.email);
-      } catch (error: any) {
-        console.error("Erro ao buscar dados do administrador:", error.message);
-        toast.error("Erro ao carregar dados do administrador.");
-      }
-    };
-    fetchAdmin();
-  }, [id]);
-
   const handleUpdate = async () => {
-    if (!name || !email || (password && password !== confirmPassword)) {
-      toast.error("Por favor, preencha todos os campos corretamente.");
+    if (password && password !== confirmPassword) {
+      toast.error("As senhas não coincidem.");
       return;
     }
 
     setLoading(true);
     try {
-      await api.put(`/update`, { name, email, password: password || undefined });
+      const updatedData: any = {};
+
+      if (name) updatedData.name = name;
+      if (email) updatedData.email = email;
+      if (password) updatedData.password = password;
+
+      console.log("Enviando dados para atualização:", updatedData);
+
+      const response = await api.put(`/admin/update`, updatedData);
+
+      console.log("Resposta da atualização:", response.data);
+
       toast.success("Dados atualizados com sucesso!");
       navigate("/admin/profile");
     } catch (error: any) {
@@ -48,42 +46,61 @@ const UpdateAdminScreen = () => {
   };
 
   return (
-<div className="flex flex-col bg-white">
+    <div className="flex flex-col bg-white">
       <Navbar />
-      <div className="flex items-center justify-center bg-white px-8 py-21"> 
+      <div className="flex items-center justify-center bg-white px-8 py-12">
         <Toaster position="top-right" />
         <div className="flex w-full max-w-md flex-col items-center">
           <h1 className="mb-8 text-4xl font-bold text-blue-500">Editar Perfil Admin</h1>
 
+          <div className="relative w-full">
+            <input
+              type="text"
+              placeholder="Nome"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mb-4 w-full rounded-md border border-gray-300 px-4 py-3 pr-10 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+            <Pencil className="absolute right-3 top-4 text-gray-400" size={20} />
+          </div>
 
-          <input
-            type="text"
-            placeholder="Nome"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mb-4 w-full rounded-md border border-gray-300 px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
-          />
-          <input
-            type="email"
-            placeholder="E-mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mb-4 w-full rounded-md border border-gray-300 px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
-          />
-          <input
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mb-4 w-full rounded-md border border-gray-300 px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
-          />
-          <input
-            type="password"
-            placeholder="Confirme sua senha"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="mb-4 w-full rounded-md border border-gray-300 px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
-          />
+          <div className="relative w-full">
+            <input
+              type="email"
+              placeholder="E-mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mb-4 w-full rounded-md border border-gray-300 px-4 py-3 pr-10 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+            <Pencil className="absolute right-3 top-4 text-gray-400" size={20} />
+          </div>
+
+          <div className="relative w-full">
+            <input
+              type="password"
+              placeholder="Nova senha (opcional)"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setShowConfirmPassword(!!e.target.value);
+              }}
+              className="mb-4 w-full rounded-md border border-gray-300 px-4 py-3 pr-10 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+            <Pencil className="absolute right-3 top-4 text-gray-400" size={20} />
+          </div>
+
+          {showConfirmPassword && (
+            <div className="relative w-full">
+              <input
+                type="password"
+                placeholder="Confirme sua senha"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="mb-4 w-full rounded-md border border-gray-300 px-4 py-3 pr-10 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              />
+              <Pencil className="absolute right-3 top-4 text-gray-400" size={20} />
+            </div>
+          )}
 
           <button
             onClick={handleUpdate}
@@ -96,17 +113,10 @@ const UpdateAdminScreen = () => {
           </button>
 
           <div className="mt-5 flex w-full justify-between">
-
-          <button
-            onClick={() => navigate("/")}
-            className="text-bg-blue-400 hover:underline"
-            >
-              Ir para Home</button>
-
-            <button
-              onClick={() => navigate("/admin/Profile")}
-              className="text-bg-blue-400 hover:underline"
-            >
+            <button onClick={() => navigate("/")} className="text-blue-400 hover:underline">
+              Ir para Home
+            </button>
+            <button onClick={() => navigate("/admin/profile")} className="text-blue-400 hover:underline">
               Voltar
             </button>
           </div>
