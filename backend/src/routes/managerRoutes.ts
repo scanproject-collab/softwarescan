@@ -13,7 +13,6 @@ import { authMiddleware, roleMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// Rotas do Manager
 router.get('/operators', authMiddleware, roleMiddleware(['MANAGER']), listOperatorsForManager);
 router.get('/pending-operators', authMiddleware, roleMiddleware(['MANAGER']), listPendingOperatorsForManager);
 router.post('/approve-operator/:operatorId', authMiddleware, roleMiddleware(['MANAGER']), approveOperatorForManager);
