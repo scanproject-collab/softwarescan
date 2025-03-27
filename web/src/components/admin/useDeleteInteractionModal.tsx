@@ -8,8 +8,6 @@ export const useDeleteInteractionModal = (setInteractions: (interactions: any[])
     const [postToDelete, setPostToDelete] = useState<string | null>(null);
     const { token, user } = useAuth();
 
-    const basePath = user?.role === "MANAGER" ? "/manager" : "/posts";
-
     const openDeleteModal = (postId: string) => {
         setPostToDelete(postId);
         setIsModalOpen(true);
@@ -23,7 +21,7 @@ export const useDeleteInteractionModal = (setInteractions: (interactions: any[])
     const handleDeleteInteraction = async () => {
         if (!token || !postToDelete) return;
         try {
-            await api.delete(`${basePath}/posts/${postToDelete}`, {
+            await api.delete(`/posts/${postToDelete}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setInteractions(interactions.filter((interaction) => interaction.id !== postToDelete));
