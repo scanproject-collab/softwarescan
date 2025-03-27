@@ -11,6 +11,67 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+export const sendVerificationEmail = async (email: string, code: string) => {
+  try {
+    const now = new Date().toLocaleString('pt-BR');
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Código de Verificação para Registro - Plataforma Scan',
+      html: `
+        <p>Olá,</p>
+        <p>Você está tentando se registrar na Plataforma Scan. Use o código abaixo para verificar seu email:</p>
+        <p><strong>Código de verificação:</strong> ${code}</p>
+        <p>Este código foi gerado em: ${now} e expira em 15 minutos.</p>
+        <p>Se você não solicitou este código, ignore este email.</p>
+        <p>Atenciosamente, <br/>Equipe da Plataforma Scan</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('E-mail de verificação enviado com sucesso para:', email);
+  } catch (error) {
+    console.error('Erro ao enviar e-mail de verificação:', error);
+    throw new Error('Erro ao enviar e-mail de verificação');
+  }
+};
+
+export const sendWelcomeEmail = async (email: string, name?: string, role?: string) => {
+  try {
+    const displayName = name || email.split('@')[0];
+    const now = new Date().toLocaleString('pt-BR');
+    let message = '';
+
+    if (role === 'ADMIN') {
+      message = 'Agora você é o administrador da Plataforma Scan e poderá visualizar todas as interações, criar tags para interações, aprovar ou rejeitar operadores e muito mais.';
+    } else if (role === 'MANAGER') {
+      message = 'Agora você é o gerente da Plataforma Scan e poderá visualizar todas as interações, criar tags e aprovar ou rejeitar operadores da sua instituição.';
+    } else {
+      message = 'Com a Scan, você poderá criar interações em diversos lugares na região de Maceió - AL.';
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Bem-vindo(a) à Plataforma Scan!',
+      html: `
+        <p>Olá <strong>${displayName}</strong>,</p>
+        <p>Seja muito bem-vindo(a) à Plataforma Scan! Estamos felizes em tê-lo(a) conosco.</p>
+        <p>Sua conta foi criada com sucesso em: ${now}</p>
+        <p>${message}</p>
+        <p>Se precisar de ajuda, não hesite em entrar em contato com nossa equipe de suporte.</p>
+        <p>Atenciosamente, <br/>Equipe da Plataforma Scan</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('E-mail de boas-vindas enviado com sucesso para:', email);
+  } catch (error) {
+    console.error('Erro ao enviar e-mail de boas-vindas:', error);
+    throw new Error('Erro ao enviar e-mail de boas-vindas');
+  }
+};
+
 export const sendResetPasswordEmail = async (email: string, code: string) => {
   try {
     const now = new Date().toLocaleString('pt-BR');
@@ -33,32 +94,6 @@ export const sendResetPasswordEmail = async (email: string, code: string) => {
   } catch (error) {
     console.error('Erro ao enviar e-mail de redefinição de senha:', error);
     throw new Error('Erro ao enviar e-mail');
-  }
-};
-
-export const sendWelcomeEmail = async (email: string, name?: string) => {
-  try {
-    const displayName = name || email.split('@')[0];
-    const now = new Date().toLocaleString('pt-BR');
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Bem-vindo(a) à Plataforma Scan!',
-      html: `
-        <p>Olá <strong>${displayName}</strong>,</p>
-        <p>Seja muito bem-vindo(a) à Plataforma Scan! Estamos felizes em tê-lo(a) conosco.</p>
-        <p>Sua conta foi criada com sucesso em: ${now}</p>
-        <p>Com a Scan, você poderá criar interações de muitos lugares na região Maceió - AL.</p>
-        <p>Se precisar de ajuda, não hesite em entrar em contato com nossa equipe de suporte.</p>
-        <p>Atenciosamente, <br/>Equipe da Plataforma Scan</p>
-      `,
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log('E-mail de boas-vindas enviado com sucesso para:', email);
-  } catch (error) {
-    console.error('Erro ao enviar e-mail de boas-vindas:', error);
-    throw new Error('Erro ao enviar e-mail de boas-vindas');
   }
 };
 
