@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#092B6E',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   editButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#092B6E',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,

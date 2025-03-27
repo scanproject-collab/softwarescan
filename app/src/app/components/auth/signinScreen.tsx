@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import axios from 'axios';
 import { router } from 'expo-router';
@@ -9,7 +9,8 @@ const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const showToast = (type: 'success' | 'error', text1: string, text2: string) => {
+
+  const showToast = useCallback((type: 'success' | 'error', text1: string, text2: string) => {
     Toast.show({
       type,
       text1,
@@ -20,44 +21,40 @@ const LoginScreen = () => {
       topOffset: 30,
       bottomOffset: 40,
     });
-  };
+  }, []);
 
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     if (!email || !password) {
       showToast('error', 'Erro de Login', 'Por favor, preencha todos os campos.');
       return;
     }
-  
+
     setIsLoading(true);
     try {
-      console.log('URL usada:', `${process.env.EXPO_PUBLIC_API_URL}/auth/login`); 
+      const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/auth/login`;
+      console.log('URL usada:', apiUrl);
       console.log('Dados enviados:', { email, password });
-      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/login`, {
-        email,
-        password,
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+
+      const response = await axios.post(apiUrl, { email, password }, {
+        headers: { 'Content-Type': 'application/json' },
       });
-  
+
       const { token } = response.data;
       await AsyncStorage.setItem('userToken', token);
       console.log('Token armazenado:', token);
       showToast('success', 'Login Bem-Sucedido', 'Bem-vindo de volta!');
-      router.replace('/');
-      console.log('Redirecionamento chamado para /');
+      router.replace('/'); // Redireciona para a tela inicial
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message === 'Account is pending approval'
           ? 'Sua conta ainda está aguardando aprovação do administrador.'
           : error?.response?.data?.message || 'Erro ao fazer login, verifique suas credenciais.';
       showToast('error', 'Erro de Login', errorMessage);
-      console.error('Erro no login:', error.response ? error.response.data : error.message); 
+      console.error('Erro no login:', error.response ? error.response.data : error.message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [email, password, showToast]);
 
   return (
     <View style={styles.container}>
@@ -72,6 +69,7 @@ const LoginScreen = () => {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        autoCorrect={false} // Evita correções automáticas que podem interferir
       />
       <TextInput
         style={styles.input}
@@ -80,6 +78,7 @@ const LoginScreen = () => {
         secureTextEntry
         value={password}
         onChangeText={setPassword}
+        autoCorrect={false} // Evita correções automáticas
       />
       <TouchableOpacity
         style={[styles.button, isLoading && styles.buttonDisabled]}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,7 +30,6 @@ export default function InteractionDetail() {
         }
 
         const data = await response.json();
-        console.log('Dados recebidos da API:', data); // Para depuração
         if (!response.ok) {
           throw new Error(data.message || 'Erro ao buscar post');
         }
@@ -38,11 +37,10 @@ export default function InteractionDetail() {
         if (data.post) {
           setPost(data.post);
         } else {
-          setPost(null); 
+          setPost(null);
         }
       } catch (error) {
-        console.error('Erro ao buscar post:', error);
-        setPost(null); 
+        setPost(null);
       } finally {
         setLoading(false);
       }
@@ -71,10 +69,19 @@ export default function InteractionDetail() {
   const imageUrl = typeof post.imageUrl === 'string' && post.imageUrl ? post.imageUrl : null;
 
   return (
-    <View style={styles.container}>
-      {imageUrl && (
-        <Image source={{ uri: imageUrl }} style={styles.interactionImage} />
-      )}
+    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+      <View style={styles.imageContainer}>
+        {imageUrl && (
+          <>
+            <Image source={{ uri: imageUrl }} style={styles.interactionImage} />
+            <View style={styles.weightBadge}>
+              <Text style={styles.weightText}>
+                {post.weight} {post.weight === 1 ? 'ponto' : 'pontos'}
+              </Text>
+            </View>
+          </>
+        )}
+      </View>
       <View style={styles.detailsContainer}>
         <Text style={styles.titleText}>{post.title || 'Sem Título'}</Text>
         <View style={styles.tagsContainer}>
@@ -86,6 +93,10 @@ export default function InteractionDetail() {
             <Text style={styles.tagText}>Sem tags</Text>
           )}
         </View>
+        <View style={styles.highlightSection}>
+          <Text style={styles.highlightLabel}>Localização:</Text>
+          <Text style={styles.highlightText}>{post.location || 'Não especificado'}</Text>
+        </View>
         <Text style={styles.detailText}>
           Data: {post.createdAt ? new Date(post.createdAt).toLocaleDateString('pt-BR') : 'Data indisponível'}
         </Text>
@@ -96,7 +107,7 @@ export default function InteractionDetail() {
           Observações: {post.content || 'Sem descrição'}
         </Text>
         <Text style={styles.detailText}>
-          Local: {post.location || 'Não especificado'}
+          Autor: {post.author && post.author.name ? post.author.name : 'Não disponível'}
         </Text>
       </View>
       {hasValidCoordinates ? (
@@ -116,15 +127,18 @@ export default function InteractionDetail() {
           <Text style={styles.mapLoading}>Localização não disponível.</Text>
         </View>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollContainer: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  contentContainer: {
     padding: 16,
+    paddingBottom: 32,
   },
   loadingContainer: {
     flex: 1,
@@ -142,15 +156,40 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
+  imageContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
   interactionImage: {
     width: '100%',
-    height: 250,
+    height: 300,
     borderRadius: 12,
-    marginBottom: 16,
     backgroundColor: '#ddd',
   },
+  weightBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#F56C2E',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  weightText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
   detailsContainer: {
-    padding: 16,
+    padding: 20,
     backgroundColor: '#fff',
     borderRadius: 12,
     marginBottom: 16,
@@ -161,7 +200,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
   },
   titleText: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 12,
@@ -169,7 +208,7 @@ const styles = StyleSheet.create({
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   tagText: {
     fontSize: 14,
@@ -181,10 +220,28 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
+  highlightSection: {
+    backgroundColor: '#f1f3f5',
+    padding: 12, 
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  highlightLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#F56C2E',
+    marginBottom: 4,
+  },
+  highlightText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
   detailText: {
     fontSize: 16,
-    color: '#333',
-    marginBottom: 10,
+    color: '#555',
+    padding: 8, 
+    marginBottom: 12,
     lineHeight: 22,
   },
   map: {
@@ -200,24 +257,13 @@ const styles = StyleSheet.create({
     height: 300,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#e9ecef',
+    borderRadius: 12,
     marginBottom: 16,
   },
   mapLoading: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-  },
-  backButton: {
-    padding: 14,
-    backgroundColor: '#007AFF',
-    borderRadius: 10,
-    alignItems: 'center',
-    alignSelf: 'center',
-    width: '40%',
-  },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
