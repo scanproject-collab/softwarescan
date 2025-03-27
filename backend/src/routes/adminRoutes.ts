@@ -1,5 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
-import { listAllOperators, deleteOperatorByAdmin, listPendingOperators, approveOperator, rejectOperator, updateAdminAccount, listNotifications, deleteExpiredOperators, listPolygons, deletePolygon, updatePolygon, createPolygon } from '../controllers/adminController';
+import { listAllOperators, deleteOperatorByAdmin, listPendingOperators, approveOperator, rejectOperator, updateAdminAccount, listNotifications, deleteExpiredOperators } from '../controllers/adminController';
 import { authMiddleware, roleMiddleware } from '../middlewares/authMiddleware';
 import { CustomRequest } from '../middlewares/authMiddleware';
 import { listAllPosts } from "../controllers/postController";
