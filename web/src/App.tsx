@@ -11,6 +11,7 @@ import { useInteractionFilters } from "./components/admin/useInteractionFilters"
 import { useDeleteInteractionModal } from "./components/admin/useDeleteInteractionModal";
 import { useMapModal } from "./components/admin/useMapModal";
 import MapModal from "./components/MapModal";
+import { Interaction } from "./types/types"; 
 
 Modal.setAppElement("#root");
 
@@ -89,11 +90,11 @@ const App: React.FC = () => {
     );
   }
 
-  const getWeightBadgeColor = (weight: string) => {
-    const weightValue = parseFloat(weight) || 0;
-    if (weightValue >= 10) return 'bg-red-500 text-white'; // Urgente
-    if (weightValue >= 5) return 'bg-orange-500 text-white'; // Mediano
-    return 'bg-yellow-500 text-black'; // Baixo
+  const getWeightBadgeColor = (weight: string | number | undefined) => {
+    const weightValue = parseFloat(String(weight)) || 0;
+    if (weightValue >= 10) return "bg-red-500 text-white"; // Urgente
+    if (weightValue >= 5) return "bg-orange-500 text-white"; // Mediano
+    return "bg-yellow-500 text-black"; // Baixo
   };
 
   return (
@@ -237,12 +238,12 @@ const App: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredInteractions.length > 0 ? (
-                filteredInteractions.map((interaction, index) => (
+                filteredInteractions.map((interaction: Interaction, index: number) => (
                   <div key={index} className="rounded-lg bg-white p-4 shadow relative">
                     <div className="absolute top-2 left-2">
                       <span
                         className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getWeightBadgeColor(
-                          interaction.weight || "0"
+                          interaction.weight
                         )}`}
                       >
                         Peso: {interaction.weight || "0"}
@@ -270,7 +271,7 @@ const App: React.FC = () => {
                       <div className="mb-4 h-24 rounded bg-gray-200" />
                     )}
                     <p className="text-sm text-gray-600">
-                      Data e hora: {new Date(interaction.createdAt).toLocaleString()}
+                      Data e hora: {new Date(interaction.createdAt || "").toLocaleString()}
                     </p>
                     <p className="text-sm text-gray-600">
                       Tipo: {interaction.tags?.join(", ") || "Sem tipo"}
@@ -282,7 +283,7 @@ const App: React.FC = () => {
                       Observações: {interaction.content || "Sem observações"}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Autor: {interaction.author.name || "Unnamed"} ({interaction.author.email})
+                      Autor: {interaction.author.name || "Unnamed"} ({interaction.author.email || "Sem email"})
                     </p>
                     <p className="text-sm text-gray-600">
                       Instituição: {interaction.author.institution?.title || "Sem instituição"}
@@ -352,8 +353,8 @@ const App: React.FC = () => {
           <h2 className="text-xl font-semibold mb-4 text-gray-800">Localização da Interação</h2>
           {selectedInteraction && (
             <MapModal
-              latitude={selectedInteraction.latitude}
-              longitude={selectedInteraction.longitude}
+              latitude={selectedInteraction.latitude || 0}
+              longitude={selectedInteraction.longitude || 0}
               title={selectedInteraction.title || "Interação"}
             />
           )}
