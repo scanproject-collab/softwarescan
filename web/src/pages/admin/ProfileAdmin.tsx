@@ -37,7 +37,7 @@ const ProfileScreen = () => {
 
         <button
           onClick={() => navigate(`/admin/update`)}
-          className="mt-6 px-6 py-2 bg-blue-500 text-white rounded-md text-lg font-semibold hover:bg-blue-600"
+          className="mt-6 px-6 py-2 bg-blue-900 text-white rounded-md text-lg font-semibold transition-colors duration-200 hover:bg-blue-600"
         >
           Editar Perfil
         </button>
