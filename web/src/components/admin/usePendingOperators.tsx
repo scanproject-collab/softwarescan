@@ -43,6 +43,9 @@ export const usePendingOperators = () => {
 
     const handleRejectOperator = async (operatorId: string) => {
         if (!token) return;
+        console.log("User role:", user?.role);
+        console.log("Base path:", basePath);
+        console.log("Full URL:", `${basePath}/reject-operator/${operatorId}`);
         try {
             await api.delete(`${basePath}/reject-operator/${operatorId}`, {
                 headers: { Authorization: `Bearer ${token}` },

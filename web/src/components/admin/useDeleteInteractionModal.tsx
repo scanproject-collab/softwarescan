@@ -6,7 +6,7 @@ import { useAuth } from "../../hooks/useAuth";
 export const useDeleteInteractionModal = (setInteractions: (interactions: any[]) => void, interactions: any[]) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [postToDelete, setPostToDelete] = useState<string | null>(null);
-    const { token, user } = useAuth();
+    const { token } = useAuth(); 
 
     const openDeleteModal = (postId: string) => {
         setPostToDelete(postId);
