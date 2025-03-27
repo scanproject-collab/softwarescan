@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 4,
     marginRight: 8,
-    marginBottom: 8, // Add marginBottom for spacing between wrapped tags
+    marginBottom: 8, 
   },
   locationText: { 
     fontSize: 16, 

@@ -21,6 +21,9 @@ import { geocodeAddress, reverseGeocode, getPlaceSuggestions } from "../utils/go
 import { Ionicons } from "@expo/vector-icons";
 import moment from "moment";
 import "moment/locale/pt-br";
+import { useFocusEffect } from "@react-navigation/native";
+import NetInfo from "@react-native-community/netinfo";
+import * as FileSystem from "expo-file-system";
 
 moment.locale("pt-br");
 
@@ -36,16 +39,7 @@ LocaleConfig.locales["pt-br"] = {
   dayNames: ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"],
   dayNamesShort: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
 };
-
 LocaleConfig.defaultLocale = "pt-br";
-
-// Define the weight modifiers
-const weightModifiers: { [key: string]: number } = {
-  "Urgente": 2,
-  "Mediano": 1,
-  "Baixo": 0,
-  "null": 0, // Treat null weights as the lowest modifier
-};
 
 interface Tag {
   name: string;
@@ -68,9 +62,21 @@ export default function NewInteraction() {
   const router = useRouter();
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-  useEffect(() => {
-    moment.locale("pt-br");
+  useFocusEffect(
+    React.useCallback(() => {
+      setTitle("");
+      setDescription("");
+      setSelectedTags([]);
+      setImage(null);
+      setLocation("");
+      setCoords({ latitude: 0, longitude: 0 });
+      setSelectedDate(new Date().toISOString().split("T")[0]);
+      setSelectedTime(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      setSuggestions([]);
+    }, [])
+  );
 
+  useEffect(() => {
     const initialize = async () => {
       const isValid = await validateToken();
       if (!isValid) return;
@@ -83,52 +89,39 @@ export default function NewInteraction() {
         const data = await response.json();
         if (response.ok) {
           setAvailableTags(data.tags || []);
+          await AsyncStorage.setItem("cachedTags", JSON.stringify(data.tags));
         } else {
-          Alert.alert("Erro", "Falha ao carregar tags.");
+          const cachedTags = await AsyncStorage.getItem("cachedTags");
+          if (cachedTags) setAvailableTags(JSON.parse(cachedTags));
+          else Alert.alert("Erro", "Falha ao carregar tags e não há dados em cache.");
         }
       } catch (error) {
-        console.error("Erro ao buscar tags:", error);
-        Alert.alert("Erro", "Falha ao carregar tags.");
+        const cachedTags = await AsyncStorage.getItem("cachedTags");
+        if (cachedTags) setAvailableTags(JSON.parse(cachedTags));
+        else Alert.alert("Erro", "Falha ao carregar tags e não há dados em cache.");
       }
 
-      console.log("Solicitando permissão de localização...");
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Permissão negada",
-          "O Softwarescan precisa de acesso à sua localização para funcionar corretamente. Você pode continuar sem ela, mas alguns recursos estarão limitados."
-        );
+        Alert.alert("Permissão negada", "A localização é obrigatória para criar a interação.");
         setMapLoaded(true);
         return;
       }
 
       try {
-        console.log("Obtendo localização atual...");
         const locationData = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
-          timeInterval: 1000,
-          distanceInterval: 1,
         });
         const { latitude, longitude } = locationData.coords;
-        console.log("Coordenadas obtidas:", { latitude, longitude });
         setCoords({ latitude, longitude });
         setMapLoaded(true);
-
-        try {
-          const address = await reverseGeocode(latitude, longitude);
-          console.log("Endereço inicial:", address);
-          setLocation(address);
-        } catch (geoError) {
-          console.warn("Erro ao obter endereço inicial:", geoError);
-          setLocation("Localização não disponível");
-        }
+        const address = await reverseGeocode(latitude, longitude);
+        setLocation(address);
       } catch (error) {
-        console.error("Erro ao obter localização:", error);
         setMapLoaded(true);
-        setLocation("Localização não disponível");
+        setLocation("");
       }
     };
-
     initialize();
   }, []);
 
@@ -175,7 +168,7 @@ export default function NewInteraction() {
       const response = await geocodeAddress(suggestion);
       setCoords(response);
     } catch (error) {
-      Alert.alert("Erro", "Endereço não encontrado. Tente outro endereço ou selecione no mapa.");
+      Alert.alert("Erro", "Endereço não encontrado.");
     }
   };
 
@@ -186,39 +179,24 @@ export default function NewInteraction() {
       const address = await reverseGeocode(latitude, longitude);
       setLocation(address);
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível obter o endereço para essa localização.");
+      Alert.alert("Erro", "Não foi possível obter o endereço.");
     }
   };
 
-  // Calculate ranking based on the number of tags and their weights
-  const getRankingFromTags = (): string => {
-    if (selectedTags.length === 0) return "Baixo"; // Default ranking if no tags are selected
-
-    // Step 1: Calculate a base score based on the number of tags
-    let baseScore = 0;
-    if (selectedTags.length === 1) {
-      baseScore = 1; // 1 tag -> Start with a low score
-    } else if (selectedTags.length === 2) {
-      baseScore = 2; // 2 tags -> Medium score
-    } else if (selectedTags.length >= 3) {
-      baseScore = 3; // 3+ tags -> High score
-    }
-
-    // Step 2: Add modifiers based on the weights of the selected tags
-    const weightScore = selectedTags.reduce((total, tagName) => {
-      const tag = availableTags.find((t) => t.name === tagName);
-      const weight = tag ? tag.weight : null;
-      const modifier = weightModifiers[weight || "null"];
-      return total + modifier;
-    }, 0);
-
-    // Step 3: Combine the scores
-    const totalScore = baseScore + weightScore;
-
-    // Step 4: Map the total score to a ranking
-    if (totalScore <= 1) return "Baixo";
-    if (totalScore <= 3) return "Mediano";
+  const getRankingLabel = (totalWeight: number): string => {
+    if (totalWeight <= 5) return "Baixo";
+    if (totalWeight <= 10) return "Mediano";
     return "Urgente";
+  };
+
+  const getRankingFromTags = () => {
+    const totalWeight = selectedTags.reduce((sum, tagName) => {
+      const tag = availableTags.find((t) => t.name === tagName);
+      const weight = tag && tag.weight ? parseFloat(tag.weight) : 0;
+      return sum + weight;
+    }, 0);
+    const rankingLabel = getRankingLabel(totalWeight);
+    return { totalWeight, rankingLabel };
   };
 
   const handleSubmit = async () => {
@@ -227,25 +205,64 @@ export default function NewInteraction() {
       const isValid = await validateToken();
       if (!isValid) return;
 
+      if (!image) {
+        Alert.alert("Erro", "Uma foto é obrigatória para criar a interação.");
+        setLoading(false);
+        return;
+      }
+      if (!location.trim()) {
+        Alert.alert("Erro", "A localização é obrigatória.");
+        setLoading(false);
+        return;
+      }
+
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        let imageUri = image;
+        if (image) {
+          const fileName = image.split("/").pop();
+          const newUri = FileSystem.cacheDirectory + fileName;
+          await FileSystem.copyAsync({ from: image, to: newUri });
+          imageUri = newUri;
+        }
+        const { totalWeight, rankingLabel } = getRankingFromTags();
+        const offlinePost = {
+          title,
+          description,
+          tags: selectedTags,
+          image: imageUri,
+          location,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          date: selectedDate,
+          time: selectedTime,
+          weight: totalWeight.toString(),
+          ranking: rankingLabel,
+        };
+        const offlinePosts = await AsyncStorage.getItem("offlinePosts");
+        const posts = offlinePosts ? JSON.parse(offlinePosts) : [];
+        posts.push(offlinePost);
+        await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
+        Alert.alert("Offline", "A postagem será enviada quando a conexão for restabelecida.");
+        router.push("/");
+        setLoading(false);
+        return;
+      }
+
       const token = await AsyncStorage.getItem("userToken");
       const playerId = await getPlayerId();
-
       const formData = new FormData();
       formData.append("title", title || "Interação sem título");
       formData.append("content", description || "");
       formData.append("tags", selectedTags.join(","));
-      if (image) {
-        formData.append("image", { uri: image, name: "image.jpg", type: "image/jpeg" } as any);
-      }
+      formData.append("image", { uri: image, name: "image.jpg", type: "image/jpeg" } as any);
       formData.append("playerId", playerId || "");
-      const ranking = getRankingFromTags();
-      formData.append("ranking", ranking);
-
-      if (coords.latitude !== 0 && coords.longitude !== 0 && location.trim()) {
-        formData.append("location", location);
-        formData.append("latitude", coords.latitude.toString());
-        formData.append("longitude", coords.longitude.toString());
-      }
+      formData.append("location", location);
+      formData.append("latitude", coords.latitude.toString());
+      formData.append("longitude", coords.longitude.toString());
+      const { totalWeight, rankingLabel } = getRankingFromTags();
+      formData.append("weight", totalWeight.toString());
+      formData.append("ranking", rankingLabel);
 
       const response = await fetch(`${API_URL}/posts/create`, {
         method: "POST",
@@ -254,7 +271,6 @@ export default function NewInteraction() {
       });
 
       if (response.status === 401) {
-        console.log("Token inválido ou expirado, redirecionando para login");
         await AsyncStorage.removeItem("userToken");
         router.replace("/pages/auth");
         return;
@@ -289,7 +305,6 @@ export default function NewInteraction() {
       );
     }
     if (item === "date") {
-      console.log(moment().calendar());
       return (
         <>
           <Text style={styles.sectionTitle}>Data</Text>
@@ -310,7 +325,7 @@ export default function NewInteraction() {
               textMonthFontWeight: "bold",
             }}
           />
-          <Text style={styles.hint}>* Selecione a data em que a foto foi tirada (pode ser diferente do dia atual).</Text>
+          <Text style={styles.hint}>* Selecione a data em que a foto foi tirada.</Text>
         </>
       );
     }
@@ -324,7 +339,7 @@ export default function NewInteraction() {
             value={selectedTime}
             onChangeText={setSelectedTime}
           />
-          <Text style={styles.hint}>* Insira a hora em que a foto foi tirada (pode diferir do horário atual).</Text>
+          <Text style={styles.hint}>* Insira a hora em que a foto foi tirada.</Text>
         </>
       );
     }
@@ -343,18 +358,19 @@ export default function NewInteraction() {
       );
     }
     if (item === "tags") {
-      const currentRanking = getRankingFromTags();
-
+      const { totalWeight, rankingLabel } = getRankingFromTags();
       return (
         <>
           <Text style={styles.sectionTitle}>Tags</Text>
           <View style={styles.tagContainer}>
             {availableTags.map((tag) => {
               let tagBackgroundColor = "#e0e0e0";
-              if (tag.weight === "Urgente") tagBackgroundColor = "#ff4d4f";
-              else if (tag.weight === "Mediano") tagBackgroundColor = "#ffeb3b";
-              else if (tag.weight === "Baixo") tagBackgroundColor = "#52c41a";
-
+              if (tag.weight) {
+                const weight = parseFloat(tag.weight);
+                if (weight >= 10) tagBackgroundColor = "#ff4d4f";
+                else if (weight >= 5) tagBackgroundColor = "#ffeb3b";
+                else tagBackgroundColor = "#52c41a";
+              }
               return (
                 <Pressable
                   key={tag.name}
@@ -373,7 +389,7 @@ export default function NewInteraction() {
             })}
           </View>
           <Text style={styles.rankingDisplay}>
-            Prioridade Atual: <Text style={styles.rankingValue}>{currentRanking}</Text>
+            Prioridade Atual: <Text style={styles.rankingValue}>Peso: {totalWeight} | Ranking: {rankingLabel}</Text>
           </Text>
         </>
       );
@@ -381,10 +397,10 @@ export default function NewInteraction() {
     if (item === "location") {
       return (
         <>
-          <Text style={styles.sectionTitle}>Local (Opcional)</Text>
+          <Text style={styles.sectionTitle}>Local</Text>
           <TextInput
             style={styles.input}
-            placeholder="Digite um endereço (ex.: Rua Exemplo, Cidade) ou selecione no mapa"
+            placeholder="Digite um endereço ou selecione no mapa"
             value={location}
             onChangeText={handleAddressChange}
           />

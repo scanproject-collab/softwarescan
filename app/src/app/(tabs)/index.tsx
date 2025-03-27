@@ -41,6 +41,7 @@ export default function Home() {
 
       const fetchedPosts = data.posts || [];
       setPosts(fetchedPosts);
+      await AsyncStorage.setItem('cachedPosts', JSON.stringify(fetchedPosts));
 
       const tagsSet = new Set<string>();
       fetchedPosts.forEach((post: any) => {
@@ -50,6 +51,20 @@ export default function Home() {
       setFilteredPosts(fetchedPosts);
     } catch (error) {
       console.error('Erro ao buscar posts:', error);
+      const cachedPosts = await AsyncStorage.getItem('cachedPosts');
+      if (cachedPosts) {
+        const parsedPosts = JSON.parse(cachedPosts);
+        setPosts(parsedPosts);
+        setFilteredPosts(parsedPosts);
+        const tagsSet = new Set<string>();
+        parsedPosts.forEach((post: any) => {
+          if (post.tags) post.tags.forEach((tag: string) => tagsSet.add(tag));
+        });
+        setAllTags(Array.from(tagsSet));
+        Alert.alert('Offline', 'Exibindo posts salvos localmente.');
+      } else {
+        Alert.alert('Erro', 'Falha ao buscar posts e não há dados em cache.');
+      }
     } finally {
       setLoading(false);
     }
