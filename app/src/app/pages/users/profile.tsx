@@ -11,6 +11,7 @@ interface DecodedToken {
   role?: string;
   institutionId?: string;
   createdAt?: string;
+  institution?: { title: string }; // Adicionamos o campo institution com title
 }
 
 const ProfileScreen = () => {
@@ -29,48 +30,48 @@ const ProfileScreen = () => {
     }
   }, []);
 
-  // Atualiza os dados do usuário sempre que a tela for focada
   useFocusEffect(
-      useCallback(() => {
-        fetchUserData();
-      }, [fetchUserData])
+    useCallback(() => {
+      fetchUserData();
+    }, [fetchUserData])
   );
 
   if (!user) {
     return (
-        <View style={styles.container}>
-          <Text style={styles.loadingText}>Carregando...</Text>
-        </View>
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Carregando...</Text>
+      </View>
     );
   }
 
   const initial = user.name ? user.name.charAt(0).toUpperCase() : '?';
-  const institution = user.institutionId ? 'Instituição Vinculada' : 'Nenhuma instituição';
+  const institutionTitle = user.institution?.title || 'Nenhuma instituição';
   const createdAt = user.createdAt ? new Date(user.createdAt).toLocaleDateString('pt-BR') : 'Data não disponível';
 
   return (
-      <View style={styles.container}>
-        <View style={styles.profileHeader}>
-          <View style={styles.userCircle}>
-            <Text style={styles.userInitial}>{initial}</Text>
-          </View>
-          <Text style={styles.name}>{user.name || 'Usuário'}</Text>
+    <View style={styles.container}>
+      <View style={styles.profileHeader}>
+        <View style={styles.userCircle}>
+          <Text style={styles.userInitial}>{initial}</Text>
         </View>
-        <View style={styles.infoContainer}>
-          <Text style={styles.label}>Email:</Text>
-          <Text style={styles.value}>{user.email || 'Não informado'}</Text>
-          <Text style={styles.label}>Instituição:</Text>
-          <Text style={styles.value}>{institution}</Text>
-          <Text style={styles.label}>Data de Criação:</Text>
-          <Text style={styles.value}>{createdAt}</Text>
-        </View>
-        <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => router.push({ pathname: '/pages/users/profileEdit', params: { id: user.id } })}
-        >
-          <Text style={styles.editButtonText}>Editar Perfil</Text>
-        </TouchableOpacity>
+        <Text style={styles.name}>{user.name || 'Usuário'}</Text>
+        <Text style={styles.institutionTitle}>{institutionTitle}</Text>
       </View>
+      <View style={styles.infoContainer}>
+        <Text style={styles.label}>Email:</Text>
+        <Text style={styles.value}>{user.email || 'Não informado'}</Text>
+        <Text style={styles.label}>Instituição:</Text>
+        <Text style={styles.value}>{institutionTitle}</Text>
+        <Text style={styles.label}>Data de Criação:</Text>
+        <Text style={styles.value}>{createdAt}</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={() => router.push({ pathname: '/pages/users/profileEdit', params: { id: user.id } })}
+      >
+        <Text style={styles.editButtonText}>Editar Perfil</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -103,6 +104,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
+  },
+  institutionTitle: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 4,
   },
   infoContainer: {
     width: '100%',

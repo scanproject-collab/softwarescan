@@ -38,11 +38,11 @@ export default function InteractionDetail() {
         if (data.post) {
           setPost(data.post);
         } else {
-          setPost(null); // Garante que post seja null se não houver dados válidos
+          setPost(null); 
         }
       } catch (error) {
         console.error('Erro ao buscar post:', error);
-        setPost(null); // Em caso de erro, define como null para exibir mensagem
+        setPost(null); 
       } finally {
         setLoading(false);
       }
@@ -66,7 +66,6 @@ export default function InteractionDetail() {
     );
   }
 
-  // Validações para garantir que os dados sejam tratados corretamente
   const tags = Array.isArray(post.tags) ? post.tags : [];
   const hasValidCoordinates = typeof post.latitude === 'number' && typeof post.longitude === 'number' && post.latitude !== 0 && post.longitude !== 0;
   const imageUrl = typeof post.imageUrl === 'string' && post.imageUrl ? post.imageUrl : null;
@@ -117,9 +116,6 @@ export default function InteractionDetail() {
           <Text style={styles.mapLoading}>Localização não disponível.</Text>
         </View>
       )}
-      <Pressable style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backButtonText}>Voltar</Text>
-      </Pressable>
     </View>
   );
 }
