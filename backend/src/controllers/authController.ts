@@ -9,9 +9,9 @@ const prisma = new PrismaClient();
 
 export const registerController = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, role, playerId, institutionId } = req.body;
-    const user = await registerUser(name, email, password, role, playerId, institutionId);
-    res.status(201).json({ message: 'User registered successfully', user });
+    const { name, email, password, role, playerId, institutionId, verificationCode } = req.body;
+    const user = await registerUser(name, email, password, role, playerId, institutionId, verificationCode);
+    res.status(201).json({ message: 'Usuário registrado com sucesso', user });
   } catch (error) {
     res.status(400).json({ message: (error as Error).message });
   }

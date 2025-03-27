@@ -10,59 +10,71 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
 export const registerUser = async (
-    name: string,
-    email: string,
-    password: string,
-    role: string = 'OPERATOR',
-    playerId?: string,
-    institutionId?: string
+  name: string,
+  email: string,
+  password: string,
+  role: string = 'OPERATOR',
+  playerId?: string,
+  institutionId?: string,
+  verificationCode?: string
 ) => {
   try {
+    
+    if (!password) {
+      throw new Error('A senha é obrigatória para registrar o usuário');
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || user.verificationCode !== verificationCode || (user.verificationCodeExpiresAt && user.verificationCodeExpiresAt < new Date())) {
+      throw new Error('Código de verificação inválido ou expirado');
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const validRoles: Role[] = ['ADMIN', 'OPERATOR', 'MANAGER'];
     const userRole = validRoles.includes(role as Role) ? role : 'OPERATOR';
 
     const expiresAt = userRole === 'OPERATOR' ? new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) : null;
 
-    const user = await prisma.user.create({
+    const updatedUser = await prisma.user.update({
+      where: { email },
       data: {
         name,
-        email,
         password: hashedPassword,
         role: userRole as Role,
         isPending: userRole === 'OPERATOR',
         expiresAt,
         playerId,
         institutionId,
+        verificationCode: null, 
+        verificationCodeExpiresAt: null,
       },
     });
 
     if (userRole === 'OPERATOR' && expiresAt) {
-
       await prisma.notification.create({
         data: {
           type: 'pending',
-          message: `${user.name || 'Usuário'} está aguardando aprovação.`,
-          userId: user.id,
+          message: `${updatedUser.name || 'Usuário'} está aguardando aprovação.`,
+          userId: updatedUser.id,
         },
       });
 
       await sendPendingApprovalEmail(email, name, expiresAt);
       if (playerId) {
         await sendExpoPushNotification(
-            playerId,
-            'Conta Pendente de Aprovação',
-            `Olá, ${name}! Sua conta foi registrada e está aguardando aprovação. Você será notificado quando for aprovada.`,
-            { type: 'pending_account' }
+          playerId,
+          'Conta Pendente de Aprovação',
+          `Olá, ${name}! Sua conta foi registrada e está aguardando aprovação. Você será notificado quando for aprovada.`,
+          { type: 'pending_account' }
         );
       }
     } else {
-      await sendWelcomeEmail(email, name);
+      await sendWelcomeEmail(email, name, userRole);
     }
 
-    return user;
+    return updatedUser;
   } catch (error: any) {
-    throw new Error(`Error registering user: ${error.message}`);
+    throw new Error(`Erro ao registrar usuário: ${error.message}`);
   }
 };
 
@@ -87,17 +99,17 @@ export const loginUser = async (email: string, password: string) => {
     }
 
     const token = jwt.sign(
-        {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          institutionId: user.institutionId,
-          createdAt: user.createdAt,
-          institution: user.institution ? { title: user.institution.title } : null,
-        },
-        JWT_SECRET,
-        { expiresIn: '1d' }
+      {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        institutionId: user.institutionId,
+        createdAt: user.createdAt,
+        institution: user.institution ? { title: user.institution.title } : null,
+      },
+      JWT_SECRET,
+      { expiresIn: '1d' }
     );
 
     return { user, token };
