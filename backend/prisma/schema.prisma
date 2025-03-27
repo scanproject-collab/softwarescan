@@ -8,24 +8,26 @@ generator client {
 }
 
 model User {
-  id                   String         @id @default(auto()) @map("_id") @db.ObjectId
-  email                String         @unique
-  password             String
-  name                 String?
-  role                 Role
-  passwordResetCode    String?        @map("resetCode")
-  resetCodeExpiresAt   DateTime?
-  institutionId        String?        @db.ObjectId
-  institution          Institution?   @relation(fields: [institutionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  posts                Post[]
-  createdAt            DateTime?      @default(now())
-  updatedAt            DateTime?      @updatedAt
-  authoredInstitutions Institution[]  @relation("InstitutionAuthor")
-  isPending            Boolean        @default(true)
-  expiresAt            DateTime?
-  playerId             String?
-  notifications        Notification[] @relation("UserNotifications")
-  polygons             Polygon[]      @relation("PolygonAuthor")
+  id                        String         @id @default(auto()) @map("_id") @db.ObjectId
+  email                     String         @unique
+  password                  String?
+  name                      String?
+  role                      Role
+  verificationCode          String?        @map("verificationCode")
+  verificationCodeExpiresAt DateTime?      @map("verificationCodeExpiresAt")
+  passwordResetCode         String?        @map("resetCode")
+  resetCodeExpiresAt        DateTime?
+  institutionId             String?        @db.ObjectId
+  institution               Institution?   @relation(fields: [institutionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  posts                     Post[]
+  createdAt                 DateTime?      @default(now())
+  updatedAt                 DateTime?      @updatedAt
+  authoredInstitutions      Institution[]  @relation("InstitutionAuthor")
+  isPending                 Boolean        @default(true)
+  expiresAt                 DateTime?
+  playerId                  String?
+  notifications             Notification[] @relation("UserNotifications")
+  polygons                  Polygon[]      @relation("PolygonAuthor")
 
   @@index([passwordResetCode])
 }
