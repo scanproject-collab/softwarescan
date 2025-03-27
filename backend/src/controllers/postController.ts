@@ -45,19 +45,8 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { title, content, tags, location, latitude, longitude, playerId, ranking } = req.body;
+    const { title, content, tags, location, latitude, longitude, playerId, weight, ranking } = req.body;
     let tagsArray = tags ? tags.split(',') : [];
-
-    const tagWeights = await prisma.tag.findMany({
-      where: { name: { in: tagsArray } },
-      select: { weight: true },
-    });
-
-    const weights = tagWeights.map(t => t.weight).filter(Boolean) as string[];
-    let postWeight = 'Baixo'; // Peso padrão
-    if (weights.includes('Alto')) postWeight = 'Alto';
-    else if (weights.includes('Médio')) postWeight = 'Médio';
-    else if (weights.length > 0) postWeight = weights[0];
 
     if (req.file) {
       const todayStart = new Date();
@@ -79,10 +68,10 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
       if (postsToday >= 3) {
         if (playerId) {
           await sendExpoPushNotification(
-              playerId, // pushToken
-              'Limite de Imagens Atingido', // title
-              'Você atingiu o limite de 3 imagens por dia. Tente novamente amanhã!', // body
-              { type: 'limit_exceeded' } // dados opcionais
+            playerId,
+            'Limite de Imagens Atingido',
+            'Você atingiu o limite de 3 imagens por dia. Tente novamente amanhã!',
+            { type: 'limit_exceeded' }
           );
         }
         return res.status(403).json({ message: 'Limite de 3 imagens por dia atingido. Tente novamente amanhã.' });
@@ -104,8 +93,8 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
         authorId: req.user.id,
-        ranking: ranking || "Baixo",
-        weight: postWeight,
+        ranking: ranking || 'Baixo',
+        weight: weight || '0', // Usa o valor enviado pelo frontend
       },
     });
 
