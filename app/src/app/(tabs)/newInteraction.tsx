@@ -8,6 +8,7 @@ import {
   Image,
   Alert,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -59,8 +60,20 @@ export default function NewInteraction() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedTime, setSelectedTime] = useState(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+  const [isManualLocation, setIsManualLocation] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const [showOfflineAlert, setShowOfflineAlert] = useState(false);
   const router = useRouter();
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+  // Verifica o status da conexão
+  const checkConnection = async () => {
+    const netInfo = await NetInfo.fetch();
+    setIsOffline(!netInfo.isConnected);
+    if (!netInfo.isConnected && !isManualLocation) {
+      setShowOfflineAlert(true);
+    }
+  };
 
   useFocusEffect(
     React.useCallback(() => {
@@ -73,6 +86,20 @@ export default function NewInteraction() {
       setSelectedDate(new Date().toISOString().split("T")[0]);
       setSelectedTime(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
       setSuggestions([]);
+      setIsManualLocation(false);
+      checkConnection();
+      
+      // Listener para mudanças de conexão
+      const unsubscribe = NetInfo.addEventListener(state => {
+        setIsOffline(!state.isConnected);
+        if (!state.isConnected && !isManualLocation) {
+          setShowOfflineAlert(true);
+        } else {
+          setShowOfflineAlert(false);
+        }
+      });
+      
+      return () => unsubscribe();
     }, [])
   );
 
@@ -83,7 +110,7 @@ export default function NewInteraction() {
 
       try {
         const token = await AsyncStorage.getItem("userToken");
-        const response = await fetch(`${API_URL}/tags`, {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/tags`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -121,6 +148,8 @@ export default function NewInteraction() {
         setMapLoaded(true);
         setLocation("");
       }
+
+      syncOfflinePosts();
     };
     initialize();
   }, []);
@@ -133,7 +162,7 @@ export default function NewInteraction() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      quality: 1,
+      quality: 0.7,
     });
     if (!result.canceled) setImage(result.assets[0].uri);
   };
@@ -153,12 +182,12 @@ export default function NewInteraction() {
 
   const handleAddressChange = async (text: string) => {
     setLocation(text);
-    if (text.trim().length < 3) {
+    if (!isManualLocation && text.trim().length >= 3 && !isOffline) {
+      const suggestionsList = await getPlaceSuggestions(text);
+      setSuggestions(suggestionsList);
+    } else {
       setSuggestions([]);
-      return;
     }
-    const suggestionsList = await getPlaceSuggestions(text);
-    setSuggestions(suggestionsList);
   };
 
   const handleSuggestionSelect = async (suggestion: string) => {
@@ -173,6 +202,11 @@ export default function NewInteraction() {
   };
 
   const handleMapPress = async (event: any) => {
+    if (isOffline) {
+      Alert.alert("Modo Offline", "Você está offline. Para selecionar um local no mapa, ative o modo manual.");
+      return;
+    }
+    
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setCoords({ latitude, longitude });
     try {
@@ -199,6 +233,48 @@ export default function NewInteraction() {
     return { totalWeight, rankingLabel };
   };
 
+  const syncOfflinePosts = async () => {
+    const netInfo = await NetInfo.fetch();
+    if (!netInfo.isConnected) return;
+
+    const token = await AsyncStorage.getItem("userToken");
+    const offlinePosts = await AsyncStorage.getItem("offlinePosts");
+    if (!offlinePosts) return;
+
+    const posts = JSON.parse(offlinePosts);
+    for (const post of posts) {
+      const formData = new FormData();
+      formData.append("title", post.title || "Interação sem título");
+      formData.append("content", post.description || "");
+      formData.append("tags", post.tags.join(","));
+      formData.append("location", post.location);
+      formData.append("latitude", post.latitude?.toString() || "");
+      formData.append("longitude", post.longitude?.toString() || "");
+      formData.append("weight", post.weight);
+      formData.append("ranking", post.ranking);
+
+      if (post.image) {
+        const fileName = post.image.split("/").pop();
+        formData.append("image", {
+          uri: post.image,
+          type: "image/jpeg",
+          name: fileName || "image.jpg",
+        } as any);
+      }
+
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/posts/create`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const updatedPosts = posts.filter((p: any) => p !== post);
+        await AsyncStorage.setItem("offlinePosts", JSON.stringify(updatedPosts));
+      }
+    }
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -217,11 +293,14 @@ export default function NewInteraction() {
       }
 
       const netInfo = await NetInfo.fetch();
-      if (!netInfo.isConnected) {
+      const token = await AsyncStorage.getItem("userToken");
+      const playerId = await getPlayerId();
+
+      if (!netInfo.isConnected || (isManualLocation && !coords.latitude && !coords.longitude)) {
         let imageUri = image;
         if (image) {
           const fileName = image.split("/").pop();
-          const newUri = FileSystem.cacheDirectory + fileName;
+          const newUri = `${FileSystem.cacheDirectory}${fileName}`;
           await FileSystem.copyAsync({ from: image, to: newUri });
           imageUri = newUri;
         }
@@ -232,10 +311,11 @@ export default function NewInteraction() {
           tags: selectedTags,
           image: imageUri,
           location,
-          latitude: coords.latitude,
-          longitude: coords.longitude,
+          latitude: isManualLocation ? null : coords.latitude,
+          longitude: isManualLocation ? null : coords.longitude,
           weight: totalWeight.toString(),
           ranking: rankingLabel,
+          isManualLocation,
         };
         const offlinePosts = await AsyncStorage.getItem("offlinePosts");
         const posts = offlinePosts ? JSON.parse(offlinePosts) : [];
@@ -247,32 +327,32 @@ export default function NewInteraction() {
         return;
       }
 
-      const token = await AsyncStorage.getItem("userToken");
-      const playerId = await getPlayerId();
       const formData = new FormData();
       formData.append("title", title || "Interação sem título");
       formData.append("content", description || "");
       formData.append("tags", selectedTags.join(","));
-      formData.append("image", { uri: image, name: "image.jpg", type: "image/jpeg" } as any);
-      formData.append("playerId", playerId || "");
       formData.append("location", location);
-      formData.append("latitude", coords.latitude.toString());
-      formData.append("longitude", coords.longitude.toString());
+      formData.append("latitude", isManualLocation ? "" : coords.latitude.toString());
+      formData.append("longitude", isManualLocation ? "" : coords.longitude.toString());
+      formData.append("playerId", playerId || "");
       const { totalWeight, rankingLabel } = getRankingFromTags();
       formData.append("weight", totalWeight.toString());
       formData.append("ranking", rankingLabel);
 
-      const response = await fetch(`${API_URL}/posts/create`, {
+      if (image) {
+        const fileName = image.split("/").pop();
+        formData.append("image", {
+          uri: image,
+          type: "image/jpeg",
+          name: fileName || "image.jpg",
+        } as any);
+      }
+
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/posts/create`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-
-      if (response.status === 401) {
-        await AsyncStorage.removeItem("userToken");
-        router.replace("/pages/auth");
-        return;
-      }
 
       const data = await response.json();
       if (response.ok) {
@@ -292,6 +372,11 @@ export default function NewInteraction() {
     if (item === "title") {
       return (
         <>
+          {isOffline && (
+            <View style={styles.offlineMessage}>
+              <Text style={styles.offlineText}>Você está offline. Esta interação será salva localmente.</Text>
+            </View>
+          )}
           <Text style={styles.sectionTitle}>Título</Text>
           <TextInput
             style={styles.input}
@@ -396,13 +481,54 @@ export default function NewInteraction() {
       return (
         <>
           <Text style={styles.sectionTitle}>Local</Text>
+          {showOfflineAlert && (
+            <View style={styles.offlineLocationAlert}>
+              <Text style={styles.offlineLocationText}>
+                Você está offline. Recomendamos usar o modo manual para localização.
+              </Text>
+              <Pressable 
+                style={styles.offlineLocationButton}
+                onPress={() => {
+                  setIsManualLocation(true);
+                  setShowOfflineAlert(false);
+                }}
+              >
+                <Text style={styles.offlineLocationButtonText}>Usar modo manual</Text>
+              </Pressable>
+            </View>
+          )}
+          <View style={styles.locationModeContainer}>
+            <Pressable
+              style={[styles.modeButton, !isManualLocation && styles.modeButtonActive]}
+              onPress={() => {
+                if (isOffline) {
+                  Alert.alert("Modo Offline", "Você está offline. Para usar localização automática, conecte-se à internet.");
+                  return;
+                }
+                setIsManualLocation(false);
+              }}
+              disabled={isOffline}
+            >
+              <Text style={!isManualLocation ? styles.modeButtonTextActive : styles.modeButtonText}>
+                Automático
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.modeButton, isManualLocation && styles.modeButtonActive]}
+              onPress={() => setIsManualLocation(true)}
+            >
+              <Text style={isManualLocation ? styles.modeButtonTextActive : styles.modeButtonText}>
+                Manual
+              </Text>
+            </Pressable>
+          </View>
           <TextInput
             style={styles.input}
-            placeholder="Digite um endereço ou selecione no mapa"
+            placeholder={isManualLocation ? "Digite a localização manualmente" : "Digite um endereço ou selecione no mapa"}
             value={location}
             onChangeText={handleAddressChange}
           />
-          {suggestions.length > 0 && (
+          {!isManualLocation && suggestions.length > 0 && (
             <FlatList
               data={suggestions}
               renderItem={({ item }) => (
@@ -414,7 +540,7 @@ export default function NewInteraction() {
               style={styles.suggestionList}
             />
           )}
-          {mapLoaded && coords.latitude !== 0 && coords.longitude !== 0 ? (
+          {!isManualLocation && mapLoaded && coords.latitude !== 0 && coords.longitude !== 0 ? (
             <MapView
               style={styles.map}
               region={{ latitude: coords.latitude, longitude: coords.longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }}
@@ -422,9 +548,9 @@ export default function NewInteraction() {
             >
               <Marker coordinate={{ latitude: coords.latitude, longitude: coords.longitude }} />
             </MapView>
-          ) : (
+          ) : !isManualLocation ? (
             <Text style={styles.mapLoading}>Carregando mapa...</Text>
-          )}
+          ) : null}
         </>
       );
     }
@@ -457,7 +583,13 @@ export default function NewInteraction() {
             onPress={handleSubmit}
             disabled={loading}
           >
-            <Text style={styles.submitButtonText}>{loading ? "Salvando..." : "Salvar"}</Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.submitButtonText}>
+                {isOffline ? "Salvar Localmente" : "Salvar"}
+              </Text>
+            )}
           </Pressable>
           <Pressable style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>Cancelar</Text>
@@ -510,4 +642,48 @@ const styles = StyleSheet.create({
   backButton: { padding: 14, backgroundColor: "#fff", borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#007AFF", flex: 1 },
   backButtonText: { color: "#007AFF", fontSize: 16, fontWeight: "600" },
   hint: { fontSize: 12, color: "#666", marginBottom: 12 },
+  locationModeContainer: { flexDirection: "row", marginBottom: 12 },
+  modeButton: {
+    padding: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  modeButtonActive: { backgroundColor: "#007AFF" },
+  modeButtonText: { color: "#333" },
+  modeButtonTextActive: { color: "#fff" },
+  offlineMessage: {
+    backgroundColor: "#ffeb3b",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  offlineText: {
+    color: "#333",
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  offlineLocationAlert: {
+    backgroundColor: "#fff3cd",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#ffc107",
+  },
+  offlineLocationText: {
+    color: "#856404",
+    marginBottom: 8,
+  },
+  offlineLocationButton: {
+    backgroundColor: "#ffc107",
+    padding: 8,
+    borderRadius: 4,
+    alignSelf: "flex-start",
+  },
+  offlineLocationButtonText: {
+    color: "#856404",
+    fontWeight: "bold",
+  },
 });

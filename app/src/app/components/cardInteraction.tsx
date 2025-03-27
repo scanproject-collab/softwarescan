@@ -7,11 +7,12 @@ interface InteractionCardProps {
   imageUrl?: string;
   hasImage: boolean;
   tags: string[];
+  location: string;
   onPress: PressableProps['onPress'];
   onDelete: () => void;
 }
 
-const InteractionCard: React.FC<InteractionCardProps> = ({ imageUrl, hasImage, tags, onPress, title, onDelete }) => (
+const InteractionCard: React.FC<InteractionCardProps> = ({ imageUrl, hasImage, tags, onPress, title, onDelete, location }) => (
   <Pressable onPress={onPress}>
     <View style={styles.card}>
       <View style={styles.header}>
@@ -31,6 +32,9 @@ const InteractionCard: React.FC<InteractionCardProps> = ({ imageUrl, hasImage, t
         {tags?.map((tag: string, index: number) => (
           <Text key={index} style={styles.tagText}>{tag}</Text>
         ))}
+      </View>
+      <View >
+        <Text>{location}</Text>
       </View>
     </View>
   </Pressable>
