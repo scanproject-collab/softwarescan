@@ -59,7 +59,9 @@ export default function NewInteraction() {
   const [loading, setLoading] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
-  const [selectedTime, setSelectedTime] = useState(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+  const [selectedTime, setSelectedTime] = useState(
+    new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  );
   const [isManualLocation, setIsManualLocation] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const router = useRouter();
@@ -226,39 +228,39 @@ export default function NewInteraction() {
   };
 
   const handleSubmit = async () => {
+    if (loading) return; // se já está rodando, não duplicar
     setLoading(true);
     try {
-      console.log("Iniciando handleSubmit");
       const isValid = await validateToken();
       if (!isValid) {
-        console.log("Token inválido");
+        setLoading(false);
         return;
       }
-  
-      console.log("Imagem selecionada:", image);
+
       if (!image) {
         Alert.alert("Erro", "Uma foto é obrigatória.");
         setLoading(false);
         return;
       }
-  
-      console.log("Localização inserida:", location);
+
       if (!location.trim()) {
         Alert.alert("Erro", "A localização é obrigatória.");
         setLoading(false);
         return;
       }
-  
+
       const netInfo = await NetInfo.fetch();
       const isConnected = netInfo.isConnected && (await checkActualConnectivity());
-      console.log("Status da conexão:", isConnected ? "online" : "offline");
-  
       const token = await AsyncStorage.getItem("userToken");
       const playerId = await getPlayerId();
       const { totalWeight, rankingLabel } = getRankingFromTags();
-  
+
+      // Vamos gerar um offlineId para usar no backend
+      const offlineId = Date.now().toString();
+
       const postData = {
-        id: Date.now().toString(),
+        id: offlineId, // ID local
+        offlineId: offlineId, // passaremos para o backend
         title: title || "Interação sem título",
         description,
         tags: selectedTags,
@@ -271,19 +273,17 @@ export default function NewInteraction() {
         isOffline: !isConnected,
         createdAt: new Date().toISOString(),
       };
-  
+
+      // Se está offline, apenas salva no AsyncStorage
       if (!isConnected) {
-        console.log("Salvando post offline:", postData);
         let imageUri = image;
         if (image) {
           try {
             const fileName = image.split("/").pop();
             const newUri = `${FileSystem.documentDirectory}${fileName}`;
-            console.log("Copiando imagem de", image, "para", newUri);
             await FileSystem.copyAsync({ from: image, to: newUri });
             imageUri = newUri;
             postData.image = imageUri;
-            console.log("Imagem copiada com sucesso para:", imageUri);
           } catch (error) {
             console.error("Erro ao copiar imagem com FileSystem.copyAsync:", error);
             Alert.alert("Erro", "Falha ao processar a imagem. Tente novamente.");
@@ -291,19 +291,24 @@ export default function NewInteraction() {
             return;
           }
         }
-  
-        const offlinePosts = await AsyncStorage.getItem("offlinePosts");
-        const posts = offlinePosts ? JSON.parse(offlinePosts) : [];
-        posts.push(postData);
-        await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
-        console.log("Post salvo offline com sucesso:", postData);
+
+        const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
+        const offlinePostsArray = offlinePostsStr ? JSON.parse(offlinePostsStr) : [];
+
+        // Garante que não duplicamos no array local
+        const alreadyExists = offlinePostsArray.find((p: any) => p.offlineId === postData.offlineId);
+        if (!alreadyExists) {
+          offlinePostsArray.push(postData);
+          await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
+        }
+
         Alert.alert("Sucesso", "Postagem salva localmente.");
         router.push("/");
         setLoading(false);
         return;
       }
-  
-      // Se há conexão, envia diretamente ao backend e NÃO salva no offlinePosts
+
+      // Se tem conexão, envia direto ao backend
       const formData = new FormData();
       formData.append("title", postData.title);
       formData.append("content", postData.description || "");
@@ -314,7 +319,9 @@ export default function NewInteraction() {
       formData.append("playerId", playerId || "");
       formData.append("weight", postData.weight);
       formData.append("ranking", postData.ranking);
-  
+      // offlineId p/ evitar duplicações no server
+      formData.append("offlineId", postData.offlineId);
+
       if (postData.image) {
         const fileName = postData.image.split("/").pop();
         formData.append("image", {
@@ -323,20 +330,20 @@ export default function NewInteraction() {
           name: fileName || "image.jpg",
         } as any);
       }
-  
+
       const response = await fetch(`${API_URL}/posts/create`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-  
+
       if (response.ok) {
-        // Após criar a postagem online, limpa qualquer cache local que possa ter sido criado anteriormente
-        const offlinePosts = await AsyncStorage.getItem("offlinePosts");
-        if (offlinePosts) {
-          let posts = JSON.parse(offlinePosts);
-          posts = posts.filter((post: any) => post.id !== postData.id); // Remove qualquer postagem com o mesmo ID fictício
-          await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
+        // Tira do offlinePosts se tiver com mesmo ID (só por precaução)
+        const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
+        if (offlinePostsStr) {
+          let offlinePostsArray = JSON.parse(offlinePostsStr);
+          offlinePostsArray = offlinePostsArray.filter((post: any) => post.offlineId !== postData.offlineId);
+          await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
         }
         router.push("/");
       } else {
@@ -523,7 +530,12 @@ export default function NewInteraction() {
           {!isManualLocation && !isOffline && mapLoaded && coords.latitude !== 0 && coords.longitude !== 0 ? (
             <MapView
               style={styles.map}
-              region={{ latitude: coords.latitude, longitude: coords.longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }}
+              region={{
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              }}
               onPress={handleMapPress}
             >
               <Marker coordinate={{ latitude: coords.latitude, longitude: coords.longitude }} />
@@ -616,11 +628,27 @@ const styles = StyleSheet.create({
   container: { backgroundColor: "#fff", padding: 16, paddingBottom: 80 },
   sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#333", marginTop: 16, marginBottom: 8 },
   calendar: { borderWidth: 1, borderColor: "#ddd", borderRadius: 8, marginBottom: 12 },
-  input: { height: 50, borderColor: "#ddd", borderWidth: 1, borderRadius: 8, marginBottom: 12, paddingHorizontal: 12, backgroundColor: "#f8f9fa", fontSize: 16 },
+  input: {
+    height: 50,
+    borderColor: "#ddd",
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    backgroundColor: "#f8f9fa",
+    fontSize: 16,
+  },
   textArea: { height: 100, textAlignVertical: "top", paddingVertical: 12 },
   map: { width: "100%", height: 300, borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: "#ddd" },
   mapLoading: { textAlign: "center", color: "#666", marginBottom: 16 },
-  suggestionList: { maxHeight: 150, borderWidth: 1, borderColor: "#ddd", borderRadius: 8, marginBottom: 12, backgroundColor: "#fff" },
+  suggestionList: {
+    maxHeight: 150,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: "#fff",
+  },
   suggestionItem: { padding: 10, borderBottomWidth: 1, borderBottomColor: "#ddd" },
   tagContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 12 },
   tagChip: { borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8, marginBottom: 8 },
@@ -629,17 +657,62 @@ const styles = StyleSheet.create({
   tagTextSelected: { color: "#fff" },
   rankingDisplay: { fontSize: 16, color: "#333", marginBottom: 12 },
   rankingValue: { fontWeight: "bold", color: "#092B6E" },
-  imagePicker: { backgroundColor: "#FF6633", padding: 12, borderRadius: 50, alignItems: "center", justifyContent: "center", marginBottom: 16, marginTop: 20, width: 50, height: 50, elevation: 5, shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 5 },
+  imagePicker: {
+    backgroundColor: "#FF6633",
+    padding: 12,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+    marginTop: 20,
+    width: 50,
+    height: 50,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
   imagePickerDisabled: { backgroundColor: "#99ccff", opacity: 0.6 },
   imageContainer: { position: "relative", marginBottom: 16, alignSelf: "center" },
   imagePreview: { width: 200, height: 200, borderRadius: 12, marginBottom: 16, alignSelf: "center" },
-  removeImageButton: { position: "absolute", top: 5, right: 5, backgroundColor: "rgba(255, 59, 48, 0.8)", borderRadius: 10, width: 20, height: 20, justifyContent: "center", alignItems: "center" },
+  removeImageButton: {
+    position: "absolute",
+    top: 5,
+    right: 5,
+    backgroundColor: "rgba(255, 59, 48, 0.8)",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   removeImageText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
-  buttonContainer: { flexDirection: "row", justifyContent: "space-between", marginTop: 16, marginBottom: 80 },
-  submitButton: { backgroundColor: "#FF6633", padding: 14, borderRadius: 8, alignItems: "center", flex: 1, marginRight: 8 },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 16,
+    marginBottom: 80,
+  },
+  submitButton: {
+    backgroundColor: "#FF6633",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    flex: 1,
+    marginRight: 8,
+  },
   submitButtonDisabled: { backgroundColor: "#99ccff" },
   submitButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  backButton: { padding: 14, backgroundColor: "#fff", borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#007AFF", flex: 1 },
+  backButton: {
+    padding: 14,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#007AFF",
+    flex: 1,
+  },
   backButtonText: { color: "#007AFF", fontSize: 16, fontWeight: "600" },
   hint: { fontSize: 12, color: "#666", marginBottom: 12 },
   locationModeContainer: { flexDirection: "row", marginBottom: 12 },

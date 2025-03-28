@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Pressable, StyleSheet, FlatList, Text, ActivityIndicator, TextInput, Alert } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,7 +16,10 @@ export default function Home() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isOffline, setIsOffline] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+
+  // Em vez de setSyncing state, usaremos um ref para bloqueio sincronização
+  const syncingRef = useRef(false);
+
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
   const checkActualConnectivity = async () => {
@@ -62,6 +65,7 @@ export default function Home() {
       setAllTags(Array.from(tagsSet));
       setIsOffline(false);
     } catch (error) {
+      // se deu erro, tentamos o cache
       const cachedPosts = await AsyncStorage.getItem('cachedPosts');
       if (cachedPosts) {
         const parsedPosts = JSON.parse(cachedPosts);
@@ -84,112 +88,115 @@ export default function Home() {
     setOfflinePosts(offlinePosts);
   };
 
-  const isPostAlreadySynced = (offlinePost: any, onlinePosts: any[]) => {
-    return onlinePosts.some(onlinePost =>
-      onlinePost.title === offlinePost.title &&
-      onlinePost.location === offlinePost.location &&
-      onlinePost.tags.join(',') === offlinePost.tags.join(',')
-    );
-  };
-
   const sendOfflinePosts = async () => {
-    if (syncing) return;
-    setSyncing(true);
-
-    const netInfo = await NetInfo.fetch();
-    const isActuallyConnected = await checkActualConnectivity();
-    if (!netInfo.isConnected || !isActuallyConnected) {
-      setIsOffline(true);
-      setSyncing(false);
+    // Use a ref para impedir multiplos disparos
+    if (syncingRef.current) {
+      console.log("Já está sincronizando, ignorando chamada repetida.");
       return;
     }
-
-    const offlinePostsStr = await AsyncStorage.getItem('offlinePosts');
-    if (!offlinePostsStr) {
-      setSyncing(false);
-      return;
-    }
-
-    let offlinePosts = JSON.parse(offlinePostsStr);
-    if (offlinePosts.length === 0) {
-      setSyncing(false);
-      return;
-    }
-
-    const token = await AsyncStorage.getItem('userToken');
-    for (let i = offlinePosts.length - 1; i >= 0; i--) {
-      const post = offlinePosts[i];
-      if (post.syncFailed) continue;
-
-      const formData = new FormData();
-      formData.append('title', post.title || 'Interação sem título');
-      formData.append('content', post.description || '');
-      formData.append('tags', post.tags.join(','));
-      formData.append('location', post.location);
-      formData.append('latitude', post.latitude?.toString() || '');
-      formData.append('longitude', post.longitude?.toString() || '');
-      formData.append('weight', post.weight);
-      formData.append('ranking', post.ranking);
-
-      if (post.image) {
-        const fileName = post.image.split('/').pop();
-        formData.append('image', {
-          uri: post.image,
-          type: 'image/jpeg',
-          name: fileName || 'image.jpg',
-        } as any);
+    syncingRef.current = true;
+    try {
+      const netInfo = await NetInfo.fetch();
+      const isActuallyConnected = await checkActualConnectivity();
+      if (!netInfo.isConnected || !isActuallyConnected) {
+        setIsOffline(true);
+        return;
       }
 
-      try {
-        const response = await fetch(`${API_URL}/posts/create`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
+      const offlinePostsStr = await AsyncStorage.getItem('offlinePosts');
+      if (!offlinePostsStr) return;
 
-        if (response.ok) {
-          const newPost = await response.json();
-          offlinePosts.splice(i, 1);
-          await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
-          setOfflinePosts([...offlinePosts]);
-          setPosts(prevPosts => [...prevPosts, newPost.post]); // Ajustado para acessar newPost.post
-          console.log('Postagem offline removida e sincronizada:', post.id);
-        } else {
-          offlinePosts[i].syncFailed = true;
-          await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
-          console.log('Falha ao sincronizar post:', post.id);
+      let offlinePostsArray = JSON.parse(offlinePostsStr);
+      if (offlinePostsArray.length === 0) return;
+
+      const token = await AsyncStorage.getItem('userToken');
+      // Envia cada post offline
+      for (let i = offlinePostsArray.length - 1; i >= 0; i--) {
+        const post = offlinePostsArray[i];
+        if (post.syncFailed) continue;
+
+        const formData = new FormData();
+        formData.append('title', post.title || 'Interação sem título');
+        formData.append('content', post.description || '');
+        formData.append('tags', post.tags.join(','));
+        formData.append('location', post.location);
+        formData.append('latitude', post.latitude?.toString() || '');
+        formData.append('longitude', post.longitude?.toString() || '');
+        formData.append('weight', post.weight);
+        formData.append('ranking', post.ranking);
+
+        // Inclui o offlineId no form, para o back evitar duplicação
+        // Aqui uso 'post.id' como offlineId. Se quiser, pode ser post.offlineId.
+        formData.append('offlineId', post.offlineId || post.id || '');
+
+        if (post.image) {
+          const fileName = post.image.split('/').pop();
+          formData.append('image', {
+            uri: post.image,
+            type: 'image/jpeg',
+            name: fileName || 'image.jpg',
+          } as any);
         }
-      } catch (error) {
-        console.error('Erro ao sincronizar post:', post.id, error);
-        offlinePosts[i].syncFailed = true;
-        await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
-      }
-    }
 
-    await fetchPosts();
-    setSyncing(false);
+        try {
+          const response = await fetch(`${API_URL}/posts/create`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+          });
+
+          if (response.ok) {
+            // Remove do offlinePosts e salva
+            offlinePostsArray.splice(i, 1);
+            await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePostsArray));
+            setOfflinePosts([...offlinePostsArray]);
+            console.log('Postagem offline removida e sincronizada:', post.id);
+          } else {
+            offlinePostsArray[i].syncFailed = true;
+            await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePostsArray));
+            console.log('Falha ao sincronizar post:', post.id);
+          }
+        } catch (error) {
+          console.error('Erro ao sincronizar post:', post.id, error);
+          offlinePostsArray[i].syncFailed = true;
+          await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePostsArray));
+        }
+      }
+
+      // Após enviar todos, buscar do servidor p/ atualizar "posts" (inclusive o recém-criado)
+      await fetchPosts();
+    } finally {
+      syncingRef.current = false;
+    }
   };
 
   useEffect(() => {
     const initialize = async () => {
       await fetchPosts();
       await loadOfflinePosts();
+
+      // Monta apenas 1x esse listener
       const unsubscribe = NetInfo.addEventListener(async state => {
         const isConnected = state.isConnected && (await checkActualConnectivity());
         console.log('Connection status:', isConnected ? 'online' : 'offline');
         setIsOffline(!isConnected);
-        if (isConnected) sendOfflinePosts();
+        if (isConnected) {
+          // Tenta sincronizar se ficou offline e voltou
+          sendOfflinePosts();
+        }
       });
+
       return () => unsubscribe();
     };
     initialize();
   }, []);
 
   useEffect(() => {
-    // Mostrar apenas postagens offline se não houver conexão
+    // Quando offline, exibe posts do backend (cache) + offline
+    // Quando online, apenas posts do backend real
     let combinedPosts = isOffline
       ? [...posts, ...offlinePosts.map(post => ({ ...post, isOffline: true }))]
-      : [...posts]; // Quando online, exibe apenas postagens do backend
+      : [...posts];
 
     let filtered = combinedPosts;
 
@@ -199,6 +206,7 @@ export default function Home() {
         (post.title?.toLowerCase().includes(query) || post.description?.toLowerCase().includes(query))
       );
     }
+
     if (selectedTags.length > 0) {
       filtered = filtered.filter(post =>
         post.tags && post.tags.some((tag: string) => selectedTags.includes(tag))
@@ -248,6 +256,7 @@ export default function Home() {
     setLoading(true);
     await fetchPosts();
     await loadOfflinePosts();
+    // Tenta enviar posts offline também
     await sendOfflinePosts();
     setLoading(false);
   };
