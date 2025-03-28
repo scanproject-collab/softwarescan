@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Image, PressableProps } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; 
+import { Ionicons } from '@expo/vector-icons';
 
 interface InteractionCardProps {
   title: string;
@@ -9,17 +9,34 @@ interface InteractionCardProps {
   tags: string[];
   location: string;
   onPress: PressableProps['onPress'];
-  onDelete: () => void;
+  onDelete?: () => void; 
+  isOffline?: boolean; 
 }
 
-const InteractionCard: React.FC<InteractionCardProps> = ({ imageUrl, hasImage, tags, onPress, title, onDelete, location }) => (
+const InteractionCard: React.FC<InteractionCardProps> = ({
+  imageUrl,
+  hasImage,
+  tags,
+  onPress,
+  title,
+  onDelete,
+  location,
+  isOffline = false, 
+}) => (
   <Pressable onPress={onPress}>
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.locationText}>Título: {title}</Text>
-        <Pressable onPress={onDelete} style={styles.deleteButton}>
-          <Ionicons name="trash-outline" size={20} color="#fff" />
-        </Pressable>
+        {isOffline && (
+          <View style={styles.offlineBadge}>
+            <Text style={styles.offlineBadgeText}>Pendente</Text>
+          </View>
+        )}
+        {onDelete && (
+          <Pressable onPress={onDelete} style={styles.deleteButton}>
+            <Ionicons name="trash-outline" size={20} color="#fff" />
+          </Pressable>
+        )}
       </View>
       {hasImage && imageUrl ? (
         <Image source={{ uri: imageUrl }} style={styles.interactionImage} key={imageUrl} />
@@ -33,7 +50,7 @@ const InteractionCard: React.FC<InteractionCardProps> = ({ imageUrl, hasImage, t
           <Text key={index} style={styles.tagText}>{tag}</Text>
         ))}
       </View>
-      <View >
+      <View>
         <Text>{location}</Text>
       </View>
     </View>
@@ -52,16 +69,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center' 
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap', 
   },
-  tagsContainer: { 
-    flexDirection: 'row', 
-    marginTop: 10, 
-    marginBottom: 8, 
-    flexWrap: 'wrap', // Add flexWrap to allow tags to wrap to the next line
+  tagsContainer: {
+    flexDirection: 'row',
+    marginTop: 10,
+    marginBottom: 8,
+    flexWrap: 'wrap',
   },
   tagText: {
     fontSize: 14,
@@ -71,19 +89,20 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 4,
     marginRight: 8,
-    marginBottom: 8, 
+    marginBottom: 8,
   },
-  locationText: { 
-    fontSize: 16, 
-    fontWeight: '500', 
-    color: '#333', 
-    flex: 1 
+  locationText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    flexShrink: 1,
+    marginRight: 8,
   },
-  interactionImage: { 
-    width: '100%', 
-    height: 150, 
-    marginTop: 8, 
-    borderRadius: 4 
+  interactionImage: {
+    width: '100%',
+    height: 150,
+    marginTop: 8,
+    borderRadius: 4,
   },
   placeholderImage: {
     width: '100%',
@@ -94,9 +113,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  placeholderText: { 
-    color: '#666', 
-    fontSize: 16 
+  placeholderText: {
+    color: '#666',
+    fontSize: 16,
   },
   deleteButton: {
     width: 36,
@@ -105,6 +124,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  offlineBadge: {
+    backgroundColor: '#FF4D4F', 
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginLeft: 8,
+  },
+  offlineBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
 

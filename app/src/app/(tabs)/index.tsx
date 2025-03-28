@@ -94,18 +94,26 @@ export default function Home() {
 
     try {
       const token = await AsyncStorage.getItem('userToken');
-      for (let i = 0; i < offlinePosts.length; i++) {
+      for (let i = offlinePosts.length - 1; i >= 0; i--) { // Iterar de trás para frente
         const post = offlinePosts[i];
         const formData = new FormData();
         formData.append('title', post.title || 'Interação sem título');
         formData.append('content', post.description || '');
         formData.append('tags', post.tags.join(','));
-        formData.append('image', { uri: post.image, name: 'image.jpg', type: 'image/jpeg' } as any);
         formData.append('location', post.location);
         formData.append('latitude', post.latitude?.toString() || '');
         formData.append('longitude', post.longitude?.toString() || '');
         formData.append('weight', post.weight);
         formData.append('ranking', post.ranking);
+
+        if (post.image) {
+          const fileName = post.image.split('/').pop();
+          formData.append('image', {
+            uri: post.image,
+            type: 'image/jpeg',
+            name: fileName || 'image.jpg',
+          } as any);
+        }
 
         const response = await fetch(`${API_URL}/posts/create`, {
           method: 'POST',
@@ -115,14 +123,16 @@ export default function Home() {
 
         if (response.ok) {
           offlinePosts.splice(i, 1); // Remove o post sincronizado
-          i--; // Ajusta o índice
           await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
-          setOfflinePosts([...offlinePosts]); // Atualiza o estado imediatamente
+          setOfflinePosts([...offlinePosts]); // Atualiza o estado
+        } else {
+          console.error('Falha ao sincronizar post:', post.id);
         }
       }
       fetchPosts(); // Atualiza os posts online
     } catch (error) {
       console.error('Erro ao enviar posts offline:', error);
+      Alert.alert('Erro', 'Falha ao sincronizar alguns posts offline. Tente novamente mais tarde.');
     }
   };
 
@@ -195,6 +205,7 @@ export default function Home() {
     setLoading(true);
     fetchPosts();
     loadOfflinePosts();
+    sendOfflinePosts();
   };
 
   if (loading) {
@@ -266,12 +277,13 @@ export default function Home() {
               tags={item.tags || []}
               onPress={() => {
                 if (item.isOffline) {
-                  router.push(`/pages/users/interaction/${item.id}`);
+                  Alert.alert('Post Offline', 'Este post ainda não foi sincronizado. Ele será enviado quando houver conexão.');
                 } else {
                   router.push(`/pages/users/interaction/${item.id}`);
                 }
               }}
-              onDelete={item.isOffline ? undefined : () => handleDeletePost(item.id)}
+              onDelete={item.isOffline ? undefined : () => handleDeletePost(item.id)} // Impede exclusão de posts offline
+              isOffline={item.isOffline} // Indica que o post é offline
             />
           )}
           keyExtractor={(item, index) => item.id || `offline-${index}`}
