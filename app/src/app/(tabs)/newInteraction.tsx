@@ -154,8 +154,6 @@ export default function NewInteraction() {
       } else {
         setMapLoaded(true);
       }
-
-      syncOfflinePosts();
     };
     initialize();
   }, [isOffline]);
@@ -227,61 +225,6 @@ export default function NewInteraction() {
     return { totalWeight, rankingLabel: getRankingLabel(totalWeight) };
   };
 
-  const syncOfflinePosts = async () => {
-    const netInfo = await NetInfo.fetch();
-    const isConnected = netInfo.isConnected && (await checkActualConnectivity());
-    if (!isConnected) return;
-
-    const token = await AsyncStorage.getItem("userToken");
-    const offlinePosts = await AsyncStorage.getItem("offlinePosts");
-    if (!offlinePosts) return;
-
-    let posts = JSON.parse(offlinePosts);
-    for (let i = posts.length - 1; i >= 0; i--) {
-      const post = posts[i];
-      if (post.syncFailed) continue;
-
-      const formData = new FormData();
-      formData.append("title", post.title || "Interação sem título");
-      formData.append("content", post.description || "");
-      formData.append("tags", post.tags.join(","));
-      formData.append("location", post.location);
-      formData.append("latitude", post.latitude?.toString() || "");
-      formData.append("longitude", post.longitude?.toString() || "");
-      formData.append("weight", post.weight);
-      formData.append("ranking", post.ranking);
-
-      if (post.image) {
-        const fileName = post.image.split("/").pop();
-        formData.append("image", {
-          uri: post.image,
-          type: "image/jpeg",
-          name: fileName || "image.jpg",
-        } as any);
-      }
-
-      try {
-        const response = await fetch(`${API_URL}/posts/create`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-
-        if (response.ok) {
-          posts.splice(i, 1);
-          await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
-        } else {
-          posts[i].syncFailed = true;
-          await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
-        }
-      } catch (error) {
-        console.error("Erro ao sincronizar post:", post.id, error);
-        posts[i].syncFailed = true;
-        await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
-      }
-    }
-  };
-
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -291,29 +234,29 @@ export default function NewInteraction() {
         console.log("Token inválido");
         return;
       }
-
+  
       console.log("Imagem selecionada:", image);
       if (!image) {
         Alert.alert("Erro", "Uma foto é obrigatória.");
         setLoading(false);
         return;
       }
-
+  
       console.log("Localização inserida:", location);
       if (!location.trim()) {
         Alert.alert("Erro", "A localização é obrigatória.");
         setLoading(false);
         return;
       }
-
+  
       const netInfo = await NetInfo.fetch();
       const isConnected = netInfo.isConnected && (await checkActualConnectivity());
       console.log("Status da conexão:", isConnected ? "online" : "offline");
-
+  
       const token = await AsyncStorage.getItem("userToken");
       const playerId = await getPlayerId();
       const { totalWeight, rankingLabel } = getRankingFromTags();
-
+  
       const postData = {
         id: Date.now().toString(),
         title: title || "Interação sem título",
@@ -328,7 +271,7 @@ export default function NewInteraction() {
         isOffline: !isConnected,
         createdAt: new Date().toISOString(),
       };
-
+  
       if (!isConnected) {
         console.log("Salvando post offline:", postData);
         let imageUri = image;
@@ -348,7 +291,7 @@ export default function NewInteraction() {
             return;
           }
         }
-
+  
         const offlinePosts = await AsyncStorage.getItem("offlinePosts");
         const posts = offlinePosts ? JSON.parse(offlinePosts) : [];
         posts.push(postData);
@@ -359,7 +302,8 @@ export default function NewInteraction() {
         setLoading(false);
         return;
       }
-
+  
+      // Se há conexão, envia diretamente ao backend e NÃO salva no offlinePosts
       const formData = new FormData();
       formData.append("title", postData.title);
       formData.append("content", postData.description || "");
@@ -370,7 +314,7 @@ export default function NewInteraction() {
       formData.append("playerId", playerId || "");
       formData.append("weight", postData.weight);
       formData.append("ranking", postData.ranking);
-
+  
       if (postData.image) {
         const fileName = postData.image.split("/").pop();
         formData.append("image", {
@@ -379,14 +323,21 @@ export default function NewInteraction() {
           name: fileName || "image.jpg",
         } as any);
       }
-
+  
       const response = await fetch(`${API_URL}/posts/create`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-
+  
       if (response.ok) {
+        // Após criar a postagem online, limpa qualquer cache local que possa ter sido criado anteriormente
+        const offlinePosts = await AsyncStorage.getItem("offlinePosts");
+        if (offlinePosts) {
+          let posts = JSON.parse(offlinePosts);
+          posts = posts.filter((post: any) => post.id !== postData.id); // Remove qualquer postagem com o mesmo ID fictício
+          await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
+        }
         router.push("/");
       } else {
         const data = await response.json();

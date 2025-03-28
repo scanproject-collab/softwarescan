@@ -16,10 +16,9 @@ export default function Home() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isOffline, setIsOffline] = useState(false);
-  const [syncing, setSyncing] = useState(false); // Flag to prevent concurrent syncs
+  const [syncing, setSyncing] = useState(false);
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-  // Function to check actual connectivity
   const checkActualConnectivity = async () => {
     try {
       const response = await fetch(`${API_URL}/ping`, { method: 'GET', timeout: 5000 });
@@ -85,8 +84,16 @@ export default function Home() {
     setOfflinePosts(offlinePosts);
   };
 
+  const isPostAlreadySynced = (offlinePost: any, onlinePosts: any[]) => {
+    return onlinePosts.some(onlinePost =>
+      onlinePost.title === offlinePost.title &&
+      onlinePost.location === offlinePost.location &&
+      onlinePost.tags.join(',') === offlinePost.tags.join(',')
+    );
+  };
+
   const sendOfflinePosts = async () => {
-    if (syncing) return; // Prevent concurrent syncs
+    if (syncing) return;
     setSyncing(true);
 
     const netInfo = await NetInfo.fetch();
@@ -112,7 +119,7 @@ export default function Home() {
     const token = await AsyncStorage.getItem('userToken');
     for (let i = offlinePosts.length - 1; i >= 0; i--) {
       const post = offlinePosts[i];
-      if (post.syncFailed) continue; // Skip posts that already failed
+      if (post.syncFailed) continue;
 
       const formData = new FormData();
       formData.append('title', post.title || 'Interação sem título');
@@ -141,20 +148,25 @@ export default function Home() {
         });
 
         if (response.ok) {
+          const newPost = await response.json();
           offlinePosts.splice(i, 1);
           await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
           setOfflinePosts([...offlinePosts]);
-          await fetchPosts(); // Update online posts
+          setPosts(prevPosts => [...prevPosts, newPost.post]); // Ajustado para acessar newPost.post
+          console.log('Postagem offline removida e sincronizada:', post.id);
         } else {
-          offlinePosts[i].syncFailed = true; // Mark as failed
+          offlinePosts[i].syncFailed = true;
           await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
+          console.log('Falha ao sincronizar post:', post.id);
         }
       } catch (error) {
         console.error('Erro ao sincronizar post:', post.id, error);
-        offlinePosts[i].syncFailed = true; // Mark as failed
+        offlinePosts[i].syncFailed = true;
         await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
       }
     }
+
+    await fetchPosts();
     setSyncing(false);
   };
 
@@ -174,8 +186,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const combinedPosts = [...posts, ...offlinePosts.map(post => ({ ...post, isOffline: true }))];
+    // Mostrar apenas postagens offline se não houver conexão
+    let combinedPosts = isOffline
+      ? [...posts, ...offlinePosts.map(post => ({ ...post, isOffline: true }))]
+      : [...posts]; // Quando online, exibe apenas postagens do backend
+
     let filtered = combinedPosts;
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(post =>
@@ -188,7 +205,8 @@ export default function Home() {
       );
     }
     setFilteredPosts(filtered);
-  }, [posts, offlinePosts, searchQuery, selectedTags]);
+    console.log('FilteredPosts atualizado:', filtered.length);
+  }, [posts, offlinePosts, searchQuery, selectedTags, isOffline]);
 
   const handleDeletePost = async (postId: string) => {
     Alert.alert(
@@ -303,7 +321,7 @@ export default function Home() {
             isOffline={item.isOffline}
           />
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.isOffline ? `offline-${item.id}` : item.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
