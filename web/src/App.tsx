@@ -27,6 +27,26 @@ const App: React.FC = () => {
     }
   }, [token, pathname, navigate]);
 
+// Função para alternar a seleção das tags
+const toggleTagSelection = (tag: string) => {
+  if (tag === "Todas as tags") {
+    if (selectedTags.length === uniqueTags.length) {
+      setSelectedTags([]);
+    } else {
+      setSelectedTags(uniqueTags);
+    }
+  } else {
+    setSelectedTags((prevTags) => {
+      if (prevTags.includes(tag)) {
+        return prevTags.filter((selectedTag) => selectedTag !== tag);
+      } else {
+        return [...prevTags, tag];
+      }
+    });
+  }
+};
+
+
   const {
     pendingOperators,
     error: pendingOperatorsError,
@@ -45,8 +65,8 @@ const App: React.FC = () => {
   const {
     searchTerm,
     setSearchTerm,
-    selectedTag,
-    setSelectedTag,
+    selectedTags,
+    setSelectedTags,
     selectedRanking,
     setSelectedRanking,
     selectedInstitution,
@@ -174,25 +194,13 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="mb-4 flex gap-4 flex-wrap">
-              <input
-                type="text"
-                placeholder="Buscar por nome do operador..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full sm:w-auto flex-grow rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-              />
-              <select
-                value={selectedTag || ""}
-                onChange={(e) => setSelectedTag(e.target.value || null)}
-                className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-              >
-                <option value="">Todas as Tags</option>
-                {uniqueTags.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
-                  </option>
-                ))}
-              </select>
+  <input
+    type="text"
+    placeholder="Buscar por nome do operador..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="w-full sm:w-auto flex-grow rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
+  />
               <select
                 value={selectedRanking || ""}
                 onChange={(e) => setSelectedRanking(e.target.value || null)}
@@ -233,6 +241,19 @@ const App: React.FC = () => {
                       ))}
                     </select>
                   )}
+            <div className="flex flex-wrap gap-2">
+              {uniqueTags.map((tag) => (
+                <label key={tag} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedTags.includes(tag)}
+                    onChange={() => toggleTagSelection(tag)}
+                    className="form-checkbox"
+                  />
+                  <span>{tag}</span>
+                </label>
+              ))}
+            </div>
                 </>
               )}
             </div>
