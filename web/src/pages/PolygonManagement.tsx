@@ -39,6 +39,7 @@ const PolygonManagement: React.FC = () => {
     const [filterCoords, setFilterCoords] = useState<{ latitude: number; longitude: number } | null>(null);
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [filterDateStart, setFilterDateStart] = useState<string>('');
+    const [filterDateEnd, setFilterDateEnd] = useState<string>(''); // Novo estado para data de fim
     const [filterWeight, setFilterWeight] = useState<string>('');
     const [weights, setWeights] = useState<string[]>([]);
     const [loadingPosts, setLoadingPosts] = useState(true);
@@ -48,6 +49,7 @@ const PolygonManagement: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState<string>('');
     const [postsInPolygons, setPostsInPolygons] = useState<Map<string, any[]>>(new Map());
+    const [selectedPolygon, setSelectedPolygon] = useState<any | null>(null); // Estado para o polígono selecionado
     const mapRef = useRef<google.maps.Map | null>(null);
 
     const basePath = user?.role === "MANAGER" ? "/manager" : "/admin";
@@ -124,6 +126,7 @@ const PolygonManagement: React.FC = () => {
         return posts.filter((post) => {
             const postDate = new Date(post.createdAt);
             const matchesDateStart = filterDateStart ? postDate >= new Date(filterDateStart) : true;
+            const matchesDateEnd = filterDateEnd ? postDate <= new Date(filterDateEnd) : true;
             const matchesWeight = filterWeight ? post.weight === filterWeight : true;
             const matchesSelectedLocation = selectedLocation ? post.location === selectedLocation : true;
 
@@ -138,9 +141,9 @@ const PolygonManagement: React.FC = () => {
                 matchesLocation = distance <= 5;
             }
 
-            return matchesDateStart && matchesWeight && matchesLocation && matchesSelectedLocation;
+            return matchesDateStart && matchesDateEnd && matchesWeight && matchesLocation && matchesSelectedLocation;
         });
-    }, [posts, filterDateStart, filterWeight, selectedLocation, filterCoords]);
+    }, [posts, filterDateStart, filterDateEnd, filterWeight, selectedLocation, filterCoords]);
 
     useEffect(() => {
         if (mapRef.current && googleMapsApiKey && window.google?.maps?.geometry) {
@@ -186,7 +189,17 @@ const PolygonManagement: React.FC = () => {
         if (drawing && event.latLng) {
             const lat = event.latLng.lat();
             const lng = event.latLng.lng();
-            setCurrentPolygon([...currentPolygon, { lat, lng }]);
+            const newPoint = { lat, lng };
+
+            // Verifica se o clique está próximo do primeiro ponto para fechar o polígono
+            if (currentPolygon.length > 2 && 
+                Math.abs(currentPolygon[0].lat - lat) < 0.001 && 
+                Math.abs(currentPolygon[0].lng - lng) < 0.001) {
+                savePolygon();
+                return;
+            }
+
+            setCurrentPolygon([...currentPolygon, newPoint]);
         }
     };
 
@@ -431,9 +444,25 @@ const PolygonManagement: React.FC = () => {
                                                 strokeColor,
                                                 strokeWeight: 2,
                                             }}
+                                            onClick={() => setSelectedPolygon(polygon)} // Evento de clique para selecionar o polígono
                                         />
                                     );
                                 })}
+                                {selectedPolygon && (
+                                    <InfoWindow
+                                        position={{
+                                            lat: selectedPolygon.points.reduce((sum: number, point: any) => sum + point.lat, 0) / selectedPolygon.points.length,
+                                            lng: selectedPolygon.points.reduce((sum: number, point: any) => sum + point.lng, 0) / selectedPolygon.points.length,
+                                        }}
+                                        onCloseClick={() => setSelectedPolygon(null)}
+                                    >
+                                        <div>
+                                            <h3 className="font-bold">{selectedPolygon.name}</h3>
+                                            <p>Nota: {postsInPolygons.get(selectedPolygon.id)?.[0]?.weight || 'N/A'}</p>
+                                            <p>Posição no Ranking: {postsInPolygons.get(selectedPolygon.id)?.length || 0}</p>
+                                        </div>
+                                    </InfoWindow>
+                                )}
                                 {drawing && currentPolygon.length > 0 && (
                                     <GooglePolygon
                                         paths={currentPolygon}
@@ -497,7 +526,7 @@ const PolygonManagement: React.FC = () => {
                         </button>
                     )}
                     <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700">Importar Shapefile</label>
+                        <label className="blockBond text-sm font-medium text-gray-700">Importar Shapefile</label>
                         <input
                             type="file"
                             multiple
@@ -529,6 +558,12 @@ const PolygonManagement: React.FC = () => {
                         type="date"
                         value={filterDateStart}
                         onChange={(e) => setFilterDateStart(e.target.value)}
+                        className="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                        type="date"
+                        value={filterDateEnd}
+                        onChange={(e) => setFilterDateEnd(e.target.value)}
                         className="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <div className="relative">
