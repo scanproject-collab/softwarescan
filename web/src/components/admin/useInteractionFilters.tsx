@@ -5,7 +5,7 @@ import { Interaction } from "../../types/types";
 
 export const useInteractionFilters = (interactions: Interaction[]) => {
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedRanking, setSelectedRanking] = useState<string | null>(null);
   const [selectedInstitution, setSelectedInstitution] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -54,14 +54,14 @@ export const useInteractionFilters = (interactions: Interaction[]) => {
   const filteredInteractions = useMemo(() => {
     let filtered = interactions.filter((interaction) => {
       const matchesAuthor =
-        interaction.author.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false; // Handle optional name
-      const matchesTag =
-        !selectedTag || (interaction.tags && interaction.tags.includes(selectedTag));
+        interaction.author.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+      const matchesTags =
+      selectedTags.length === 0 || (interaction.tags && Array.isArray(interaction.tags) && selectedTags.some(tag => interaction.tags.includes(tag)));
       const matchesRanking = !selectedRanking || interaction.ranking === selectedRanking;
       const matchesInstitution =
         !selectedInstitution || interaction.author.institution?.id === selectedInstitution;
       const matchesUser = !selectedUser || interaction.author.id === selectedUser;
-      return matchesAuthor && matchesTag && matchesRanking && matchesInstitution && matchesUser;
+      return matchesAuthor && matchesTags && matchesRanking && matchesInstitution && matchesUser;
     });
 
     const rankingOrder: Record<string, number> = {
@@ -71,30 +71,47 @@ export const useInteractionFilters = (interactions: Interaction[]) => {
     };
 
     filtered.sort((a, b) => {
-      const aRanking = rankingOrder[a.ranking || ""] || 4; // Handle undefined ranking
-      const bRanking = rankingOrder[b.ranking || ""] || 4; // Handle undefined ranking
+      const aRanking = rankingOrder[a.ranking || ""] || 4;
+      const bRanking = rankingOrder[b.ranking || ""] || 4;
       if (aRanking !== bRanking) return aRanking - bRanking;
-      const aWeight = parseFloat(String(a.weight)) || 0; // Convert weight to string first
+      const aWeight = parseFloat(String(a.weight)) || 0;
       const bWeight = parseFloat(String(b.weight)) || 0;
       return bWeight - aWeight;
     });
 
     return filtered;
-  }, [interactions, searchTerm, selectedTag, selectedRanking, selectedInstitution, selectedUser]);
+  }, [interactions, searchTerm, selectedTags, selectedRanking, selectedInstitution, selectedUser]);
 
   const uniqueTags = useMemo(() => {
-    return [...new Set(interactions.flatMap((interaction) => interaction.tags || []))];
+    const allTags = ["Todas as tags", ...new Set(interactions.flatMap((interaction) => interaction.tags || []))];
+    return allTags;
   }, [interactions]);
 
   const uniqueRankings = useMemo(() => {
-    return [...new Set(interactions.map((interaction) => interaction.ranking || ""))]; // Handle undefined ranking
+    return [...new Set(interactions.map((interaction) => interaction.ranking || ""))];
   }, [interactions]);
+
+  const toggleTagSelection = (tag: string) => {
+    if (tag === "Todas as tags") {
+      setSelectedTags(uniqueTags); 
+    } else {
+      setSelectedTags((prev) =>
+        prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      );
+    }
+  };
+
+  const selectedTagsPlaceholder = selectedTags.length > 0
+    ? selectedTags.slice(0, 2).join(", ") + (selectedTags.length > 2 ? ", ..." : "")
+    : "Selecione tags";
 
   return {
     searchTerm,
     setSearchTerm,
-    selectedTag,
-    setSelectedTag,
+    selectedTags,
+    setSelectedTags,
+    selectedTagsPlaceholder,
+    toggleTagSelection,
     selectedRanking,
     setSelectedRanking,
     selectedInstitution,
