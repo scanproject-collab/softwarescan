@@ -8,9 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import NetInfo from "@react-native-community/netinfo";
 
 export default function Home() {
-  const [posts, setPosts] = useState([]);
-  const [offlinePosts, setOfflinePosts] = useState([]);
-  const [filteredPosts, setFilteredPosts] = useState([]);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [offlinePosts, setOfflinePosts] = useState<any[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -61,12 +61,8 @@ export default function Home() {
           if (post.tags) post.tags.forEach((tag: string) => tagsSet.add(tag));
         });
         setAllTags(Array.from(tagsSet));
-        setIsOffline(true);
-      } else {
-        setPosts([]);
-        setAllTags([]);
-        setIsOffline(true);
       }
+      setIsOffline(true);
     } finally {
       setLoading(false);
     }
@@ -74,12 +70,8 @@ export default function Home() {
 
   const loadOfflinePosts = async () => {
     const offlinePostsStr = await AsyncStorage.getItem('offlinePosts');
-    if (offlinePostsStr) {
-      const offlinePosts = JSON.parse(offlinePostsStr);
-      setOfflinePosts(offlinePosts);
-    } else {
-      setOfflinePosts([]);
-    }
+    const offlinePosts = offlinePostsStr ? JSON.parse(offlinePostsStr) : [];
+    setOfflinePosts(offlinePosts);
   };
 
   const sendOfflinePosts = async () => {
@@ -92,29 +84,29 @@ export default function Home() {
     let offlinePosts = JSON.parse(offlinePostsStr);
     if (offlinePosts.length === 0) return;
 
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      for (let i = offlinePosts.length - 1; i >= 0; i--) { // Iterar de trás para frente
-        const post = offlinePosts[i];
-        const formData = new FormData();
-        formData.append('title', post.title || 'Interação sem título');
-        formData.append('content', post.description || '');
-        formData.append('tags', post.tags.join(','));
-        formData.append('location', post.location);
-        formData.append('latitude', post.latitude?.toString() || '');
-        formData.append('longitude', post.longitude?.toString() || '');
-        formData.append('weight', post.weight);
-        formData.append('ranking', post.ranking);
+    const token = await AsyncStorage.getItem('userToken');
+    for (let i = offlinePosts.length - 1; i >= 0; i--) {
+      const post = offlinePosts[i];
+      const formData = new FormData();
+      formData.append('title', post.title || 'Interação sem título');
+      formData.append('content', post.description || '');
+      formData.append('tags', post.tags.join(','));
+      formData.append('location', post.location);
+      formData.append('latitude', post.latitude?.toString() || '');
+      formData.append('longitude', post.longitude?.toString() || '');
+      formData.append('weight', post.weight);
+      formData.append('ranking', post.ranking);
 
-        if (post.image) {
-          const fileName = post.image.split('/').pop();
-          formData.append('image', {
-            uri: post.image,
-            type: 'image/jpeg',
-            name: fileName || 'image.jpg',
-          } as any);
-        }
+      if (post.image) {
+        const fileName = post.image.split('/').pop();
+        formData.append('image', {
+          uri: post.image,
+          type: 'image/jpeg',
+          name: fileName || 'image.jpg',
+        } as any);
+      }
 
+      try {
         const response = await fetch(`${API_URL}/posts/create`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
@@ -122,17 +114,14 @@ export default function Home() {
         });
 
         if (response.ok) {
-          offlinePosts.splice(i, 1); // Remove o post sincronizado
+          offlinePosts.splice(i, 1);
           await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
-          setOfflinePosts([...offlinePosts]); // Atualiza o estado
-        } else {
-          console.error('Falha ao sincronizar post:', post.id);
+          setOfflinePosts([...offlinePosts]);
+          await fetchPosts(); // Atualiza os posts online
         }
+      } catch (error) {
+        console.error('Erro ao sincronizar post:', post.id, error);
       }
-      fetchPosts(); // Atualiza os posts online
-    } catch (error) {
-      console.error('Erro ao enviar posts offline:', error);
-      Alert.alert('Erro', 'Falha ao sincronizar alguns posts offline. Tente novamente mais tarde.');
     }
   };
 
@@ -140,30 +129,31 @@ export default function Home() {
     const initialize = async () => {
       await fetchPosts();
       await loadOfflinePosts();
-      const interval = setInterval(() => {
-        fetchPosts();
-        sendOfflinePosts();
-      }, 10000);
-      return () => clearInterval(interval);
+      const unsubscribe = NetInfo.addEventListener(state => {
+        setIsOffline(!state.isConnected);
+        if (state.isConnected) sendOfflinePosts();
+      });
+      return () => unsubscribe();
     };
     initialize();
   }, []);
 
   useEffect(() => {
-    let combinedPosts = [...posts, ...offlinePosts.map((post: any) => ({ ...post, isOffline: true }))];
+    const combinedPosts = [...posts, ...offlinePosts.map(post => ({ ...post, isOffline: true }))];
+    let filtered = combinedPosts;
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      combinedPosts = combinedPosts.filter((post: any) =>
-        (post.title?.toLowerCase().includes(query) || post.content?.toLowerCase().includes(query))
+      filtered = filtered.filter(post =>
+        (post.title?.toLowerCase().includes(query) || post.description?.toLowerCase().includes(query))
       );
     }
     if (selectedTags.length > 0) {
-      combinedPosts = combinedPosts.filter((post: any) =>
+      filtered = filtered.filter(post =>
         post.tags && post.tags.some((tag: string) => selectedTags.includes(tag))
       );
     }
-    setFilteredPosts(combinedPosts);
-  }, [searchQuery, selectedTags, posts, offlinePosts]);
+    setFilteredPosts(filtered);
+  }, [posts, offlinePosts, searchQuery, selectedTags]);
 
   const handleDeletePost = async (postId: string) => {
     Alert.alert(
@@ -198,14 +188,15 @@ export default function Home() {
   };
 
   const handleToggleTag = (tag: string) => {
-    setSelectedTags(selectedTags.includes(tag) ? selectedTags.filter(t => t !== tag) : [...selectedTags, tag]);
+    setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setLoading(true);
-    fetchPosts();
-    loadOfflinePosts();
-    sendOfflinePosts();
+    await fetchPosts();
+    await loadOfflinePosts();
+    await sendOfflinePosts();
+    setLoading(false);
   };
 
   if (loading) {
@@ -220,13 +211,13 @@ export default function Home() {
     <View style={styles.container}>
       {isOffline && (
         <View style={styles.offlineMessage}>
-          <Text style={styles.offlineText}>Exibindo posts salvos localmente (offline)</Text>
+          <Text style={styles.offlineText}>Você está offline</Text>
         </View>
       )}
       <View style={styles.headerContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Pesquisar por título ou conteúdo..."
+          placeholder="Pesquisar por título ou descrição..."
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -257,39 +248,38 @@ export default function Home() {
         </View>
       )}
 
-      {filteredPosts.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            {searchQuery || selectedTags.length > 0
-              ? 'Nenhum post encontrado com os filtros aplicados.'
-              : 'Você ainda não possui nenhuma postagem. Crie uma nova interação!'}
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredPosts}
-          renderItem={({ item }) => (
-            <InteractionCard
-              title={item.title || 'Sem Título'}
-              location={item.location || 'Local não especificado'}
-              imageUrl={item.image || item.imageUrl}
-              hasImage={!!(item.image || item.imageUrl)}
-              tags={item.tags || []}
-              onPress={() => {
-                if (item.isOffline) {
-                  Alert.alert('Post Offline', 'Este post ainda não foi sincronizado. Ele será enviado quando houver conexão.');
-                } else {
-                  router.push(`/pages/users/interaction/${item.id}`);
-                }
-              }}
-              onDelete={item.isOffline ? undefined : () => handleDeletePost(item.id)} // Impede exclusão de posts offline
-              isOffline={item.isOffline} // Indica que o post é offline
-            />
-          )}
-          keyExtractor={(item, index) => item.id || `offline-${index}`}
-          contentContainerStyle={styles.listContent}
-        />
-      )}
+      <FlatList
+        data={filteredPosts}
+        renderItem={({ item }) => (
+          <InteractionCard
+            title={item.title || 'Sem Título'}
+            location={item.location || 'Local não especificado'}
+            imageUrl={item.image || item.imageUrl}
+            hasImage={!!(item.image || item.imageUrl)}
+            tags={item.tags || []}
+            onPress={() => {
+              if (item.isOffline) {
+                Alert.alert('Post Offline', 'Este post será sincronizado quando houver conexão.');
+              } else {
+                router.push(`/pages/users/interaction/${item.id}`);
+              }
+            }}
+            onDelete={item.isOffline ? undefined : () => handleDeletePost(item.id)}
+            isOffline={item.isOffline}
+          />
+        )}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {searchQuery || selectedTags.length > 0
+                ? 'Nenhum post encontrado.'
+                : 'Nenhuma interação disponível. Crie uma nova!'}
+            </Text>
+          </View>
+        }
+      />
     </View>
   );
 }
