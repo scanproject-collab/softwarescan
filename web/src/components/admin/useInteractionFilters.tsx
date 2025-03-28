@@ -56,7 +56,7 @@ export const useInteractionFilters = (interactions: Interaction[]) => {
       const matchesAuthor =
         interaction.author.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
       const matchesTags =
-      selectedTags.length === 0 || (interaction.tags && Array.isArray(interaction.tags) && selectedTags.some(tag => interaction.tags.includes(tag)));
+      selectedTags.length === 0 || (Array.isArray(interaction.tags) && interaction.tags.some(tag => selectedTags.includes(tag)));
       const matchesRanking = !selectedRanking || interaction.ranking === selectedRanking;
       const matchesInstitution =
         !selectedInstitution || interaction.author.institution?.id === selectedInstitution;
