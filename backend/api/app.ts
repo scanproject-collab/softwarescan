@@ -33,6 +33,10 @@ app.get("/google-maps-api-url", (_req: Request, res: Response) => {
   res.json({ url });
 });
 
+app.get("/ping", (_req: Request, res: Response) => {
+  res.sendStatus(200);
+});
+
 app.use((_req: Request, res: Response) => {
   res.status(500).send("Not found");
 });
