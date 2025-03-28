@@ -45,8 +45,24 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { title, content, tags, location, latitude, longitude, playerId, weight, ranking } = req.body;
+    const { title, content, tags, location, latitude, longitude, playerId, weight, ranking, offlineId } = req.body;
     let tagsArray = tags ? tags.split(',') : [];
+
+    if (offlineId) {
+      const existingPost = await prisma.post.findFirst({
+        where: {
+          authorId: req.user.id,
+          offlineId: offlineId
+        }
+      });
+
+      if (existingPost) {
+        return res.status(200).json({
+          message: 'Post already created or duplicated, returning existing one',
+          post: existingPost
+        });
+      }
+    }
 
     if (req.file) {
       const todayStart = new Date();
@@ -94,7 +110,8 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
         longitude: longitude ? parseFloat(longitude) : null,
         authorId: req.user.id,
         ranking: ranking || 'Baixo',
-        weight: weight || '0', // Usa o valor enviado pelo frontend
+        weight: weight || '0',
+        offlineId: offlineId || null,
       },
     });
 
@@ -103,6 +120,7 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
     res.status(400).json({ message: 'Error creating post: ' + (error as Error).message });
   }
 };
+
 
 export const uploadImage = upload.single('image');
 
@@ -200,7 +218,6 @@ export const listAllPosts = async (_req: Request, res: Response) => {
     const response = {
       message: "Posts retrieved successfully",
       posts: posts.map((post) => {
-        console.log("Post Author Institution:", post.author.institution); // Log para depuração
         return {
           id: post.id,
           title: post.title,
