@@ -10,7 +10,9 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const showToast = useCallback((type: 'success' | 'error', text1: string, text2: string) => {
+  console.log('Render LoginScreen', { email, password }); // Log mais detalhado
+
+  const showToast = useCallback((type, text1, text2) => {
     Toast.show({
       type,
       text1,
@@ -44,7 +46,7 @@ const LoginScreen = () => {
       console.log('Token armazenado:', token);
       showToast('success', 'Login Bem-Sucedido', 'Bem-vindo de volta!');
       router.replace('/'); // Redireciona para a tela inicial
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage =
         error?.response?.data?.message === 'Account is pending approval'
           ? 'Sua conta ainda está aguardando aprovação do administrador.'
@@ -69,7 +71,7 @@ const LoginScreen = () => {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
-        autoCorrect={false} // Evita correções automáticas que podem interferir
+        autoCorrect={false}
       />
       <TextInput
         style={styles.input}
@@ -78,7 +80,7 @@ const LoginScreen = () => {
         secureTextEntry
         value={password}
         onChangeText={setPassword}
-        autoCorrect={false} // Evita correções automáticas
+        autoCorrect={false}
       />
       <TouchableOpacity
         style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -157,4 +159,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen;
+export default React.memo(LoginScreen);

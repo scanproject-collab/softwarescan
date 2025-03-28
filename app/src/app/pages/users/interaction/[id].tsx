@@ -3,27 +3,57 @@ import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView } from 're
 import MapView, { Marker } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { validateToken } from '../../../utils/auth';
+import { validateToken } from '../../../utils/validateAuth';
+import NetInfo from "@react-native-community/netinfo";
 
 export default function InteractionDetail() {
   const { id } = useLocalSearchParams();
-  const [post, setPost] = useState(null);
+  const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchPost = async () => {
+      const netInfo = await NetInfo.fetch();
+      setIsOffline(!netInfo.isConnected);
+
       try {
         const isValid = await validateToken();
         if (!isValid) return;
 
         const token = await AsyncStorage.getItem('userToken');
+
+        if (!netInfo.isConnected) {
+          // Tenta carregar do cache offline
+          const offlinePostsStr = await AsyncStorage.getItem('offlinePosts');
+          const cachedPostsStr = await AsyncStorage.getItem('cachedPosts');
+          let foundPost = null;
+
+          if (offlinePostsStr) {
+            const offlinePosts = JSON.parse(offlinePostsStr);
+            foundPost = offlinePosts.find((p: any) => p.id === id);
+          }
+
+          if (!foundPost && cachedPostsStr) {
+            const cachedPosts = JSON.parse(cachedPostsStr);
+            foundPost = cachedPosts.find((p: any) => p.id === id);
+          }
+
+          if (foundPost) {
+            setPost(foundPost);
+          } else {
+            setPost(null);
+          }
+          setLoading(false);
+          return;
+        }
+
         const response = await fetch(`${API_URL}/posts/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.status === 401) {
-          console.log('Token inválido ou expirado, redirecionando para login');
           await AsyncStorage.removeItem('userToken');
           router.replace('/pages/auth');
           return;
@@ -40,7 +70,26 @@ export default function InteractionDetail() {
           setPost(null);
         }
       } catch (error) {
-        setPost(null);
+        // Fallback para cache se houver erro
+        const offlinePostsStr = await AsyncStorage.getItem('offlinePosts');
+        const cachedPostsStr = await AsyncStorage.getItem('cachedPosts');
+        let foundPost = null;
+
+        if (offlinePostsStr) {
+          const offlinePosts = JSON.parse(offlinePostsStr);
+          foundPost = offlinePosts.find((p: any) => p.id === id);
+        }
+
+        if (!foundPost && cachedPostsStr) {
+          const cachedPosts = JSON.parse(cachedPostsStr);
+          foundPost = cachedPosts.find((p: any) => p.id === id);
+        }
+
+        if (foundPost) {
+          setPost(foundPost);
+        } else {
+          setPost(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -66,10 +115,15 @@ export default function InteractionDetail() {
 
   const tags = Array.isArray(post.tags) ? post.tags : [];
   const hasValidCoordinates = typeof post.latitude === 'number' && typeof post.longitude === 'number' && post.latitude !== 0 && post.longitude !== 0;
-  const imageUrl = typeof post.imageUrl === 'string' && post.imageUrl ? post.imageUrl : null;
+  const imageUrl = typeof post.image === 'string' ? post.image : (typeof post.imageUrl === 'string' ? post.imageUrl : null);
 
   return (
     <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+      {isOffline && (
+        <View style={styles.offlineMessage}>
+          <Text style={styles.offlineText}>Você está offline. Exibindo dados salvos localmente.</Text>
+        </View>
+      )}
       <View style={styles.imageContainer}>
         {imageUrl && (
           <>
@@ -104,7 +158,7 @@ export default function InteractionDetail() {
           Hora: {post.createdAt ? new Date(post.createdAt).toLocaleTimeString('pt-BR') : 'Hora indisponível'}
         </Text>
         <Text style={styles.detailText}>
-          Observações: {post.content || 'Sem descrição'}
+          Observações: {post.content || post.description || 'Sem descrição'}
         </Text>
         <Text style={styles.detailText}>
           Autor: {post.author && post.author.name ? post.author.name : 'Não disponível'}
@@ -222,7 +276,7 @@ const styles = StyleSheet.create({
   },
   highlightSection: {
     backgroundColor: '#f1f3f5',
-    padding: 12, 
+    padding: 12,
     borderRadius: 8,
     marginBottom: 16,
   },
@@ -240,7 +294,7 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 16,
     color: '#555',
-    padding: 8, 
+    padding: 8,
     marginBottom: 12,
     lineHeight: 22,
   },
@@ -264,6 +318,17 @@ const styles = StyleSheet.create({
   mapLoading: {
     fontSize: 16,
     color: '#666',
+    textAlign: 'center',
+  },
+  offlineMessage: {
+    backgroundColor: '#ffeb3b',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  offlineText: {
+    color: '#333',
+    fontWeight: '500',
     textAlign: 'center',
   },
 });

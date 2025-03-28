@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet } from 'react-native';
 import { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { validateToken } from '../utils/auth';
+import { validateToken } from '../utils/validateAuth';
 import { router } from 'expo-router';
 import Navbar from '../components/navbar';
 
@@ -57,7 +57,7 @@ export default function TabsLayout() {
                     tabBarButton: (props) => (
                         <Pressable {...props} style={styles.addButton} />
                     ),
-                    tabBarStyle: { display: 'none' }, 
+                    tabBarStyle: { display: 'none' },
                 }}
             />
 

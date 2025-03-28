@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-nati
 import MapView, { Marker } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { validateToken } from '../utils/auth';
+import { validateToken } from '../utils/validateAuth';
 
 export default function MyPerceptions() {
     const [posts, setPosts] = useState([]);

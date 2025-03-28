@@ -3,7 +3,7 @@ import { View, Pressable, StyleSheet, FlatList, Text, ActivityIndicator, TextInp
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import InteractionCard from '../components/cardInteraction';
-import { validateToken } from '../utils/auth';
+import { validateToken } from '../utils/validateAuth';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from "@react-native-community/netinfo";
 
@@ -33,7 +33,6 @@ export default function Home() {
       });
 
       if (response.status === 401) {
-        console.log('Token inválido ou expirado, redirecionando para login');
         await AsyncStorage.removeItem('userToken');
         router.replace('/pages/auth');
         return;
@@ -53,7 +52,6 @@ export default function Home() {
       setAllTags(Array.from(tagsSet));
       setIsOffline(false);
     } catch (error) {
-      console.error('Erro ao buscar posts:', error);
       const cachedPosts = await AsyncStorage.getItem('cachedPosts');
       if (cachedPosts) {
         const parsedPosts = JSON.parse(cachedPosts);
@@ -91,20 +89,21 @@ export default function Home() {
     const offlinePostsStr = await AsyncStorage.getItem('offlinePosts');
     if (!offlinePostsStr) return;
 
-    const offlinePosts = JSON.parse(offlinePostsStr);
+    let offlinePosts = JSON.parse(offlinePostsStr);
     if (offlinePosts.length === 0) return;
 
     try {
       const token = await AsyncStorage.getItem('userToken');
-      for (const post of offlinePosts) {
+      for (let i = 0; i < offlinePosts.length; i++) {
+        const post = offlinePosts[i];
         const formData = new FormData();
         formData.append('title', post.title || 'Interação sem título');
         formData.append('content', post.description || '');
         formData.append('tags', post.tags.join(','));
         formData.append('image', { uri: post.image, name: 'image.jpg', type: 'image/jpeg' } as any);
         formData.append('location', post.location);
-        formData.append('latitude', post.latitude.toString());
-        formData.append('longitude', post.longitude.toString());
+        formData.append('latitude', post.latitude?.toString() || '');
+        formData.append('longitude', post.longitude?.toString() || '');
         formData.append('weight', post.weight);
         formData.append('ranking', post.ranking);
 
@@ -115,14 +114,13 @@ export default function Home() {
         });
 
         if (response.ok) {
-          const updatedOfflinePosts = offlinePosts.filter((p: any) => p !== post);
-          await AsyncStorage.setItem('offlinePosts', JSON.stringify(updatedOfflinePosts));
-          setOfflinePosts(updatedOfflinePosts);
-        } else {
-          console.error('Erro ao enviar post offline:', response.status);
+          offlinePosts.splice(i, 1); // Remove o post sincronizado
+          i--; // Ajusta o índice
+          await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
+          setOfflinePosts([...offlinePosts]); // Atualiza o estado imediatamente
         }
       }
-      fetchPosts(); // Atualiza os posts online após enviar os offline
+      fetchPosts(); // Atualiza os posts online
     } catch (error) {
       console.error('Erro ao enviar posts offline:', error);
     }
@@ -268,7 +266,7 @@ export default function Home() {
               tags={item.tags || []}
               onPress={() => {
                 if (item.isOffline) {
-                  Alert.alert('Post Offline', 'Este post ainda não foi enviado. Ele será enviado quando a conexão for restabelecida.');
+                  router.push(`/pages/users/interaction/${item.id}`);
                 } else {
                   router.push(`/pages/users/interaction/${item.id}`);
                 }
