@@ -65,10 +65,20 @@ export default function NewInteraction() {
   const router = useRouter();
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
+  const checkActualConnectivity = async () => {
+    try {
+      const response = await fetch(`${API_URL}/ping`, { method: 'GET', timeout: 5000 });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  };
+
   const checkConnection = async () => {
     const netInfo = await NetInfo.fetch();
-    setIsOffline(!netInfo.isConnected);
-    if (!netInfo.isConnected) {
+    const isConnected = netInfo.isConnected && (await checkActualConnectivity());
+    setIsOffline(!isConnected);
+    if (!isConnected) {
       setIsManualLocation(true);
       Alert.alert("Você está offline", "A localização será inserida manualmente.");
     }
@@ -88,9 +98,10 @@ export default function NewInteraction() {
       setIsManualLocation(false);
       checkConnection();
 
-      const unsubscribe = NetInfo.addEventListener(state => {
-        setIsOffline(!state.isConnected);
-        if (!state.isConnected) setIsManualLocation(true);
+      const unsubscribe = NetInfo.addEventListener(async state => {
+        const isConnected = state.isConnected && (await checkActualConnectivity());
+        setIsOffline(!isConnected);
+        if (!isConnected) setIsManualLocation(true);
       });
 
       return () => unsubscribe();
@@ -102,10 +113,8 @@ export default function NewInteraction() {
       const isValid = await validateToken();
       if (!isValid) return;
 
-      // Carregar tags do cache primeiro
       const cachedTags = await AsyncStorage.getItem("cachedTags");
       if (cachedTags) {
-        console.log("Tags carregadas do cache:", cachedTags);
         setAvailableTags(JSON.parse(cachedTags));
       }
 
@@ -119,7 +128,6 @@ export default function NewInteraction() {
           if (response.ok) {
             setAvailableTags(data.tags || []);
             await AsyncStorage.setItem("cachedTags", JSON.stringify(data.tags));
-            console.log("Tags atualizadas do servidor:", data.tags);
           }
         } catch (error) {
           console.log("Erro ao carregar tags online, usando cache:", error);
@@ -185,13 +193,15 @@ export default function NewInteraction() {
   const handleSuggestionSelect = async (suggestion: string) => {
     setLocation(suggestion);
     setSuggestions([]);
-    if (!isOffline) {
+    if (!isOffline && !isManualLocation) {
       try {
         const response = await geocodeAddress(suggestion);
         setCoords(response);
       } catch (error) {
         Alert.alert("Erro", "Endereço não encontrado.");
       }
+    } else {
+      Alert.alert("Aviso", "Localização manual salva. Coordenadas não serão obtidas até que haja conexão.");
     }
   };
 
@@ -219,7 +229,8 @@ export default function NewInteraction() {
 
   const syncOfflinePosts = async () => {
     const netInfo = await NetInfo.fetch();
-    if (!netInfo.isConnected) return;
+    const isConnected = netInfo.isConnected && (await checkActualConnectivity());
+    if (!isConnected) return;
 
     const token = await AsyncStorage.getItem("userToken");
     const offlinePosts = await AsyncStorage.getItem("offlinePosts");
@@ -228,6 +239,8 @@ export default function NewInteraction() {
     let posts = JSON.parse(offlinePosts);
     for (let i = posts.length - 1; i >= 0; i--) {
       const post = posts[i];
+      if (post.syncFailed) continue;
+
       const formData = new FormData();
       formData.append("title", post.title || "Interação sem título");
       formData.append("content", post.description || "");
@@ -257,9 +270,14 @@ export default function NewInteraction() {
         if (response.ok) {
           posts.splice(i, 1);
           await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
+        } else {
+          posts[i].syncFailed = true;
+          await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
         }
       } catch (error) {
         console.error("Erro ao sincronizar post:", post.id, error);
+        posts[i].syncFailed = true;
+        await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
       }
     }
   };
@@ -289,7 +307,8 @@ export default function NewInteraction() {
       }
 
       const netInfo = await NetInfo.fetch();
-      console.log("Status da conexão:", netInfo.isConnected ? "online" : "offline");
+      const isConnected = netInfo.isConnected && (await checkActualConnectivity());
+      console.log("Status da conexão:", isConnected ? "online" : "offline");
 
       const token = await AsyncStorage.getItem("userToken");
       const playerId = await getPlayerId();
@@ -301,16 +320,16 @@ export default function NewInteraction() {
         description,
         tags: selectedTags,
         location,
-        latitude: isManualLocation || isOffline ? null : coords.latitude,
-        longitude: isManualLocation || isOffline ? null : coords.longitude,
+        latitude: !isManualLocation && isConnected ? coords.latitude : null,
+        longitude: !isManualLocation && isConnected ? coords.longitude : null,
         weight: totalWeight.toString(),
         ranking: rankingLabel,
         image,
-        isOffline: !netInfo.isConnected,
+        isOffline: !isConnected,
         createdAt: new Date().toISOString(),
       };
 
-      if (!netInfo.isConnected) {
+      if (!isConnected) {
         console.log("Salvando post offline:", postData);
         let imageUri = image;
         if (image) {
@@ -380,6 +399,25 @@ export default function NewInteraction() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const syncPendingGeocode = async () => {
+      if (!isOffline) {
+        const pendingGeocode = await AsyncStorage.getItem('pendingGeocode');
+        if (pendingGeocode) {
+          try {
+            const response = await geocodeAddress(pendingGeocode);
+            setCoords(response);
+            setLocation(pendingGeocode);
+            await AsyncStorage.removeItem('pendingGeocode');
+          } catch (error) {
+            console.error('Erro ao geocodificar endereço pendente:', error);
+          }
+        }
+      }
+    };
+    syncPendingGeocode();
+  }, [isOffline]);
 
   const renderItem = ({ item }: { item: string }) => {
     if (item === "title") {
@@ -538,6 +576,26 @@ export default function NewInteraction() {
               onPress={handleMapPress}
             >
               <Marker coordinate={{ latitude: coords.latitude, longitude: coords.longitude }} />
+            </MapView>
+          ) : isManualLocation && coords.latitude === 0 && coords.longitude === 0 ? (
+            <Text style={styles.mapLoading}>Localização manual selecionada. O mapa não será exibido sem coordenadas.</Text>
+          ) : isOffline ? (
+            <MapView
+              style={styles.map}
+              region={{
+                latitude: coords.latitude || -23.5505,
+                longitude: coords.longitude || -46.6333,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              }}
+              liteMode={true}
+            >
+              <Marker
+                coordinate={{
+                  latitude: coords.latitude || -23.5505,
+                  longitude: coords.longitude || -46.6333,
+                }}
+              />
             </MapView>
           ) : !isManualLocation && !isOffline ? (
             <Text style={styles.mapLoading}>Carregando mapa...</Text>

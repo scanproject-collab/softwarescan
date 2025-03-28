@@ -16,7 +16,18 @@ export default function Home() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isOffline, setIsOffline] = useState(false);
+  const [syncing, setSyncing] = useState(false); // Flag to prevent concurrent syncs
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+  // Function to check actual connectivity
+  const checkActualConnectivity = async () => {
+    try {
+      const response = await fetch(`${API_URL}/ping`, { method: 'GET', timeout: 5000 });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  };
 
   const fetchPosts = async () => {
     try {
@@ -75,18 +86,34 @@ export default function Home() {
   };
 
   const sendOfflinePosts = async () => {
+    if (syncing) return; // Prevent concurrent syncs
+    setSyncing(true);
+
     const netInfo = await NetInfo.fetch();
-    if (!netInfo.isConnected) return;
+    const isActuallyConnected = await checkActualConnectivity();
+    if (!netInfo.isConnected || !isActuallyConnected) {
+      setIsOffline(true);
+      setSyncing(false);
+      return;
+    }
 
     const offlinePostsStr = await AsyncStorage.getItem('offlinePosts');
-    if (!offlinePostsStr) return;
+    if (!offlinePostsStr) {
+      setSyncing(false);
+      return;
+    }
 
     let offlinePosts = JSON.parse(offlinePostsStr);
-    if (offlinePosts.length === 0) return;
+    if (offlinePosts.length === 0) {
+      setSyncing(false);
+      return;
+    }
 
     const token = await AsyncStorage.getItem('userToken');
     for (let i = offlinePosts.length - 1; i >= 0; i--) {
       const post = offlinePosts[i];
+      if (post.syncFailed) continue; // Skip posts that already failed
+
       const formData = new FormData();
       formData.append('title', post.title || 'Interação sem título');
       formData.append('content', post.description || '');
@@ -117,21 +144,29 @@ export default function Home() {
           offlinePosts.splice(i, 1);
           await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
           setOfflinePosts([...offlinePosts]);
-          await fetchPosts(); // Atualiza os posts online
+          await fetchPosts(); // Update online posts
+        } else {
+          offlinePosts[i].syncFailed = true; // Mark as failed
+          await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
         }
       } catch (error) {
         console.error('Erro ao sincronizar post:', post.id, error);
+        offlinePosts[i].syncFailed = true; // Mark as failed
+        await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePosts));
       }
     }
+    setSyncing(false);
   };
 
   useEffect(() => {
     const initialize = async () => {
       await fetchPosts();
       await loadOfflinePosts();
-      const unsubscribe = NetInfo.addEventListener(state => {
-        setIsOffline(!state.isConnected);
-        if (state.isConnected) sendOfflinePosts();
+      const unsubscribe = NetInfo.addEventListener(async state => {
+        const isConnected = state.isConnected && (await checkActualConnectivity());
+        console.log('Connection status:', isConnected ? 'online' : 'offline');
+        setIsOffline(!isConnected);
+        if (isConnected) sendOfflinePosts();
       });
       return () => unsubscribe();
     };
