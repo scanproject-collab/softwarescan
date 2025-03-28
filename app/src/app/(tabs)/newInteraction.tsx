@@ -69,7 +69,7 @@ export default function NewInteraction() {
     const netInfo = await NetInfo.fetch();
     setIsOffline(!netInfo.isConnected);
     if (!netInfo.isConnected) {
-      setIsManualLocation(true); // Forçar modo manual quando offline
+      setIsManualLocation(true);
       Alert.alert("Você está offline", "A localização será inserida manualmente.");
     }
   };
@@ -102,22 +102,28 @@ export default function NewInteraction() {
       const isValid = await validateToken();
       if (!isValid) return;
 
-      try {
-        const token = await AsyncStorage.getItem("userToken");
-        const response = await fetch(`${API_URL}/tags`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setAvailableTags(data.tags || []);
-          await AsyncStorage.setItem("cachedTags", JSON.stringify(data.tags));
-        } else {
-          const cachedTags = await AsyncStorage.getItem("cachedTags");
-          if (cachedTags) setAvailableTags(JSON.parse(cachedTags));
+      // Carregar tags do cache primeiro
+      const cachedTags = await AsyncStorage.getItem("cachedTags");
+      if (cachedTags) {
+        console.log("Tags carregadas do cache:", cachedTags);
+        setAvailableTags(JSON.parse(cachedTags));
+      }
+
+      if (!isOffline) {
+        try {
+          const token = await AsyncStorage.getItem("userToken");
+          const response = await fetch(`${API_URL}/tags`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await response.json();
+          if (response.ok) {
+            setAvailableTags(data.tags || []);
+            await AsyncStorage.setItem("cachedTags", JSON.stringify(data.tags));
+            console.log("Tags atualizadas do servidor:", data.tags);
+          }
+        } catch (error) {
+          console.log("Erro ao carregar tags online, usando cache:", error);
         }
-      } catch (error) {
-        const cachedTags = await AsyncStorage.getItem("cachedTags");
-        if (cachedTags) setAvailableTags(JSON.parse(cachedTags));
       }
 
       if (!isOffline) {
@@ -138,13 +144,13 @@ export default function NewInteraction() {
           }
         }
       } else {
-        setMapLoaded(true); // Mapa não será usado offline
+        setMapLoaded(true);
       }
 
       syncOfflinePosts();
     };
     initialize();
-  }, []);
+  }, [isOffline]);
 
   const pickImage = async () => {
     if (image) return;
@@ -261,14 +267,21 @@ export default function NewInteraction() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
+      console.log("Iniciando handleSubmit");
       const isValid = await validateToken();
-      if (!isValid) return;
+      if (!isValid) {
+        console.log("Token inválido");
+        return;
+      }
 
+      console.log("Imagem selecionada:", image);
       if (!image) {
         Alert.alert("Erro", "Uma foto é obrigatória.");
         setLoading(false);
         return;
       }
+
+      console.log("Localização inserida:", location);
       if (!location.trim()) {
         Alert.alert("Erro", "A localização é obrigatória.");
         setLoading(false);
@@ -276,6 +289,8 @@ export default function NewInteraction() {
       }
 
       const netInfo = await NetInfo.fetch();
+      console.log("Status da conexão:", netInfo.isConnected ? "online" : "offline");
+
       const token = await AsyncStorage.getItem("userToken");
       const playerId = await getPlayerId();
       const { totalWeight, rankingLabel } = getRankingFromTags();
@@ -296,19 +311,30 @@ export default function NewInteraction() {
       };
 
       if (!netInfo.isConnected) {
+        console.log("Salvando post offline:", postData);
         let imageUri = image;
         if (image) {
-          const fileName = image.split("/").pop();
-          const newUri = `${FileSystem.documentDirectory}${fileName}`;
-          await FileSystem.copyAsync({ from: image, to: newUri });
-          imageUri = newUri;
-          postData.image = imageUri;
+          try {
+            const fileName = image.split("/").pop();
+            const newUri = `${FileSystem.documentDirectory}${fileName}`;
+            console.log("Copiando imagem de", image, "para", newUri);
+            await FileSystem.copyAsync({ from: image, to: newUri });
+            imageUri = newUri;
+            postData.image = imageUri;
+            console.log("Imagem copiada com sucesso para:", imageUri);
+          } catch (error) {
+            console.error("Erro ao copiar imagem com FileSystem.copyAsync:", error);
+            Alert.alert("Erro", "Falha ao processar a imagem. Tente novamente.");
+            setLoading(false);
+            return;
+          }
         }
 
         const offlinePosts = await AsyncStorage.getItem("offlinePosts");
         const posts = offlinePosts ? JSON.parse(offlinePosts) : [];
         posts.push(postData);
         await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
+        console.log("Post salvo offline com sucesso:", postData);
         Alert.alert("Sucesso", "Postagem salva localmente.");
         router.push("/");
         setLoading(false);
@@ -348,8 +374,8 @@ export default function NewInteraction() {
         Alert.alert("Erro", data.message || "Falha ao criar interação.");
       }
     } catch (error) {
+      console.error("Erro geral em handleSubmit:", error);
       Alert.alert("Erro", "Ocorreu um problema ao salvar a interação.");
-      console.error(error);
     } finally {
       setLoading(false);
     }

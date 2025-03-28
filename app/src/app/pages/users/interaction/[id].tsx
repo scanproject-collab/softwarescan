@@ -4,7 +4,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { validateToken } from '../../../utils/validateAuth';
-import NetInfo from "@react-native-community/netinfo";
+import NetInfo from '@react-native-community/netinfo';
 
 export default function InteractionDetail() {
   const { id } = useLocalSearchParams();
@@ -25,7 +25,6 @@ export default function InteractionDetail() {
         const token = await AsyncStorage.getItem('userToken');
 
         if (!netInfo.isConnected) {
-          // Tenta carregar do cache offline
           const offlinePostsStr = await AsyncStorage.getItem('offlinePosts');
           const cachedPostsStr = await AsyncStorage.getItem('cachedPosts');
           let foundPost = null;
@@ -70,7 +69,6 @@ export default function InteractionDetail() {
           setPost(null);
         }
       } catch (error) {
-        // Fallback para cache se houver erro
         const offlinePostsStr = await AsyncStorage.getItem('offlinePosts');
         const cachedPostsStr = await AsyncStorage.getItem('cachedPosts');
         let foundPost = null;
@@ -186,40 +184,13 @@ export default function InteractionDetail() {
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#666',
-    textAlign: 'center',
-  },
-  imageContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  interactionImage: {
-    width: '100%',
-    height: 300,
-    borderRadius: 12,
-    backgroundColor: '#ddd',
-  },
+  scrollContainer: { flex: 1, backgroundColor: '#f8f9fa' },
+  contentContainer: { padding: 16, paddingBottom: 32 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fa' },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyText: { fontSize: 18, color: '#666', textAlign: 'center' },
+  imageContainer: { position: 'relative', marginBottom: 16 },
+  interactionImage: { width: '100%', height: 300, borderRadius: 12, backgroundColor: '#ddd' },
   weightBadge: {
     position: 'absolute',
     top: 10,
@@ -253,17 +224,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 5,
   },
-  titleText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
-  },
+  titleText: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 12 },
+  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
   tagText: {
     fontSize: 14,
     color: '#007AFF',
@@ -274,38 +236,11 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
-  highlightSection: {
-    backgroundColor: '#f1f3f5',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  highlightLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#F56C2E',
-    marginBottom: 4,
-  },
-  highlightText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  detailText: {
-    fontSize: 16,
-    color: '#555',
-    padding: 8,
-    marginBottom: 12,
-    lineHeight: 22,
-  },
-  map: {
-    width: '100%',
-    height: 300,
-    borderRadius: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
+  highlightSection: { backgroundColor: '#f1f3f5', padding: 12, borderRadius: 8, marginBottom: 16 },
+  highlightLabel: { fontSize: 16, fontWeight: '600', color: '#F56C2E', marginBottom: 4 },
+  highlightText: { fontSize: 18, fontWeight: 'bold', color: '#333' },
+  detailText: { fontSize: 16, color: '#555', padding: 8, marginBottom: 12, lineHeight: 22 },
+  map: { width: '100%', height: 300, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: '#ddd' },
   mapPlaceholder: {
     width: '100%',
     height: 300,
@@ -315,20 +250,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
   },
-  mapLoading: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  offlineMessage: {
-    backgroundColor: '#ffeb3b',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  offlineText: {
-    color: '#333',
-    fontWeight: '500',
-    textAlign: 'center',
-  },
+  mapLoading: { fontSize: 16, color: '#666', textAlign: 'center' },
+  offlineMessage: { backgroundColor: '#ffeb3b', padding: 10, borderRadius: 8, marginBottom: 12 },
+  offlineText: { color: '#333', fontWeight: '500', textAlign: 'center' },
 });

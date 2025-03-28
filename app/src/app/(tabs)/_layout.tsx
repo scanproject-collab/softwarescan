@@ -57,7 +57,7 @@ export default function TabsLayout() {
                     tabBarButton: (props) => (
                         <Pressable {...props} style={styles.addButton} />
                     ),
-                    tabBarStyle: { display: 'none' },
+                    tabBarStyle: { display: 'none' }, 
                 }}
             />
 
