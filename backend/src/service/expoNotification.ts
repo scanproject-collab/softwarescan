@@ -8,13 +8,6 @@ export const sendExpoPushNotification = async (pushToken: string, title: string,
             title,
             body,
             data: data || { type: 'notification' },
-            android: {
-                icon: 'ic_notification',  
-                color: '#FF6347',  
-            },
-            ios: {
-                sound: 'default', 
-            },
         };
 
         console.log('Enviando notificação:', message);  
