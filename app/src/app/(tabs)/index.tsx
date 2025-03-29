@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Pressable, StyleSheet, FlatList, Text, ActivityIndicator, TextInput, Alert } from 'react-native';
+import { View, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import InteractionCard from '../components/cardInteraction';
-import { validateToken } from '../utils/validateAuth';
-import { Ionicons } from '@expo/vector-icons';
+import { validateToken } from '@/src/app/utils/ValidateAuth';
 import NetInfo from "@react-native-community/netinfo";
+import PostList from '../components/home/PostList';
+import SearchBar from '../components/home/SearchBar';
+import TagFilter from '../components/home/TagFilter';
+import OfflineMessage from '../components/home/OfflineMessage';
 
 export default function Home() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -17,7 +19,6 @@ export default function Home() {
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isOffline, setIsOffline] = useState(false);
 
-  // Em vez de setSyncing state, usaremos um ref para bloqueio sincronização
   const syncingRef = useRef(false);
 
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -65,7 +66,6 @@ export default function Home() {
       setAllTags(Array.from(tagsSet));
       setIsOffline(false);
     } catch (error) {
-      // se deu erro, tentamos o cache
       const cachedPosts = await AsyncStorage.getItem('cachedPosts');
       if (cachedPosts) {
         const parsedPosts = JSON.parse(cachedPosts);
@@ -89,11 +89,7 @@ export default function Home() {
   };
 
   const sendOfflinePosts = async () => {
-    // Use a ref para impedir multiplos disparos
-    if (syncingRef.current) {
-      console.log("Já está sincronizando, ignorando chamada repetida.");
-      return;
-    }
+    if (syncingRef.current) return;
     syncingRef.current = true;
     try {
       const netInfo = await NetInfo.fetch();
@@ -110,7 +106,6 @@ export default function Home() {
       if (offlinePostsArray.length === 0) return;
 
       const token = await AsyncStorage.getItem('userToken');
-      // Envia cada post offline
       for (let i = offlinePostsArray.length - 1; i >= 0; i--) {
         const post = offlinePostsArray[i];
         if (post.syncFailed) continue;
@@ -124,9 +119,6 @@ export default function Home() {
         formData.append('longitude', post.longitude?.toString() || '');
         formData.append('weight', post.weight);
         formData.append('ranking', post.ranking);
-
-        // Inclui o offlineId no form, para o back evitar duplicação
-        // Aqui uso 'post.id' como offlineId. Se quiser, pode ser post.offlineId.
         formData.append('offlineId', post.offlineId || post.id || '');
 
         if (post.image) {
@@ -146,24 +138,19 @@ export default function Home() {
           });
 
           if (response.ok) {
-            // Remove do offlinePosts e salva
             offlinePostsArray.splice(i, 1);
             await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePostsArray));
             setOfflinePosts([...offlinePostsArray]);
-            console.log('Postagem offline removida e sincronizada:', post.id);
           } else {
             offlinePostsArray[i].syncFailed = true;
             await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePostsArray));
-            console.log('Falha ao sincronizar post:', post.id);
           }
         } catch (error) {
-          console.error('Erro ao sincronizar post:', post.id, error);
           offlinePostsArray[i].syncFailed = true;
           await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePostsArray));
         }
       }
 
-      // Após enviar todos, buscar do servidor p/ atualizar "posts" (inclusive o recém-criado)
       await fetchPosts();
     } finally {
       syncingRef.current = false;
@@ -175,13 +162,10 @@ export default function Home() {
       await fetchPosts();
       await loadOfflinePosts();
 
-      // Monta apenas 1x esse listener
       const unsubscribe = NetInfo.addEventListener(async state => {
         const isConnected = state.isConnected && (await checkActualConnectivity());
-        console.log('Connection status:', isConnected ? 'online' : 'offline');
         setIsOffline(!isConnected);
         if (isConnected) {
-          // Tenta sincronizar se ficou offline e voltou
           sendOfflinePosts();
         }
       });
@@ -192,8 +176,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Quando offline, exibe posts do backend (cache) + offline
-    // Quando online, apenas posts do backend real
     let combinedPosts = isOffline
       ? [...posts, ...offlinePosts.map(post => ({ ...post, isOffline: true }))]
       : [...posts];
@@ -213,7 +195,6 @@ export default function Home() {
       );
     }
     setFilteredPosts(filtered);
-    console.log('FilteredPosts atualizado:', filtered.length);
   }, [posts, offlinePosts, searchQuery, selectedTags, isOffline]);
 
   const handleDeletePost = async (postId: string) => {
@@ -240,7 +221,6 @@ export default function Home() {
               Alert.alert('Sucesso', 'Postagem excluída com sucesso!');
             } catch (error) {
               Alert.alert('Erro', 'Falha ao excluir a postagem.');
-              console.error('Erro ao excluir:', error);
             }
           },
         },
@@ -256,7 +236,6 @@ export default function Home() {
     setLoading(true);
     await fetchPosts();
     await loadOfflinePosts();
-    // Tenta enviar posts offline também
     await sendOfflinePosts();
     setLoading(false);
   };
@@ -271,113 +250,17 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      {isOffline && (
-        <View style={styles.offlineMessage}>
-          <Text style={styles.offlineText}>Você está offline</Text>
-        </View>
-      )}
-      <View style={styles.headerContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Pesquisar por título ou descrição..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <Pressable onPress={handleRefresh} style={styles.refreshIcon}>
-          <Ionicons name="refresh" size={24} color="#fff" />
-        </Pressable>
-      </View>
-
+      <OfflineMessage isOffline={isOffline} />
+      <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} handleRefresh={handleRefresh} />
       {allTags.length > 0 && (
-        <View>
-          <Text style={styles.filterTitle}>Filtrar por Tags:</Text>
-          <FlatList
-            data={allTags}
-            horizontal
-            renderItem={({ item }) => (
-              <Pressable
-                style={[styles.tagChip, selectedTags.includes(item) && styles.tagChipSelected]}
-                onPress={() => handleToggleTag(item)}
-              >
-                <Text style={[styles.tagText, selectedTags.includes(item) && styles.tagTextSelected]}>
-                  {item}
-                </Text>
-              </Pressable>
-            )}
-            keyExtractor={(item) => item}
-            style={styles.tagList}
-          />
-        </View>
+        <TagFilter allTags={allTags} selectedTags={selectedTags} handleToggleTag={handleToggleTag} />
       )}
-
-      <FlatList
-        data={filteredPosts}
-        renderItem={({ item }) => (
-          <InteractionCard
-            title={item.title || 'Sem Título'}
-            location={item.location || 'Local não especificado'}
-            imageUrl={item.image || item.imageUrl}
-            hasImage={!!(item.image || item.imageUrl)}
-            tags={item.tags || []}
-            onPress={() => {
-              if (item.isOffline) {
-                Alert.alert('Post Offline', 'Este post será sincronizado quando houver conexão.');
-              } else {
-                router.push(`/pages/users/interaction/${item.id}`);
-              }
-            }}
-            onDelete={item.isOffline ? undefined : () => handleDeletePost(item.id)}
-            isOffline={item.isOffline}
-          />
-        )}
-        keyExtractor={(item) => item.isOffline ? `offline-${item.id}` : item.id}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {searchQuery || selectedTags.length > 0
-                ? 'Nenhum post encontrado.'
-                : 'Nenhuma interação disponível. Crie uma nova!'}
-            </Text>
-          </View>
-        }
-      />
+      <PostList filteredPosts={filteredPosts} handleDeletePost={handleDeletePost} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f9fa' },
-  headerContainer: { flexDirection: 'row', alignItems: 'center', padding: 16 },
-  refreshIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#092B6E',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
-  },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fa' },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  emptyText: { fontSize: 18, color: '#666', textAlign: 'center', fontWeight: '500' },
-  listContent: { padding: 16, paddingBottom: 80 },
-  searchInput: {
-    flex: 1,
-    height: 50,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#fff',
-    fontSize: 16,
-  },
-  filterTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginLeft: 16, marginBottom: 8 },
-  tagList: { marginHorizontal: 16, marginBottom: 12 },
-  tagChip: { backgroundColor: '#e0e0e0', borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8 },
-  tagChipSelected: { backgroundColor: '#007AFF' },
-  tagText: { color: '#333', fontSize: 14 },
-  tagTextSelected: { color: '#fff' },
-  offlineMessage: { backgroundColor: '#ffeb3b', padding: 10, alignItems: 'center' },
-  offlineText: { color: '#333', fontWeight: 'bold' },
 });

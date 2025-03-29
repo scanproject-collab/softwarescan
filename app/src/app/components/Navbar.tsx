@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import AppLogo from './appLogo';
+import AppLogo from './AppLogo';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import jwt_decode from 'jwt-decode';
@@ -41,7 +41,7 @@ const Navbar = () => {
 
   const handleProfile = () => {
     setDropdownVisible(false);
-    router.push('/pages/users/profile');
+    router.push('/pages/users/ProfileUser');
   };
 
   return (

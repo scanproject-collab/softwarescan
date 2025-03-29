@@ -3,9 +3,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet } from 'react-native';
 import { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { validateToken } from '../utils/validateAuth';
+import { validateToken } from '@/src/app/utils/ValidateAuth';
 import { router } from 'expo-router';
-import Navbar from '../components/navbar';
+import Navbar from '../components/Navbar';
 
 export default function TabsLayout() {
     useEffect(() => {
@@ -47,7 +47,7 @@ export default function TabsLayout() {
             />
 
             <Tabs.Screen
-                name="newInteraction"
+                name="NewInteraction"
                 options={{
                     title: '+',
                     tabBarIcon: ({ size }) => (
@@ -62,7 +62,7 @@ export default function TabsLayout() {
             />
 
             <Tabs.Screen
-                name="myPerceptions"
+                name="MysPerceptions"
                 options={{
                     title: 'Map',
                     tabBarIcon: ({ color, size }) => (

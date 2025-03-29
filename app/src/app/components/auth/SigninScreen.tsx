@@ -10,8 +10,6 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  console.log('Render LoginScreen', { email, password }); // Log mais detalhado
-
   const showToast = useCallback((type, text1, text2) => {
     Toast.show({
       type,
@@ -34,25 +32,20 @@ const LoginScreen = () => {
     setIsLoading(true);
     try {
       const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/auth/login`;
-      console.log('URL usada:', apiUrl);
-      console.log('Dados enviados:', { email, password });
-
       const response = await axios.post(apiUrl, { email, password }, {
         headers: { 'Content-Type': 'application/json' },
       });
 
       const { token } = response.data;
       await AsyncStorage.setItem('userToken', token);
-      console.log('Token armazenado:', token);
       showToast('success', 'Login Bem-Sucedido', 'Bem-vindo de volta!');
-      router.replace('/'); // Redireciona para a tela inicial
+      router.replace('/');
     } catch (error) {
       const errorMessage =
         error?.response?.data?.message === 'Account is pending approval'
           ? 'Sua conta ainda está aguardando aprovação do administrador.'
           : error?.response?.data?.message || 'Erro ao fazer login, verifique suas credenciais.';
       showToast('error', 'Erro de Login', errorMessage);
-      console.error('Erro no login:', error.response ? error.response.data : error.message);
     } finally {
       setIsLoading(false);
     }
@@ -92,10 +85,10 @@ const LoginScreen = () => {
         </Text>
       </TouchableOpacity>
       <View style={styles.footer}>
-        <TouchableOpacity onPress={() => router.push('/pages/auth/recovery')}>
+        <TouchableOpacity onPress={() => router.push('/pages/auth/Recovery')}>
           <Text style={styles.link}>Esqueceu a Senha?</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/pages/auth/signup')}>
+        <TouchableOpacity onPress={() => router.push('/pages/auth/SignUp')}>
           <Text style={styles.link}>Criar Conta</Text>
         </TouchableOpacity>
       </View>

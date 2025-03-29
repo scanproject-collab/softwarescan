@@ -1,5 +1,5 @@
 import React from "react";
-import PasswordRecoveryRequestScreen from "../../components/auth/passwordRecoveryRequestScreen";
+import PasswordRecoveryRequestScreen from "./PasswordRecoveryRequestScreen";
 
 export default function RecoveryPage() {
   return <PasswordRecoveryRequestScreen />;

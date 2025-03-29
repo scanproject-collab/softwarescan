@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView } from 're
 import MapView, { Marker } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { validateToken } from '../../../utils/validateAuth';
+import { validateToken } from '@/src/app/utils/ValidateAuth';
 import NetInfo from '@react-native-community/netinfo';
 
 export default function InteractionDetail() {

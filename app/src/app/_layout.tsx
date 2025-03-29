@@ -1,8 +1,8 @@
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'react-native';
 import { useEffect, useState } from 'react';
-import { initializeExpoNotification } from './utils/expoNotifications';
-import { validateToken } from './utils/validateAuth';
+import { initializeExpoNotification } from './utils/ExpoNotifications';
+import { validateToken } from '@/src/app/utils/ValidateAuth';
 import React from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
 
@@ -43,14 +43,14 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="pages/auth/index" options={{ title: 'Login' }} />
-        <Stack.Screen name="pages/auth/signup" options={{ title: 'Registro' }} />
-        <Stack.Screen name="pages/auth/recovery" options={{ title: 'Recuperar Senha' }} />
-        <Stack.Screen name="components/auth/passwordRecoverySuccessScreen" options={{ title: 'Recuperação Bem-Sucedida' }} />
-        <Stack.Screen name="components/auth/passwordResetCodeVerificationScreen" options={{ title: 'Verificar Código' }} />
-        <Stack.Screen name="components/auth/passwordResetScreen" options={{ title: 'Redefinir Senha' }} />
-        <Stack.Screen name="pages/users/interaction/[id]" options={{ title: 'Local' }} />
-        <Stack.Screen name="pages/users/profile" options={{ title: 'Perfil' }} />
-        <Stack.Screen name="pages/users/profileEdit" options={{ title: 'Editar Perfil' }} />
+        <Stack.Screen name="pages/auth/SignUp" options={{ title: 'Registro' }} />
+        <Stack.Screen name="pages/auth/Recovery" options={{ title: 'Recuperar Senha' }} />
+        <Stack.Screen name="pages/auth/PasswordRecoveryRequestScreen" options={{ title: 'Recuperação Bem-Sucedida' }} />
+        <Stack.Screen name="pages/auth/PasswordResetCodeVerificationScreen" options={{ title: 'Verificar Código' }} />
+        <Stack.Screen name="pages/auth/PasswordResetScreen" options={{ title: 'Redefinir Senha' }} />
+        <Stack.Screen name="pages/posts/[id]" options={{ title: 'Local' }} />
+        <Stack.Screen name="pages/users/ProfileUser" options={{ title: 'Perfil' }} />
+        <Stack.Screen name="pages/users/ProfileEditUser" options={{ title: 'Editar Perfil' }} />
       </Stack>
     </>
   );

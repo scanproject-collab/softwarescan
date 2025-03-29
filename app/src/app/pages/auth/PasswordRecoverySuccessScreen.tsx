@@ -16,7 +16,7 @@ const PasswordRecoverySuccessScreen = () => {
           com as instruções para redefinir sua senha.
         </Text>
         <TouchableOpacity
-            onPress={() => router.push({ pathname: '/components/auth/passwordResetCodeVerificationScreen', params: { email } })}
+            onPress={() => router.push({ pathname: '/pages/auth/PasswordResetCodeVerificationScreen', params: { email } })}
             style={styles.submitButton}
         >
           <Text style={styles.submitButtonText}>Prosseguir</Text>

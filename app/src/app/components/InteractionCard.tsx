@@ -9,8 +9,8 @@ interface InteractionCardProps {
   tags: string[];
   location: string;
   onPress: PressableProps['onPress'];
-  onDelete?: () => void; 
-  isOffline?: boolean; 
+  onDelete?: () => void;
+  isOffline?: boolean;
 }
 
 const InteractionCard: React.FC<InteractionCardProps> = ({
@@ -21,7 +21,7 @@ const InteractionCard: React.FC<InteractionCardProps> = ({
   title,
   onDelete,
   location,
-  isOffline = false, 
+  isOffline = false,
 }) => (
   <Pressable onPress={onPress}>
     <View style={styles.card}>
@@ -33,7 +33,13 @@ const InteractionCard: React.FC<InteractionCardProps> = ({
           </View>
         )}
         {onDelete && (
-          <Pressable onPress={onDelete} style={styles.deleteButton}>
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation(); 
+              onDelete();
+            }}
+            style={styles.deleteButton}
+          >
             <Ionicons name="trash-outline" size={20} color="#fff" />
           </Pressable>
         )}
@@ -73,7 +79,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    flexWrap: 'wrap', 
+    flexWrap: 'wrap',
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -126,7 +132,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   offlineBadge: {
-    backgroundColor: '#FF4D4F', 
+    backgroundColor: '#FF4D4F',
     borderRadius: 12,
     paddingVertical: 4,
     paddingHorizontal: 8,

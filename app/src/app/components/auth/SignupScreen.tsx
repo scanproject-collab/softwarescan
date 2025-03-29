@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'reac
 import axios from 'axios';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
-import { getPushToken } from '../../utils/expoNotifications';
+import { getPlayerId } from '../../utils/ExpoNotifications';
 import { Picker } from '@react-native-picker/picker';
 
 interface Institution {
@@ -27,9 +27,8 @@ const RegisterScreen = () => {
 
   useEffect(() => {
     const fetchPushToken = async () => {
-      const token = await getPushToken();
+      const token = await getPlayerId();
       setPushToken(token);
-      console.log('Push Token capturado:', token);
     };
     fetchPushToken();
   }, []);
@@ -40,7 +39,6 @@ const RegisterScreen = () => {
         const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/institutions`);
         setInstitutions(response.data.institutions);
       } catch (error) {
-        console.error('Erro ao buscar instituições:', error);
         Toast.show({
           type: 'error',
           text1: 'Erro',
@@ -96,6 +94,7 @@ const RegisterScreen = () => {
 
     setIsLoading(true);
     try {
+      console.log('Push Token antes de enviar:', pushToken);
       const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/register`, {
         name,
         email,

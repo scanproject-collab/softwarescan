@@ -105,7 +105,7 @@ const EditProfileScreen = () => {
           text2: 'Perfil atualizado com sucesso!',
           position: 'top',
         });
-        router.push('/pages/users/profile');
+        router.push('/pages/users/ProfileUser');
       }
     } catch (error) {
       Toast.show({

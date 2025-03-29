@@ -67,7 +67,7 @@ const ProfileScreen = () => {
       </View>
       <TouchableOpacity
         style={styles.editButton}
-        onPress={() => router.push({ pathname: '/pages/users/profileEdit', params: { id: user.id } })}
+        onPress={() => router.push({ pathname: '/pages/users/ProfileEditUser', params: { id: user.id } })}
       >
         <Text style={styles.editButtonText}>Editar Perfil</Text>
       </TouchableOpacity>
