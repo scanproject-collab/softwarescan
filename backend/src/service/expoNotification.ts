@@ -10,6 +10,8 @@ export const sendExpoPushNotification = async (pushToken: string, title: string,
             data: data || { type: 'notification' },
         };
 
+        console.log('Enviando notificação:', message);  // Log para verificar a mensagem sendo enviada
+
         const response = await axios.post('https://exp.host/--/api/v2/push/send', message, {
             headers: {
                 Accept: 'application/json',
@@ -17,7 +19,7 @@ export const sendExpoPushNotification = async (pushToken: string, title: string,
             },
         });
 
-        console.log('Notificação Expo enviada com sucesso:', response.data);
+        console.log('Notificação Expo enviada com sucesso:', response.data);  // Log para verificar resposta da API
     } catch (error) {
         console.error('Erro ao enviar notificação Expo:', error.response?.data || error.message);
     }

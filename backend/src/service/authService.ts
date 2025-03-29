@@ -50,6 +50,8 @@ export const registerUser = async (
       },
     });
 
+    console.log('PlayerId do usuário atualizado:', updatedUser.playerId); 
+
     if (userRole === 'OPERATOR' && expiresAt) {
       await prisma.notification.create({
         data: {
@@ -61,6 +63,7 @@ export const registerUser = async (
 
       await sendPendingApprovalEmail(email, name, expiresAt);
       if (playerId) {
+        console.log('Enviando notificação para playerId:', playerId);  
         await sendExpoPushNotification(
           playerId,
           'Conta Pendente de Aprovação',
@@ -74,9 +77,11 @@ export const registerUser = async (
 
     return updatedUser;
   } catch (error: any) {
+    console.error('Erro ao registrar usuário:', error.message);
     throw new Error(`Erro ao registrar usuário: ${error.message}`);
   }
 };
+
 
 export const loginUser = async (email: string, password: string) => {
   try {
