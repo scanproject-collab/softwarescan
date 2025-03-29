@@ -1,6 +1,7 @@
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import React from "react";
 import { View, Pressable, Image, StyleSheet, Text } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 
 interface ImagePickerProps {
@@ -11,12 +12,22 @@ interface ImagePickerProps {
 const ImagePickerComponent = ({ image, setImage }: ImagePickerProps) => {
   const pickImage = async () => {
     if (image) return;
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      quality: 0.7,
+      quality: 0.7,  
     });
-    if (!result.canceled) setImage(result.assets[0].uri);
+
+    if (!result.canceled) {
+      const compressedImage = await ImageManipulator.manipulateAsync(
+        result.assets[0].uri,  
+        [{ resize: { width: 800 } }], 
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }  
+      );
+
+      setImage(compressedImage.uri);  
+    }
   };
 
   const removeImage = () => {

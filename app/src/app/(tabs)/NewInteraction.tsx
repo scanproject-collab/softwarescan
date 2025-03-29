@@ -23,6 +23,7 @@ interface Tag {
   weight: string | null;
 }
 
+
 export default function NewInteraction() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -152,19 +153,19 @@ export default function NewInteraction() {
         setLoading(false);
         return;
       }
-
+  
       if (!image) {
         Alert.alert("Erro", "Uma foto é obrigatória.");
         setLoading(false);
         return;
       }
-
+  
       if (!location.trim()) {
         Alert.alert("Erro", "A localização é obrigatória.");
         setLoading(false);
         return;
       }
-
+  
       const netInfo = await NetInfo.fetch();
       const isConnected = netInfo.isConnected && (await checkActualConnectivity());
       const token = await AsyncStorage.getItem("userToken");
@@ -173,8 +174,8 @@ export default function NewInteraction() {
         const tag = availableTags.find((t) => t.name === tagName);
         return sum + (tag && tag.weight ? parseFloat(tag.weight) : 0);
       }, 0);
-      const rankingLabel = totalWeight <= 5 ? "Baixo" : totalWeight <= 10 ? "Mediano" : "Urgente";
-
+      const rankingLabel = totalWeight <= 120 ? "Baixo" : totalWeight <= 250 ? "Mediano" : "Urgente";
+  
       const offlineId = Date.now().toString();
       const postData = {
         id: offlineId,
@@ -191,7 +192,7 @@ export default function NewInteraction() {
         isOffline: !isConnected,
         createdAt: new Date().toISOString(),
       };
-
+  
       if (!isConnected) {
         let imageUri = image;
         if (image) {
@@ -201,7 +202,7 @@ export default function NewInteraction() {
           imageUri = newUri;
           postData.image = imageUri;
         }
-
+  
         const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
         const offlinePostsArray = offlinePostsStr ? JSON.parse(offlinePostsStr) : [];
         const alreadyExists = offlinePostsArray.find((p: any) => p.offlineId === postData.offlineId);
@@ -209,13 +210,13 @@ export default function NewInteraction() {
           offlinePostsArray.push(postData);
           await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
         }
-
+  
         Alert.alert("Sucesso", "Postagem salva localmente.");
         router.push("/");
         setLoading(false);
         return;
       }
-
+  
       const formData = new FormData();
       formData.append("title", postData.title);
       formData.append("content", postData.description || "");
@@ -227,7 +228,7 @@ export default function NewInteraction() {
       formData.append("weight", postData.weight);
       formData.append("ranking", postData.ranking);
       formData.append("offlineId", postData.offlineId);
-
+  
       if (postData.image) {
         const fileName = postData.image.split("/").pop();
         formData.append("image", {
@@ -236,13 +237,13 @@ export default function NewInteraction() {
           name: fileName || "image.jpg",
         } as any);
       }
-
+  
       const response = await fetch(`${API_URL}/posts/create`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-
+  
       if (response.ok) {
         const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
         if (offlinePostsStr) {
@@ -251,6 +252,16 @@ export default function NewInteraction() {
           await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
         }
         router.push("/");
+  
+        
+        setTitle("");  
+        setDescription("");  
+        setSelectedTags([]); 
+        setLocation("");  
+        setCoords({ latitude: 0, longitude: 0 });  
+        setImage(null); 
+        setSelectedDate(new Date().toISOString().split("T")[0]);  
+        setSelectedTime(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));  
       } else {
         const data = await response.json();
         Alert.alert("Erro", data.message || "Falha ao criar interação.");
@@ -262,6 +273,7 @@ export default function NewInteraction() {
       setLoading(false);
     }
   };
+  
 
   return (
     <FlatList

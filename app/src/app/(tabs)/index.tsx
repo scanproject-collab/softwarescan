@@ -88,6 +88,23 @@ export default function Home() {
     setOfflinePosts(offlinePosts);
   };
 
+  const clearOldCachePosts = async () => {
+    try {
+      const cachedPostsStr = await AsyncStorage.getItem('cachedPosts');
+      const cachedPosts = cachedPostsStr ? JSON.parse(cachedPostsStr) : [];
+      
+      // Se tiver algum post que não segue o formato correto, limpe o cache
+      const updatedPosts = cachedPosts.filter((post: any) => post.offlineId);
+      
+      if (cachedPosts.length !== updatedPosts.length) {
+        await AsyncStorage.setItem('cachedPosts', JSON.stringify(updatedPosts));
+        console.log("Posts antigos removidos do cache.");
+      }
+    } catch (error) {
+      console.error("Erro ao limpar posts antigos:", error);
+    }
+  };
+
   const sendOfflinePosts = async () => {
     if (syncingRef.current) return;
     syncingRef.current = true;
@@ -159,6 +176,7 @@ export default function Home() {
 
   useEffect(() => {
     const initialize = async () => {
+      await clearOldCachePosts(); // Limpar posts antigos do cache
       await fetchPosts();
       await loadOfflinePosts();
 
