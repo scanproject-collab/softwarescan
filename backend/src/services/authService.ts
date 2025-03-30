@@ -7,7 +7,7 @@ import { sendExpoPushNotification } from './expoNotification';
 
 const prisma = new PrismaClient();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+const JWT_SECRET = process.env.SECRET_KEY_SESSION;
 
 export const registerUser = async (
   name: string,
