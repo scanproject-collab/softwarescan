@@ -25,7 +25,7 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.get("/google-maps-api-url", (_req: Request, res: Response) => {
-  const apiKey = "AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE";
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ message: "Google Maps API key not configured" });
   }
@@ -45,7 +45,6 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Error occurred:", err);
   res.status(500).send("Internal Server Error");
 });
-
 
 
 export default app;
