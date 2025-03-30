@@ -1,4 +1,3 @@
-Aqui está a documentação completa com a observação sobre os controllers e serviços que utilizam serviços externos:
 
 ---
 
