@@ -1,4 +1,3 @@
-// Navbar.tsx
 import { Menu } from 'lucide-react';
 import {
   DropdownMenu,
@@ -30,7 +29,7 @@ const Navbar: React.FC = () => {
   };
 
   const resetNotificationCount = () => {
-    // Since notificationCount is not used, this can remain empty or be removed if not needed
+    
   };
 
   const profilePath = user?.role === "MANAGER" ? "/manager/profile" : "/admin/profile";

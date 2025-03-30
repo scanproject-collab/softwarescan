@@ -21,7 +21,6 @@ const UserProfileAdmin: React.FC = () => {
                 return;
             }
             try {
-                // Obter todos os posts e filtrar pelo usuário
                 const postsResponse = await api.get("/admin/listAllPosts", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
@@ -30,7 +29,7 @@ const UserProfileAdmin: React.FC = () => {
                 );
                 setPosts(userPosts);
 
-                // Obter informações do usuário a partir do primeiro post (ou criar uma rota específica no backend)
+            
                 const userData = userPosts.length > 0 ? userPosts[0].author : null;
                 if (userData) {
                     setUser(userData);

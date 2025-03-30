@@ -27,7 +27,6 @@ const App: React.FC = () => {
     }
   }, [token, pathname, navigate]);
 
-// Função para alternar a seleção das tags
 const toggleTagSelection = (tag: string) => {
   if (tag === "Todas as tags") {
     if (selectedTags.length === uniqueTags.length) {

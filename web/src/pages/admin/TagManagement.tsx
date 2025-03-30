@@ -14,7 +14,6 @@ import {
   DialogTrigger,
 } from "../../components/ui/dialog.tsx";
 
-// Updated interface to match backend response
 interface Tag {
   id: string;
   name: string;
@@ -29,7 +28,7 @@ interface TagResponse {
 }
 
 const TagManagement: React.FC = () => {
-  const [tags, setTags] = useState<Tag[]>([]); // Updated to Tag[]
+  const [tags, setTags] = useState<Tag[]>([]);
   const [newTag, setNewTag] = useState("");
   const [loading, setLoading] = useState(false);
   const [editingTag, setEditingTag] = useState<{ name: string; weight: string | null } | null>(null);
