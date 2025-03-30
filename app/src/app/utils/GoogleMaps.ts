@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const GOOGLE_GEOCODE_URL = 'https://maps.googleapis.com/maps/api/geocode/json';
 const GOOGLE_PLACES_URL = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
-const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE';
+const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
 
 export const geocodeAddress = async (address: string): Promise<{ latitude: number; longitude: number }> => {
     try {
@@ -11,7 +11,7 @@ export const geocodeAddress = async (address: string): Promise<{ latitude: numbe
             params: {
                 address: address,
                 key: GOOGLE_API_KEY,
-                region: 'br', // Focar no Brasil
+                region: 'br',
             },
         });
 
@@ -46,7 +46,7 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
             params: {
                 latlng: `${latitude},${longitude}`,
                 key: GOOGLE_API_KEY,
-                region: 'br', // Focar no Brasil
+                region: 'br',
             },
         });
 
@@ -70,7 +70,6 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
     }
 };
 
-// Nova função para autocomplete
 export const getPlaceSuggestions = async (input: string): Promise<string[]> => {
     try {
         console.log('Buscando sugestões para:', input);
@@ -78,9 +77,9 @@ export const getPlaceSuggestions = async (input: string): Promise<string[]> => {
             params: {
                 input: input,
                 key: GOOGLE_API_KEY,
-                region: 'br', // Focar no Brasil
-                types: 'geocode', // Limitar a endereços
-                language: 'pt-BR', // Resultados em português
+                region: 'br', 
+                types: 'geocode',
+                language: 'pt-BR', 
             },
         });
 

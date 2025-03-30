@@ -1,5 +1,5 @@
 import React from "react";
-import MapView, { Marker } from "react-native-maps"; // Ajuste na importação
+import MapView, { Marker } from "react-native-maps"; 
 import { Text, StyleSheet } from "react-native";
 
 interface MapViewComponentProps {
@@ -10,7 +10,7 @@ interface MapViewComponentProps {
 }
 
 const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline }: MapViewComponentProps) => {
-  // Caso esteja em modo manual e sem coordenadas válidas
+
   if (isManualLocation && coords.latitude === 0 && coords.longitude === 0) {
     return (
       <Text style={styles.mapLoading}>
@@ -19,18 +19,17 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
     );
   }
 
-  // Caso esteja offline, usa o modo lite com coordenadas padrão ou fornecidas
   if (isOffline) {
     return (
       <MapView
         style={styles.map}
         region={{
-          latitude: coords.latitude || -23.5505, // São Paulo como fallback
+          latitude: coords.latitude || -23.5505, 
           longitude: coords.longitude || -46.6333,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}
-        liteMode={true} // Modo leve para offline
+        liteMode={true} 
       >
         <Marker
           coordinate={{

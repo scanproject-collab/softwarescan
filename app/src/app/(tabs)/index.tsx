@@ -93,7 +93,6 @@ export default function Home() {
       const cachedPostsStr = await AsyncStorage.getItem('cachedPosts');
       const cachedPosts = cachedPostsStr ? JSON.parse(cachedPostsStr) : [];
       
-      // Se tiver algum post que não segue o formato correto, limpe o cache
       const updatedPosts = cachedPosts.filter((post: any) => post.offlineId);
       
       if (cachedPosts.length !== updatedPosts.length) {
@@ -176,7 +175,7 @@ export default function Home() {
 
   useEffect(() => {
     const initialize = async () => {
-      await clearOldCachePosts(); // Limpar posts antigos do cache
+      await clearOldCachePosts();
       await fetchPosts();
       await loadOfflinePosts();
 

@@ -18,7 +18,7 @@ export async function initializeExpoNotification() {
     }
 
     const token = (await Notifications.getExpoPushTokenAsync({
-      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || '2ad9aa1c-f80d-4558-8a5a-d02752d160e3',
+      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
     })).data;
 
     await AsyncStorage.setItem('playerId', token);
