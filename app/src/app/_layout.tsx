@@ -12,26 +12,33 @@ export default function RootLayout() {
   const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
-    const checkTokenAndRedirect = async () => {
-      const isValid = await validateToken();
-      setIsCheckingToken(false);
-      setInitialCheckDone(true);
+    const initializeApp = async () => {
+      try {
+    
+        await initializeExpoNotification();
 
-      if (!isValid) {
-        router.replace('/pages/auth');
-      } else if (segments.length === 0 || (segments[0] === 'pages' && segments[1] === 'auth')) {
-        router.replace('/');
+        const isValid = await validateToken();
+        setIsCheckingToken(false);
+        setInitialCheckDone(true);
+
+        if (!isValid) {
+          router.replace('/pages/auth');
+        } else if (segments.length === 0 || (segments[0] === 'pages' && segments[1] === 'auth')) {
+          router.replace('/');
+        }
+      } catch (error) {
+        console.error('Erro ao inicializar o app:', error);
+        setIsCheckingToken(false);
+        setInitialCheckDone(true);
+      
       }
     };
 
     if (!initialCheckDone) {
-      checkTokenAndRedirect();
+      initializeApp();
     }
-
-    initializeExpoNotification().catch((error) => {
-      console.error('Erro ao inicializar notificações:', error);
-    });
   }, [initialCheckDone]);
+
 
   if (isCheckingToken) {
     return <LoadingScreen />;
