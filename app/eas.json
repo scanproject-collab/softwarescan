@@ -11,14 +11,20 @@
         "buildType": "apk",
         "gradleCommand": ":app:clean :app:assembleRelease"
       },
-      "node": "18.18.2" 
+      "node": "18.18.2"
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
       },
-      "node": "18.18.2"
+      "node": "18.18.2",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "@EXPO_PUBLIC_API_URL",
+        "EXPO_PUBLIC_API_URL_LOCAL": "@EXPO_PUBLIC_API_URL_LOCAL",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "@EXPO_PUBLIC_EAS_PROJECT_ID",
+        "EXPO_PUBLIC_GOOGLE_API_KEY": "@EXPO_PUBLIC_GOOGLE_API_KEY"
+      }
     },
     "production": {
       "autoIncrement": true,
