@@ -1,10 +1,10 @@
 import { Router, Request, Response, RequestHandler } from 'express';
 import { registerController, loginController, verifyResetCodeController, verifyTokenController } from '../controllers/authController';
-import { generateResetPasswordCode, resetPassword } from '../service/authService';
+import { generateResetPasswordCode, resetPassword } from '../services/authService';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
-import { sendVerificationEmail } from '../service/mailer';
+import { sendVerificationEmail } from '../services/mailer';
 
 const prisma = new PrismaClient();
 const router = Router();
@@ -24,8 +24,8 @@ router.post('/send-verification-code', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Email já está em uso' });
     }
 
-    const code = crypto.randomBytes(3).toString('hex'); 
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); 
+    const code = crypto.randomBytes(3).toString('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await prisma.user.upsert({
       where: { email },
@@ -37,8 +37,8 @@ router.post('/send-verification-code', async (req: Request, res: Response) => {
         email,
         verificationCode: code,
         verificationCodeExpiresAt: expiresAt,
-        role: 'OPERATOR', 
-        isPending: true, 
+        role: 'OPERATOR',
+        isPending: true,
       },
     });
 

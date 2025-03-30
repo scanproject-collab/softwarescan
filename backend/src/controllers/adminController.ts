@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { sendWelcomeEmail, sendRejectionEmail, sendExpirationEmail } from '../service/mailer';
+import { sendWelcomeEmail, sendRejectionEmail, sendExpirationEmail } from '../services/mailer';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { sendExpoPushNotification } from '../service/expoNotification';
+import { sendExpoPushNotification } from '../services/expoNotification';
 
 const prisma = new PrismaClient();
 
@@ -85,8 +85,6 @@ export const rejectOperator = async (req: Request, res: Response) => {
     if (!operator) {
       return res.status(404).json({ message: 'Operator not found or not pending' });
     }
-
-    // Criar a notificação
     await prisma.notification.create({
       data: {
         type: 'rejected',
@@ -94,23 +92,15 @@ export const rejectOperator = async (req: Request, res: Response) => {
         userId: operator.id,
       },
     });
-
-    // Deletar posts associados
     await prisma.post.deleteMany({
       where: { authorId: operatorId },
     });
-
-    // Deletar polígonos associados
     await prisma.polygon.deleteMany({
       where: { authorId: operatorId },
     });
-
-    // Deletar notificações associadas
     await prisma.notification.deleteMany({
       where: { userId: operatorId },
     });
-
-    // Deletar o usuário
     await prisma.user.delete({
       where: { id: operatorId },
     });
@@ -146,7 +136,6 @@ export const deleteExpiredOperators = async () => {
 
     if (expiredOperators.length > 0) {
       for (const operator of expiredOperators) {
-        // Criar notificação de expiração
         await prisma.notification.create({
           data: {
             type: 'expired',
@@ -155,22 +144,15 @@ export const deleteExpiredOperators = async () => {
           },
         });
 
-        // Deletar posts associados
         await prisma.post.deleteMany({
           where: { authorId: operator.id },
         });
-
-        // Deletar polígonos associados
         await prisma.polygon.deleteMany({
           where: { authorId: operator.id },
         });
-
-        // Deletar notificações associadas
         await prisma.notification.deleteMany({
           where: { userId: operator.id },
         });
-
-        // Deletar o usuário
         await prisma.user.delete({
           where: { id: operator.id },
         });
@@ -317,7 +299,6 @@ export const deleteOperatorByAdmin = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Operator not found' });
     }
 
-    // Criar notificação
     await prisma.notification.create({
       data: {
         type: 'deleted',
@@ -325,23 +306,17 @@ export const deleteOperatorByAdmin = async (req: Request, res: Response) => {
         userId: operator.id,
       },
     });
-
-    // Deletar posts associados
     await prisma.post.deleteMany({
       where: { authorId: operatorId },
     });
-
-    // Deletar polígonos associados
     await prisma.polygon.deleteMany({
       where: { authorId: operatorId },
     });
 
-    // Deletar notificações associadas
     await prisma.notification.deleteMany({
       where: { userId: operatorId },
     });
 
-    // Deletar o usuário
     await prisma.user.delete({
       where: { id: operatorId },
     });

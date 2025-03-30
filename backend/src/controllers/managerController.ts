@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { sendWelcomeEmail, sendRejectionEmail } from '../service/mailer';
-import { sendExpoPushNotification } from '../service/expoNotification';
+import { sendWelcomeEmail, sendRejectionEmail } from '../services/mailer';
+import { sendExpoPushNotification } from '../services/expoNotification';
 
 const prisma = new PrismaClient();
 
@@ -161,8 +161,6 @@ export const rejectOperatorForManager = async (req: RequestWithUser, res: Respon
     if (!operator) {
       return res.status(404).json({ message: 'Operator not found or not pending in your institution' });
     }
-
-    // Criar a notificação
     await prisma.notification.create({
       data: {
         type: 'rejected',
@@ -170,23 +168,15 @@ export const rejectOperatorForManager = async (req: RequestWithUser, res: Respon
         userId: operator.id,
       },
     });
-
-    // Deletar posts associados
     await prisma.post.deleteMany({
       where: { authorId: operatorId },
     });
-
-    // Deletar polígonos associados
     await prisma.polygon.deleteMany({
       where: { authorId: operatorId },
     });
-
-    // Deletar notificações associadas
     await prisma.notification.deleteMany({
       where: { userId: operatorId },
     });
-
-    // Deletar o usuário
     await prisma.user.delete({
       where: { id: operatorId },
     });

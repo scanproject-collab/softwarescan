@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { PutObjectCommand, ObjectCannedACL, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import s3Client from '../service/storage/AWSs3';
+import s3Client from '../services/storage/AWSs3';
 import multer from 'multer';
-import { sendExpoPushNotification } from '../service/expoNotification';
+import { sendExpoPushNotification } from '../services/expoNotification';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -237,11 +237,11 @@ export const listAllPosts = async (_req: Request, res: Response) => {
             name: post.author.name || "Unnamed",
             email: post.author.email,
             institution: post.author.institution
-                ? {
-                  id: post.author.institution.id,
-                  title: post.author.institution.title,
-                }
-                : null,
+              ? {
+                id: post.author.institution.id,
+                title: post.author.institution.title,
+              }
+              : null,
           },
         };
       }),

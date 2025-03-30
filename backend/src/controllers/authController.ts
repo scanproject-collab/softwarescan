@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { registerUser, loginUser, verifyResetCode } from '../service/authService';
+import { registerUser, loginUser, verifyResetCode } from '../services/authService';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 
