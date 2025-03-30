@@ -1,4 +1,3 @@
-Com base nos arquivos enviados, aqui está a documentação da parte web do projeto Softwarescan. A documentação será clara e acessível para qualquer equipe ou pessoa envolvida no projeto, destacando as funcionalidades, estrutura, dependências e o fluxo geral.
 
 ---
 
