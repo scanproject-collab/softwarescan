@@ -1,4 +1,3 @@
-Claro! Aqui está o documento de documentação para o projeto, levando em consideração os arquivos enviados e as explicações necessárias para que todos na empresa, não só os desenvolvedores, possam entender o funcionamento do projeto:
 
 ---
 
