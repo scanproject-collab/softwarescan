@@ -22,7 +22,7 @@ export async function initializeExpoNotification() {
     })).data;
 
     await AsyncStorage.setItem('playerId', token);
-    console.log('PlayerId registrado:', token);  // Log para verificar o token gerado
+    console.log('PlayerId registrado:', token);  
     return token;
   } catch (error) {
     console.error('Erro ao inicializar notificações:', error.message);
@@ -32,6 +32,6 @@ export async function initializeExpoNotification() {
 
 export async function getPlayerId() {
   const playerId = await AsyncStorage.getItem('playerId');
-  console.log('PlayerId recuperado do AsyncStorage:', playerId);  // Log para verificar o playerId recuperado
+  console.log('PlayerId recuperado do AsyncStorage:', playerId);  
   return playerId;
 }

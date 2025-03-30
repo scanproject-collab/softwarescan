@@ -18,18 +18,15 @@
           "@expo/server",
           "dotenv",
           "expo-modules-core",
-          "onesignal-expo-plugin",
           "react-native-css-interop"
         ]
       }
     },
     "android": {
       "package": "com.anonymous.softwarescan",
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE"
-        }
-      }
+      "permissions": [
+        "NOTIFICATIONS"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -38,6 +35,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
@@ -47,34 +45,11 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      [
-        "onesignal-expo-plugin",
-        {
-          "mode": "development"
-        }
-      ],
       "expo-asset"
     ],
     "extra": {
       "eas": {
-        "projectId": "2ad9aa1c-f80d-4558-8a5a-d02752d160e3",
-        "build": {
-          "experimental": {
-            "ios": {
-              "appExtensions": [
-                {
-                  "targetName": "OneSignalNotificationServiceExtension",
-                  "bundleIdentifier": "com.anonymous.softwarescan.OneSignalNotificationServiceExtension",
-                  "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.com.anonymous.softwarescan.onesignal"
-                    ]
-                  }
-                }
-              ]
-            }
-          }
-        }
+        "projectId": "2ad9aa1c-f80d-4558-8a5a-d02752d160e3"
       },
       "router": {
         "origin": false
