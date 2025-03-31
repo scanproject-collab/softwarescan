@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "677861394424",
+    "project_id": "softwarescan-20b99",
+    "storage_bucket": "softwarescan-20b99.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:677861394424:android:59379b268389cf4606f80d",
+        "android_client_info": {
+          "package_name": "com.anonymous.softwarescan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_NALR236AqflLs7BQK3P9Fn2QoKKfejw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
