@@ -10,11 +10,13 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import NotificationModal from './NotificationModal';
+import { useState } from 'react';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { setAuthToken, user } = useAuth();
+  const [notificationCount, setNotificationCount] = useState(0); // Contagem de notificações
 
   const handleLogout = () => {
     console.log('Tentando fazer logout...');
@@ -29,69 +31,69 @@ const Navbar: React.FC = () => {
   };
 
   const resetNotificationCount = () => {
-    
+    setNotificationCount(0); // Reseta a contagem de notificações
   };
 
   const profilePath = user?.role === "MANAGER" ? "/manager/profile" : "/admin/profile";
 
   return (
-      <nav className="flex items-center justify-between bg-blue-900 px-4 py-3 text-white">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="focus:outline-none">
-              <Menu className="h-6 w-6" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 ml-10">
-            <DropdownMenuLabel>Olá, {user?.name || 'Usuário'}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {pathname !== '/' && (
-                <DropdownMenuItem
-                    onClick={handleHomeClick}
-                    className="cursor-pointer hover:bg-gray-100"
-                >
-                  Home
-                </DropdownMenuItem>
-            )}
+    <nav className="flex items-center justify-between bg-blue-900 px-4 py-3 text-white">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="focus:outline-none">
+            <Menu className="h-6 w-6" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56 ml-10">
+          <DropdownMenuLabel>Olá, {user?.name || 'Usuário'}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {pathname !== '/' && (
             <DropdownMenuItem
-                onClick={() => navigate(profilePath)}
-                className="cursor-pointer hover:bg-gray-100"
+              onClick={handleHomeClick}
+              className="cursor-pointer hover:bg-gray-100"
             >
-              Perfil
+              Home
             </DropdownMenuItem>
-            {user?.role === "ADMIN" && (
-                <DropdownMenuItem
-                    onClick={() => navigate('/tags')}
-                    className="cursor-pointer hover:bg-gray-100"
-                >
-                  Gerenciar Tags
-                </DropdownMenuItem>
-            )}
+          )}
+          <DropdownMenuItem
+            onClick={() => navigate(profilePath)}
+            className="cursor-pointer hover:bg-gray-100"
+          >
+            Perfil
+          </DropdownMenuItem>
+          {user?.role === "ADMIN" && (
             <DropdownMenuItem
-                onClick={() => navigate('/polygons')}
-                className="cursor-pointer hover:bg-gray-100"
+              onClick={() => navigate('/tags')}
+              className="cursor-pointer hover:bg-gray-100"
             >
-              Gerenciar Polígonos
+              Gerenciar Tags
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-                onClick={handleLogout}
-                className="cursor-pointer text-red-600 hover:bg-red-100"
-            >
-              Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+          <DropdownMenuItem
+            onClick={() => navigate('/polygons')}
+            className="cursor-pointer hover:bg-gray-100"
+          >
+            Gerenciar Polígonos
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={handleLogout}
+            className="cursor-pointer text-red-600 hover:bg-red-100"
+          >
+            Sair
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-        <div className="flex items-center gap-2">
-          <img src="/scan-removebg-preview.png" alt="Scan Logo" className="h-12 w-12" />
-          <h1 className="text-lg font-bold">Scan</h1>
-        </div>
+      <div className="flex items-center gap-2">
+        <img src="/scan-removebg-preview.png" alt="Scan Logo" className="h-12 w-12" />
+        <h1 className="text-lg font-bold">Scan</h1>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <NotificationModal onOpen={resetNotificationCount} />
-        </div>
-      </nav>
+      <div className="flex items-center gap-2">
+        <NotificationModal onOpen={resetNotificationCount} />
+      </div>
+    </nav>
   );
 };
 
