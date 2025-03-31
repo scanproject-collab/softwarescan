@@ -29,13 +29,12 @@ export async function initializeOneSignalNotification() {
   
     OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
       if (subscription?.id) {
-        const playerId = subscription.id;
+        const playerId = (subscription as any).id;
         console.log('OneSignal Push Subscription ID changed:', playerId);
         AsyncStorage.setItem('playerId', playerId);
       }
     });
 
-    // Obter o ID atual da assinatura push
     const pushSubscriptionId = await OneSignal.User.pushSubscription.getPushSubscriptionId();
     if (pushSubscriptionId) {
       console.log('OneSignal Push Subscription ID:', pushSubscriptionId);
