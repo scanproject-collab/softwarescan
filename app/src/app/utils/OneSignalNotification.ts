@@ -25,8 +25,7 @@ export async function initializeOneSignalNotification() {
       return null;
     }
     OneSignal.initialize('85a27f07-2069-4cae-94ac-e85afa04d321');
-    
-  
+
     OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
       if (subscription?.id) {
         const playerId = (subscription as any).id;
@@ -35,7 +34,7 @@ export async function initializeOneSignalNotification() {
       }
     });
 
-    const pushSubscriptionId = await OneSignal.User.pushSubscription.getPushSubscriptionId();
+    const pushSubscriptionId = await OneSignal.User.pushSubscription.getIdAsync();
     if (pushSubscriptionId) {
       console.log('OneSignal Push Subscription ID:', pushSubscriptionId);
       const currentStoredId = await AsyncStorage.getItem('playerId');
