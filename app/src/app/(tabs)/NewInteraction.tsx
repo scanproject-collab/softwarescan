@@ -39,6 +39,8 @@ export default function NewInteraction() {
   const [isManualLocation, setIsManualLocation] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(true);
+
   const router = useRouter();
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -127,6 +129,12 @@ export default function NewInteraction() {
   }, []);
 
   useEffect(() => {
+    return () => {
+      setMounted(false); 
+    };
+  }, []);
+
+  useEffect(() => {
     const syncPendingGeocode = async () => {
       if (!isOffline) {
         const pendingGeocode = await AsyncStorage.getItem("pendingGeocode");
@@ -146,13 +154,19 @@ export default function NewInteraction() {
   }, [isOffline]);
 
   const handleMapPress = async (event: any) => {
-    if (isOffline) return;
+  if (isOffline || !mounted) return;
+  
+  try {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setCoords({ latitude, longitude });
     const address = await reverseGeocode(latitude, longitude);
-    setLocation(address);
-  };
-
+    if (mounted) {
+      setLocation(address);
+    }
+  } catch (error) {
+    console.error('Erro no handleMapPress:', error);
+  }
+};
   const handleSubmit = async () => {
     if (loading) return;
     setLoading(true);

@@ -10,7 +10,6 @@ interface MapViewComponentProps {
 }
 
 const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline }: MapViewComponentProps) => {
-  // Verificação mais robusta das coordenadas
   const areCoordsValid = coords && 
                         typeof coords.latitude === 'number' && 
                         typeof coords.longitude === 'number' &&
