@@ -15,7 +15,7 @@ export default {
     },
     android: {
       package: 'com.anonymous.softwarescan',
-      permissions: ['NOTIFICATIONS'],
+      permissions: ["NOTIFICATIONS", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"],
       googleServicesFile: './google-services.json',
     },
     web: {
