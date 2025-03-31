@@ -13,6 +13,7 @@ export const useInteractionFilters = (interactions: Interaction[]) => {
   const [uniqueInstitutions, setUniqueInstitutions] = useState<any[]>([]);
   const { token, user } = useAuth();
 
+
   const fetchInstitutions = async () => {
     if (!token || user?.role !== "ADMIN") return;
     try {
@@ -82,10 +83,11 @@ export const useInteractionFilters = (interactions: Interaction[]) => {
     return filtered;
   }, [interactions, searchTerm, selectedTags, selectedRanking, selectedInstitution, selectedUser]);
 
-  const uniqueTags = useMemo(() => {
-    const allTags = ["Todas as tags", ...new Set(interactions.flatMap((interaction) => interaction.tags || []))];
-    return allTags;
-  }, [interactions]);
+    const uniqueTags = useMemo(() => {
+      const allTags = ["Todas as tags", ...new Set((interactions ?? []).flatMap((interaction) => interaction.tags || []))];
+      return allTags;
+    }, [interactions]);
+    
 
   const uniqueRankings = useMemo(() => {
     return [...new Set(interactions.map((interaction) => interaction.ranking || ""))];
