@@ -35,7 +35,7 @@ app.get("/google-maps-api-url", (_req: Request, res: Response) => {
 });
 
 
-app.post("/send-notification"), async (req: Request, res: Response) => {
+app.post("/send-notification", async (req: Request, res: Response) => {
   const { playerId, title, body, data } = req.body;
   if (!playerId || !title || !body) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -47,8 +47,7 @@ app.post("/send-notification"), async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to send notification' });
   }
-};
-
+});
 
 app.get("/ping", (_req: Request, res: Response) => {
   res.sendStatus(200);
@@ -58,13 +57,10 @@ app.use((_req: Request, res: Response) => {
   res.status(500).send("Not found");
 });
 
-
-
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Error occurred:", err);
   res.status(500).send("Internal Server Error");
 });
-
 
 
 export default app;
