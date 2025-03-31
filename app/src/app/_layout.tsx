@@ -1,7 +1,7 @@
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'react-native';
 import { useEffect, useState } from 'react';
-import { initializeExpoNotification } from './utils/ExpoNotifications';
+import { initializeOneSignalNotification } from './utils/OneSignalNotification';
 import { validateToken } from '@/src/app/utils/ValidateAuth';
 import React from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -10,35 +10,38 @@ export default function RootLayout() {
   const segments = useSegments();
   const [isCheckingToken, setIsCheckingToken] = useState(true);
   const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const [shouldNavigate, setShouldNavigate] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
-    
-        await initializeExpoNotification();
-
+        await initializeOneSignalNotification();
         const isValid = await validateToken();
         setIsCheckingToken(false);
         setInitialCheckDone(true);
 
         if (!isValid) {
-          router.replace('/pages/auth');
+          setShouldNavigate('/pages/auth');
         } else if (segments.length === 0 || (segments[0] === 'pages' && segments[1] === 'auth')) {
-          router.replace('/');
+          setShouldNavigate('/');
         }
       } catch (error) {
         console.error('Erro ao inicializar o app:', error);
         setIsCheckingToken(false);
         setInitialCheckDone(true);
-      
       }
     };
 
     if (!initialCheckDone) {
       initializeApp();
     }
-  }, [initialCheckDone]);
+  }, [initialCheckDone, segments]);
 
+  useEffect(() => {
+    if (shouldNavigate && !isCheckingToken) {
+      router.replace(shouldNavigate);
+    }
+  }, [shouldNavigate, isCheckingToken]);
 
   if (isCheckingToken) {
     return <LoadingScreen />;

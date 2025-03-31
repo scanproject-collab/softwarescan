@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'reac
 import axios from 'axios';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
-import { getPlayerId } from '../../utils/ExpoNotifications';
+import { getPlayerId } from '../../utils/OneSignalNotification';
 import { Picker } from '@react-native-picker/picker';
 
 interface Institution {
