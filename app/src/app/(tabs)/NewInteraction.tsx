@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, FlatList, Alert, StyleSheet } from "react-native";
 import TitleInput from "@/src/app/components/posts/TitleInput";
 import DescriptionInput from "@/src/app/components/posts/DescriptionInput";
@@ -23,7 +23,6 @@ interface Tag {
   weight: string | null;
 }
 
-
 export default function NewInteraction() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -40,139 +39,197 @@ export default function NewInteraction() {
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(true);
+  const isMounted = useRef(true);
 
   const router = useRouter();
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
   const checkActualConnectivity = async () => {
     try {
-      const response = await fetch(`${API_URL}/ping`, { method: "GET", timeout: 5000 });
-      return response.ok;
+      const response = await fetch(`${API_URL}/ping`, { 
+        method: "GET", 
+        timeout: 5000 
+      }).catch(() => null);
+      return response && response.ok;
     } catch {
       return false;
     }
   };
 
   const checkConnection = async () => {
-    const netInfo = await NetInfo.fetch();
-    const isConnected = netInfo.isConnected && (await checkActualConnectivity());
-    setIsOffline(!isConnected);
-    if (!isConnected) {
-      setIsManualLocation(true);
-      Alert.alert("Você está offline", "A localização será inserida manualmente.");
+    try {
+      const netInfo = await NetInfo.fetch();
+      const isConnected = netInfo.isConnected && (await checkActualConnectivity());
+      if (isMounted.current) {
+        setIsOffline(!isConnected);
+        if (!isConnected) {
+          setIsManualLocation(true);
+          Alert.alert("Você está offline", "A localização será inserida manualmente.");
+        }
+      }
+    } catch (error) {
+      console.log("Erro ao verificar conexão:", error);
+      if (isMounted.current) {
+        setIsOffline(true);
+        setIsManualLocation(true);
+      }
     }
   };
 
   useEffect(() => {
+    isMounted.current = true;
+    
     const initialize = async () => {
-      const isValid = await validateToken();
-      if (!isValid) return;
-  
-      await checkConnection();
-  
-      const cachedTags = await AsyncStorage.getItem("cachedTags");
-      if (cachedTags) {
-        setAvailableTags(JSON.parse(cachedTags));
-      }
-  
-      if (!isOffline) {
-        try {
-          const token = await AsyncStorage.getItem("userToken");
-          const response = await fetch(`${API_URL}/tags`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = await response.json();
-          if (response.ok) {
-            setAvailableTags(data.tags || []);
-            await AsyncStorage.setItem("cachedTags", JSON.stringify(data.tags));
-          }
-        } catch (error) {
-          console.log("Erro ao carregar tags online, usando cache:", error);
+      try {
+        const isValid = await validateToken();
+        if (!isValid || !isMounted.current) return;
+      
+        await checkConnection();
+        if (!isMounted.current) return;
+      
+        const cachedTags = await AsyncStorage.getItem("cachedTags");
+        if (cachedTags && isMounted.current) {
+          setAvailableTags(JSON.parse(cachedTags));
         }
-      }
-  
-      if (!isOffline) {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === "granted") {
+      
+        if (!isOffline && isMounted.current) {
           try {
-            const locationData = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.High,
+            const token = await AsyncStorage.getItem("userToken");
+            const response = await fetch(`${API_URL}/tags`, {
+              headers: { Authorization: `Bearer ${token}` },
             });
-            const { latitude, longitude } = locationData.coords;
-            setCoords({ latitude, longitude });
-            try {
-              const address = await reverseGeocode(latitude, longitude);
-              setLocation(address);
-            } catch (error) {
-              console.error("Erro ao obter endereço via reverse geocoding:", error);
-              setLocation("Localização não disponível");
+            const data = await response.json();
+            if (response.ok && isMounted.current) {
+              setAvailableTags(data.tags || []);
+              await AsyncStorage.setItem("cachedTags", JSON.stringify(data.tags));
             }
           } catch (error) {
-            console.error("Erro ao obter localização:", error);
-            setLocation("Localização não disponível");
+            console.log("Erro ao carregar tags online, usando cache:", error);
           }
-        } else {
-          console.log("Permissão de localização não concedida");
-          setLocation("Permissão de localização não concedida");
         }
+      
+        if (!isOffline && isMounted.current) {
+          try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === "granted" && isMounted.current) {
+              try {
+                const locationData = await Location.getCurrentPositionAsync({
+                  accuracy: Location.Accuracy.High,
+                });
+                
+                if (!isMounted.current) return;
+                
+                const { latitude, longitude } = locationData.coords;
+                setCoords({ latitude, longitude });
+                
+                try {
+                  const address = await reverseGeocode(latitude, longitude);
+                  if (isMounted.current) {
+                    setLocation(address);
+                  }
+                } catch (error) {
+                  console.error("Erro ao obter endereço via reverse geocoding:", error);
+                  if (isMounted.current) {
+                    setLocation("Localização não disponível");
+                  }
+                }
+              } catch (error) {
+                console.error("Erro ao obter localização:", error);
+                if (isMounted.current) {
+                  setLocation("Localização não disponível");
+                }
+              }
+            } else {
+              console.log("Permissão de localização não concedida");
+              if (isMounted.current) {
+                setLocation("Permissão de localização não concedida");
+              }
+            }
+          } catch (error) {
+            console.error("Erro ao obter permissão de localização:", error);
+            if (isMounted.current) {
+              setLocation("Erro ao obter permissão de localização");
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Erro na inicialização:", error);
       }
     };
+    
     initialize();
   
     const unsubscribe = NetInfo.addEventListener(async (state) => {
+      if (!isMounted.current) return;
+      
       const isConnected = state.isConnected && (await checkActualConnectivity());
-      setIsOffline(!isConnected);
-      if (!isConnected) setIsManualLocation(true);
+      if (isMounted.current) {
+        setIsOffline(!isConnected);
+        if (!isConnected) setIsManualLocation(true);
+      }
     });
   
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
     return () => {
-      setMounted(false); 
+      isMounted.current = false;
+      unsubscribe();
     };
   }, []);
 
   useEffect(() => {
     const syncPendingGeocode = async () => {
-      if (!isOffline) {
-        const pendingGeocode = await AsyncStorage.getItem("pendingGeocode");
-        if (pendingGeocode) {
-          try {
-            const response = await geocodeAddress(pendingGeocode);
-            setCoords(response);
-            setLocation(pendingGeocode);
-            await AsyncStorage.removeItem("pendingGeocode");
-          } catch (error) {
-            console.error("Erro ao geocodificar endereço pendente:", error);
+      if (!isOffline && isMounted.current) {
+        try {
+          const pendingGeocode = await AsyncStorage.getItem("pendingGeocode");
+          if (pendingGeocode && isMounted.current) {
+            try {
+              const response = await geocodeAddress(pendingGeocode);
+              if (isMounted.current) {
+                setCoords(response);
+                setLocation(pendingGeocode);
+                await AsyncStorage.removeItem("pendingGeocode");
+              }
+            } catch (error) {
+              console.error("Erro ao geocodificar endereço pendente:", error);
+            }
           }
+        } catch (error) {
+          console.error("Erro ao buscar pendingGeocode:", error);
         }
       }
     };
+    
     syncPendingGeocode();
   }, [isOffline]);
 
   const handleMapPress = async (event: any) => {
-  if (isOffline || !mounted) return;
-  
-  try {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    setCoords({ latitude, longitude });
-    const address = await reverseGeocode(latitude, longitude);
-    if (mounted) {
-      setLocation(address);
+    if (isOffline || !isMounted.current) return;
+    
+    try {
+      const { latitude, longitude } = event.nativeEvent.coordinate;
+      
+      if (!isMounted.current) return;
+      setCoords({ latitude, longitude });
+      
+      try {
+        const address = await reverseGeocode(latitude, longitude);
+        if (isMounted.current) {
+          setLocation(address);
+        }
+      } catch (error) {
+        console.error('Erro no reverseGeocode durante handleMapPress:', error);
+      }
+    } catch (error) {
+      console.error('Erro no handleMapPress:', error);
     }
-  } catch (error) {
-    console.error('Erro no handleMapPress:', error);
-  }
-};
+  };
+
   const handleSubmit = async () => {
-    if (loading) return;
+    if (loading || !isMounted.current) return;
+    
     setLoading(true);
     try {
       const isValid = await validateToken();
-      if (!isValid) {
+      if (!isValid || !isMounted.current) {
         setLoading(false);
         return;
       }
@@ -192,11 +249,19 @@ export default function NewInteraction() {
       const netInfo = await NetInfo.fetch();
       const isConnected = netInfo.isConnected && (await checkActualConnectivity());
       const token = await AsyncStorage.getItem("userToken");
-      const playerId = await getPlayerId();
+      let playerId = null;
+      
+      try {
+        playerId = await getPlayerId();
+      } catch (error) {
+        console.error("Erro ao obter playerId:", error);
+      }
+      
       const totalWeight = selectedTags.reduce((sum, tagName) => {
         const tag = availableTags.find((t) => t.name === tagName);
         return sum + (tag && tag.weight ? parseFloat(tag.weight) : 0);
       }, 0);
+      
       const rankingLabel = totalWeight <= 120 ? "Baixo" : totalWeight <= 250 ? "Mediano" : "Urgente";
 
       const offlineId = Date.now().toString();
@@ -217,86 +282,103 @@ export default function NewInteraction() {
       };
 
       if (!isConnected) {
-        let imageUri = image;
-        if (image) {
-          const fileName = image.split("/").pop();
-          const newUri = `${FileSystem.documentDirectory}${fileName}`;
-          await FileSystem.copyAsync({ from: image, to: newUri });
-          imageUri = newUri;
-          postData.image = imageUri;
-        }
+        try {
+          let imageUri = image;
+          if (image) {
+            const fileName = image.split("/").pop();
+            const newUri = `${FileSystem.documentDirectory}${fileName}`;
+            await FileSystem.copyAsync({ from: image, to: newUri });
+            imageUri = newUri;
+            postData.image = imageUri;
+          }
 
-        const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
-        const offlinePostsArray = offlinePostsStr ? JSON.parse(offlinePostsStr) : [];
-        const alreadyExists = offlinePostsArray.find((p: any) => p.offlineId === postData.offlineId);
-        if (!alreadyExists) {
-          offlinePostsArray.push(postData);
-          await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
-        }
+          const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
+          const offlinePostsArray = offlinePostsStr ? JSON.parse(offlinePostsStr) : [];
+          const alreadyExists = offlinePostsArray.find((p: any) => p.offlineId === postData.offlineId);
+          if (!alreadyExists) {
+            offlinePostsArray.push(postData);
+            await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
+          }
 
-        Alert.alert("Sucesso", "Postagem salva localmente.");
-        router.push("/");
-        setLoading(false);
+          Alert.alert("Sucesso", "Postagem salva localmente.");
+          if (isMounted.current) {
+            router.push("/");
+          }
+        } catch (error) {
+          console.error("Erro ao salvar dados offline:", error);
+          Alert.alert("Erro", "Falha ao salvar dados offline.");
+        } finally {
+          if (isMounted.current) {
+            setLoading(false);
+          }
+        }
         return;
       }
 
-      const formData = new FormData();
-      formData.append("title", postData.title);
-      formData.append("content", postData.description || "");
-      formData.append("tags", postData.tags.join(","));
-      formData.append("location", postData.location);
-      formData.append("latitude", postData.latitude?.toString() || "");
-      formData.append("longitude", postData.longitude?.toString() || "");
-      formData.append("playerId", playerId || "");
-      formData.append("weight", postData.weight);
-      formData.append("ranking", postData.ranking);
-      formData.append("offlineId", postData.offlineId);
+      try {
+        const formData = new FormData();
+        formData.append("title", postData.title);
+        formData.append("content", postData.description || "");
+        formData.append("tags", postData.tags.join(","));
+        formData.append("location", postData.location);
+        formData.append("latitude", postData.latitude?.toString() || "");
+        formData.append("longitude", postData.longitude?.toString() || "");
+        formData.append("playerId", playerId || "");
+        formData.append("weight", postData.weight);
+        formData.append("ranking", postData.ranking);
+        formData.append("offlineId", postData.offlineId);
 
-      if (postData.image) {
-        const fileName = postData.image.split("/").pop();
-        formData.append("image", {
-          uri: postData.image,
-          type: "image/jpeg",
-          name: fileName || "image.jpg",
-        } as any);
-      }
-
-      const response = await fetch(`${API_URL}/posts/create`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-
-      if (response.ok) {
-        const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
-        if (offlinePostsStr) {
-          let offlinePostsArray = JSON.parse(offlinePostsStr);
-          offlinePostsArray = offlinePostsArray.filter((post: any) => post.offlineId !== postData.offlineId);
-          await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
+        if (postData.image) {
+          const fileName = postData.image.split("/").pop();
+          formData.append("image", {
+            uri: postData.image,
+            type: "image/jpeg",
+            name: fileName || "image.jpg",
+          } as any);
         }
-        router.push("/");
 
+        const response = await fetch(`${API_URL}/posts/create`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
 
-        setTitle("");
-        setDescription("");
-        setSelectedTags([]);
-        setLocation("");
-        setCoords({ latitude: 0, longitude: 0 });
-        setImage(null);
-        setSelectedDate(new Date().toISOString().split("T")[0]);
-        setSelectedTime(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
-      } else {
-        const data = await response.json();
-        Alert.alert("Erro", data.message || "Falha ao criar interação.");
+        if (response.ok) {
+          const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
+          if (offlinePostsStr) {
+            let offlinePostsArray = JSON.parse(offlinePostsStr);
+            offlinePostsArray = offlinePostsArray.filter((post: any) => post.offlineId !== postData.offlineId);
+            await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
+          }
+          
+          if (isMounted.current) {
+            router.push("/");
+            setTitle("");
+            setDescription("");
+            setSelectedTags([]);
+            setLocation("");
+            setCoords({ latitude: 0, longitude: 0 });
+            setImage(null);
+            setSelectedDate(new Date().toISOString().split("T")[0]);
+            setSelectedTime(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+          }
+        } else {
+          const data = await response.json();
+          Alert.alert("Erro", data.message || "Falha ao criar interação.");
+        }
+      } catch (error) {
+        console.error("Erro ao enviar dados para o servidor:", error);
+        Alert.alert("Erro", "Ocorreu um problema ao enviar a interação para o servidor.");
       }
     } catch (error) {
       console.error("Erro geral em handleSubmit:", error);
       Alert.alert("Erro", "Ocorreu um problema ao salvar a interação.");
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
-
 
   return (
     <FlatList

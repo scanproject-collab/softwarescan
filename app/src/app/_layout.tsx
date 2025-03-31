@@ -1,7 +1,7 @@
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'react-native';
-import { useEffect, useState } from 'react';
-import { initializeOneSignalNotification } from './utils/OneSignalNotification';
+import { useEffect, useState, useRef } from 'react';
+import { initializeOneSignalNotification, cleanupOneSignal } from './utils/OneSignalNotification';
 import { validateToken } from '@/src/app/utils/ValidateAuth';
 import React from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -11,30 +11,42 @@ export default function RootLayout() {
   const [isCheckingToken, setIsCheckingToken] = useState(true);
   const [initialCheckDone, setInitialCheckDone] = useState(false);
   const [shouldNavigate, setShouldNavigate] = useState<string | null>(null);
+  const oneSignalCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        await initializeOneSignalNotification();
+        const oneSignalInit = await initializeOneSignalNotification();
+        if (oneSignalInit) {
+          oneSignalCleanupRef.current = oneSignalInit.cleanup;
+        }
         const isValid = await validateToken();
+        
         setIsCheckingToken(false);
         setInitialCheckDone(true);
-
         if (!isValid) {
           setShouldNavigate('/pages/auth');
         } else if (segments.length === 0 || (segments[0] === 'pages' && segments[1] === 'auth')) {
           setShouldNavigate('/');
         }
       } catch (error) {
-        console.error('Erro ao inicializar o app:', error);
+        console.error('Erro durante inicialização:', error);
         setIsCheckingToken(false);
         setInitialCheckDone(true);
+        setShouldNavigate('/pages/auth');
       }
     };
 
     if (!initialCheckDone) {
       initializeApp();
     }
+
+    return () => {
+      if (oneSignalCleanupRef.current) {
+        oneSignalCleanupRef.current();
+      }
+      cleanupOneSignal();
+    };
   }, [initialCheckDone, segments]);
 
   useEffect(() => {

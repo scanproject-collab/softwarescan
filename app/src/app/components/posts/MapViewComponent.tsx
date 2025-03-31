@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import MapView, { Marker } from "react-native-maps";
 import { Text, StyleSheet, View } from "react-native";
 
@@ -10,11 +10,28 @@ interface MapViewComponentProps {
 }
 
 const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline }: MapViewComponentProps) => {
-  const areCoordsValid = coords && 
-                        typeof coords.latitude === 'number' && 
+  // State to manage error handling and map loading
+  const [mapError, setMapError] = useState<string | null>(null);
+  
+  // More strict validation of coordinates
+  const areCoordsValid = coords &&
+                        typeof coords.latitude === 'number' &&
                         typeof coords.longitude === 'number' &&
-                        coords.latitude !== 0 && 
-                        coords.longitude !== 0;
+                        !isNaN(coords.latitude) &&
+                        !isNaN(coords.longitude) &&
+                        coords.latitude !== 0 &&
+                        coords.longitude !== 0 &&
+                        Math.abs(coords.latitude) <= 90 &&
+                        Math.abs(coords.longitude) <= 180;
+
+  useEffect(() => {
+    // Reset error state when coords or other props change
+    setMapError(null);
+  }, [coords, isManualLocation, isOffline]);
+
+  const handleMapError = () => {
+    setMapError("Erro ao carregar o mapa. Tente novamente.");
+  };
 
   if (isManualLocation && !areCoordsValid) {
     return (
@@ -28,20 +45,29 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
 
   if (isOffline) {
     return areCoordsValid ? (
-      <MapView
-        style={styles.map}
-        initialRegion={{
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
-        liteMode={true}
-        scrollEnabled={false}
-        zoomEnabled={false}
-      >
-        <Marker coordinate={coords} />
-      </MapView>
+      <View style={styles.mapContainer}>
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+          liteMode={true}
+          scrollEnabled={false}
+          zoomEnabled={false}
+          onError={handleMapError}
+        >
+          <Marker coordinate={coords} />
+        </MapView>
+        
+        {mapError && (
+          <View style={styles.errorOverlay}>
+            <Text style={styles.errorText}>{mapError}</Text>
+          </View>
+        )}
+      </View>
     ) : (
       <View style={styles.mapPlaceholder}>
         <Text style={styles.mapLoading}>
@@ -60,27 +86,41 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
   }
 
   return (
-    <MapView
-      style={styles.map}
-      initialRegion={{
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      }}
-      onPress={handleMapPress}
-    >
-      <Marker coordinate={coords} />
-    </MapView>
+    <View style={styles.mapContainer}>
+      <MapView
+        style={styles.map}
+        initialRegion={{
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+        onPress={handleMapPress}
+        onError={handleMapError}
+      >
+        <Marker coordinate={coords} />
+      </MapView>
+      
+      {mapError && (
+        <View style={styles.errorOverlay}>
+          <Text style={styles.errorText}>{mapError}</Text>
+        </View>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  mapContainer: {
+    width: "100%",
+    height: 300, 
+    position: "relative",
+    marginBottom: 16,
+  },
   map: {
     width: "100%",
     height: 300,
     borderRadius: 8,
-    marginBottom: 16,
     borderWidth: 1,
     borderColor: "#ddd",
   },
@@ -100,6 +140,23 @@ const styles = StyleSheet.create({
     color: "#666",
     padding: 16,
   },
+  errorOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+    borderRadius: 8,
+  },
+  errorText: {
+    color: "#f44336",
+    textAlign: "center",
+    padding: 16,
+  }
 });
 
 export default MapViewComponent;
