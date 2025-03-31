@@ -12,6 +12,7 @@ import { useDeleteInteractionModal } from "./components/admin/useDeleteInteracti
 import { useMapModal } from "./components/admin/useMapModal";
 import MapModal from "./components/MapModal";
 import { Interaction } from "./types/types"; 
+import TagFilterDropdown from "./components/admin/dropdownTagFilter";
 
 Modal.setAppElement("#root");
 
@@ -27,23 +28,19 @@ const App: React.FC = () => {
     }
   }, [token, pathname, navigate]);
 
-const toggleTagSelection = (tag: string) => {
-  if (tag === "Todas as tags") {
-    if (selectedTags.length === uniqueTags.length) {
-      setSelectedTags([]);
-    } else {
-      setSelectedTags(uniqueTags);
-    }
-  } else {
-    setSelectedTags((prevTags) => {
-      if (prevTags.includes(tag)) {
-        return prevTags.filter((selectedTag) => selectedTag !== tag);
+  const toggleTagSelection = (tag: string) => {
+    if (tag === "Todas as tags") {
+      if (selectedTags.length === uniqueTags.length) {
+        setSelectedTags([]);
       } else {
-        return [...prevTags, tag];
+        setSelectedTags(uniqueTags);
       }
-    });
-  }
-};
+    } else {
+      setSelectedTags((prevTags) =>
+        prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]
+      );
+    }
+  };
 
 
   const {
@@ -193,13 +190,13 @@ const toggleTagSelection = (tag: string) => {
               </div>
             </div>
             <div className="mb-4 flex gap-4 flex-wrap">
-  <input
-    type="text"
-    placeholder="Buscar por nome do operador..."
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-    className="w-full sm:w-auto flex-grow rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-  />
+              <input
+                type="text"
+                placeholder="Buscar por nome do operador..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full sm:w-auto flex-grow rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              />
               <select
                 value={selectedRanking || ""}
                 onChange={(e) => setSelectedRanking(e.target.value || null)}
@@ -240,19 +237,11 @@ const toggleTagSelection = (tag: string) => {
                       ))}
                     </select>
                   )}
-            <div className="flex flex-wrap gap-2">
-              {uniqueTags.map((tag) => (
-                <label key={tag} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedTags.includes(tag)}
-                    onChange={() => toggleTagSelection(tag)}
-                    className="form-checkbox"
-                  />
-                  <span>{tag}</span>
-                </label>
-              ))}
-            </div>
+                <TagFilterDropdown 
+                uniqueTags={uniqueTags} 
+                selectedTags={selectedTags} 
+                toggleTagSelection={toggleTagSelection} 
+                />
                 </>
               )}
             </div>
