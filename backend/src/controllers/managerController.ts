@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { sendWelcomeEmail, sendRejectionEmail } from '../services/mailer';
-import { sendExpoPushNotification } from '../services/expoNotification';
+import { sendOneSignalNotification } from '../services/oneSignalNotification';
 
 const prisma = new PrismaClient();
 
@@ -126,7 +126,7 @@ export const approveOperatorForManager = async (req: RequestWithUser, res: Respo
     await sendWelcomeEmail(user.email, user.name || 'User');
 
     if (user.playerId) {
-      await sendExpoPushNotification(
+      await sendOneSignalNotification(
         user.playerId,
         'Conta Aprovada',
         `Parabéns, ${user.name}! Sua conta foi aprovada pelo manager. Faça login para começar.`,
@@ -184,7 +184,7 @@ export const rejectOperatorForManager = async (req: RequestWithUser, res: Respon
     await sendRejectionEmail(operator.email, operator.name);
 
     if (operator.playerId) {
-      await sendExpoPushNotification(
+      await sendOneSignalNotification(
         operator.playerId,
         'Conta Rejeitada',
         `Olá, ${operator.name || 'Usuário'}! Sua solicitação foi rejeitada pelo manager. Entre em contato com o suporte para mais informações.`,

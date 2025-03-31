@@ -9,7 +9,7 @@ const router = Router();
 
 const verifyCronSecret = (req: CustomRequest, res: Response, next: NextFunction) => {
     const cronSecret = req.headers['x-cron-secret'];
-    const expectedSecret = process.env.CRON_SECRET || '6QJqfafr5Qdzjyq';
+    const expectedSecret = process.env.CRON_SECRET_KEY || '6QJqfafr5Qdzjyq';
 
     if (cronSecret !== expectedSecret) {
         return res.status(403).json({ message: 'Unauthorized: Invalid cron secret' });

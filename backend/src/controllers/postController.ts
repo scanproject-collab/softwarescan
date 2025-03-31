@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { PutObjectCommand, ObjectCannedACL, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import s3Client from '../services/storage/AWSs3';
 import multer from 'multer';
-import { sendExpoPushNotification } from '../services/expoNotification';
+import { sendOneSignalNotification } from '../services/oneSignalNotification';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -83,7 +83,7 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
 
       if (postsToday >= 3) {
         if (playerId) {
-          await sendExpoPushNotification(
+          await sendOneSignalNotification(
             playerId,
             'Limite de Imagens Atingido',
             'Você atingiu o limite de 3 imagens por dia. Tente novamente amanhã!',

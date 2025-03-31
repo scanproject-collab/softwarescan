@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { sendWelcomeEmail, sendRejectionEmail, sendExpirationEmail } from '../services/mailer';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { sendExpoPushNotification } from '../services/expoNotification';
+import { sendOneSignalNotification } from '../services/oneSignalNotification';
 
 const prisma = new PrismaClient();
 
@@ -59,7 +59,7 @@ export const approveOperator = async (req: Request, res: Response) => {
     await sendWelcomeEmail(user.email, user.name || 'User');
 
     if (user.playerId) {
-      await sendExpoPushNotification(
+      await sendOneSignalNotification(
         user.playerId,
         'Conta Aprovada',
         `Parabéns, ${user.name}! Sua conta foi aprovada. Faça login para começar.`,
@@ -108,7 +108,7 @@ export const rejectOperator = async (req: Request, res: Response) => {
     await sendRejectionEmail(operator.email, operator.name);
 
     if (operator.playerId) {
-      await sendExpoPushNotification(
+      await sendOneSignalNotification(
         operator.playerId,
         'Conta Rejeitada',
         `Olá, ${operator.name || 'Usuário'}! Sua solicitação de registro foi rejeitada. Entre em contato com o suporte para mais informações.`,
@@ -159,7 +159,7 @@ export const deleteExpiredOperators = async () => {
 
         await sendExpirationEmail(operator.email, operator.name || 'Usuário');
         if (operator.playerId) {
-          await sendExpoPushNotification(
+          await sendOneSignalNotification(
             operator.playerId,
             'Conta Expirada',
             `Olá, ${operator.name || 'Usuário'}! Sua solicitação de registro expirou e foi removida. Entre em contato com o suporte se precisar de ajuda.`,
@@ -322,7 +322,7 @@ export const deleteOperatorByAdmin = async (req: Request, res: Response) => {
     });
 
     if (operator.playerId) {
-      await sendExpoPushNotification(
+      await sendOneSignalNotification(
         operator.playerId,
         'Conta Deletada',
         `Olá, ${operator.name || 'Usuário'}! Sua conta foi deletada por um administrador. Entre em contato com o suporte para mais informações.`,

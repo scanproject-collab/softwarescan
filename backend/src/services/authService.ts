@@ -3,7 +3,7 @@ import { PrismaClient, Role } from '@prisma/client';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { sendResetPasswordEmail, sendWelcomeEmail, sendPendingApprovalEmail } from './mailer';
-import { sendExpoPushNotification } from './expoNotification';
+import { sendOneSignalNotification } from './oneSignalNotification';
 
 const prisma = new PrismaClient();
 
@@ -19,7 +19,7 @@ export const registerUser = async (
   verificationCode?: string
 ) => {
   try {
-    
+
     if (!password) {
       throw new Error('A senha é obrigatória para registrar o usuário');
     }
@@ -45,12 +45,12 @@ export const registerUser = async (
         expiresAt,
         playerId,
         institutionId,
-        verificationCode: null, 
+        verificationCode: null,
         verificationCodeExpiresAt: null,
       },
     });
 
-    console.log('PlayerId do usuário atualizado:', updatedUser.playerId); 
+    console.log('PlayerId do usuário atualizado:', updatedUser.playerId);
 
     if (userRole === 'OPERATOR' && expiresAt) {
       await prisma.notification.create({
@@ -63,8 +63,8 @@ export const registerUser = async (
 
       await sendPendingApprovalEmail(email, name, expiresAt);
       if (playerId) {
-        console.log('Enviando notificação para playerId:', playerId);  
-        await sendExpoPushNotification(
+        console.log('Enviando notificação para playerId:', playerId);
+        await sendOneSignalNotification(
           playerId,
           'Conta Pendente de Aprovação',
           `Olá, ${name}! Sua conta foi registrada e está aguardando aprovação. Você será notificado quando for aprovada.`,

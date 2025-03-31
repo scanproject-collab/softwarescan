@@ -1,4 +1,3 @@
-// tagRoutes.ts
 import { Router, Response, NextFunction } from "express";
 import { listTags, createTag, deleteTag, listWeights, updateTag } from "../controllers/tagController";
 import { authMiddleware, roleMiddleware, CustomRequest } from "../middlewares/authMiddleware";
