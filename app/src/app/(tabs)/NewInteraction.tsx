@@ -65,14 +65,14 @@ export default function NewInteraction() {
     const initialize = async () => {
       const isValid = await validateToken();
       if (!isValid) return;
-
+  
       await checkConnection();
-
+  
       const cachedTags = await AsyncStorage.getItem("cachedTags");
       if (cachedTags) {
         setAvailableTags(JSON.parse(cachedTags));
       }
-
+  
       if (!isOffline) {
         try {
           const token = await AsyncStorage.getItem("userToken");
@@ -88,7 +88,7 @@ export default function NewInteraction() {
           console.log("Erro ao carregar tags online, usando cache:", error);
         }
       }
-
+  
       if (!isOffline) {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === "granted") {
@@ -98,22 +98,31 @@ export default function NewInteraction() {
             });
             const { latitude, longitude } = locationData.coords;
             setCoords({ latitude, longitude });
-            const address = await reverseGeocode(latitude, longitude);
-            setLocation(address);
+            try {
+              const address = await reverseGeocode(latitude, longitude);
+              setLocation(address);
+            } catch (error) {
+              console.error("Erro ao obter endereço via reverse geocoding:", error);
+              setLocation("Localização não disponível");
+            }
           } catch (error) {
-            setLocation("");
+            console.error("Erro ao obter localização:", error);
+            setLocation("Localização não disponível");
           }
+        } else {
+          console.log("Permissão de localização não concedida");
+          setLocation("Permissão de localização não concedida");
         }
       }
     };
     initialize();
-
+  
     const unsubscribe = NetInfo.addEventListener(async (state) => {
       const isConnected = state.isConnected && (await checkActualConnectivity());
       setIsOffline(!isConnected);
       if (!isConnected) setIsManualLocation(true);
     });
-
+  
     return () => unsubscribe();
   }, []);
 

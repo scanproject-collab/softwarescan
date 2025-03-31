@@ -10,8 +10,10 @@ interface MapViewComponentProps {
 }
 
 const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline }: MapViewComponentProps) => {
+  // Check if coordinates are valid (not 0, 0)
+  const areCoordsValid = coords.latitude !== 0 && coords.longitude !== 0;
 
-  if (isManualLocation && coords.latitude === 0 && coords.longitude === 0) {
+  if (isManualLocation && !areCoordsValid) {
     return (
       <Text style={styles.mapLoading}>
         Localização manual selecionada. O mapa não será exibido sem coordenadas.
@@ -20,28 +22,32 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
   }
 
   if (isOffline) {
-    return (
+    return areCoordsValid ? (
       <MapView
         style={styles.map}
         region={{
-          latitude: coords.latitude || -23.5505, 
-          longitude: coords.longitude || -46.6333,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}
-        liteMode={true} 
+        liteMode={true}
       >
         <Marker
           coordinate={{
-            latitude: coords.latitude || -23.5505,
-            longitude: coords.longitude || -46.6333,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
           }}
         />
       </MapView>
+    ) : (
+      <Text style={styles.mapLoading}>
+        Modo offline: coordenadas não disponíveis.
+      </Text>
     );
   }
 
-  if (!isManualLocation && !isOffline && coords.latitude === 0 && coords.longitude === 0) {
+  if (!areCoordsValid) {
     return <Text style={styles.mapLoading}>Carregando mapa...</Text>;
   }
 
