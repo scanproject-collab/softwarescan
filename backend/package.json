@@ -30,6 +30,7 @@
     "node-cron": "^3.0.3",
     "node-schedule": "^2.1.1",
     "nodemailer": "^6.10.0",
+    "onesignal-node": "^3.4.0",
     "prisma": "^6.4.1",
     "shapefile": "^0.6.6",
     "ts-node": "^10.9.2",
