@@ -25,6 +25,10 @@ export default {
     },
     plugins: [
       'expo-router',
+      'react-native-maps',
+      {
+        apiKey: process.env.EXPO_PUBLIC_GOOGLE_API_KEY
+      }
       [
         'onesignal-expo-plugin',
         {
