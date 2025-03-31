@@ -1,4 +1,6 @@
-import * as OneSignal from '@onesignal/node-onesignal';
+import { from } from "@onesignal/node-onesignal/dist/rxjsStub";
+import * as OneSignal from 'onesignal-node'; 
+
 
 interface NotificationData {
   imageUrl?: string;
@@ -6,30 +8,33 @@ interface NotificationData {
   [key: string]: any;
 }
 
-const configuration = OneSignal.createConfiguration({
-  restApiKey: process.env.ONESIGNAL_REST_API_KEY || "your_one_signal_rest_api_key",
-});
-
-const client = new OneSignal.DefaultApi(configuration);
+const client = new OneSignal.Client(
+  process.env.ONESIGNAL_APP_ID!,
+  process.env.ONESIGNAL_REST_API_KEY!
+);
 
 export const sendOneSignalNotification = async (playerId: string, title: string, body: string, data?: NotificationData) => {
-  try {
-    const notification = new OneSignal.Notification({
-      app_id: process.env.ONESIGNAL_APP_ID || "your_one_signal_app_id",
-      include_player_ids: [playerId],
-      headings: { en: title },
-      contents: { en: body },
-      data: data || { type: 'notification' },
-      big_picture: data?.imageUrl || undefined,
-    });
+  const notification = { 
+    contents: { en: body },
+    headings: { en: title },
+    include_player_ids: [playerId],
+    data: data || { type: 'notification' }, 
+    big_picture: data?.imageUrl || undefined,
+  };
 
+  try {
+    console.log('Sending notification object:', notification);
     const response = await client.createNotification(notification);
-    console.log('OneSignal notification sent successfully:', response);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error('Error sending OneSignal notification:', error.message);
-    } else {
-      console.error('Error sending OneSignal notification:', error);
+    if (response.body.errors?.includes('All included players are not subscribed')) {
+      throw new Error('User is not subscribed to notifications');
     }
+    console.log('OneSignal notification sent successfully:', response.body); 
+  } catch (error: any) {
+    if (error instanceof OneSignal.HTTPError) {
+      console.error('Error sending OneSignal notification:', error.statusCode, error.body);
+    } else {
+      console.error('Generic error sending OneSignal notification:', error.message || error);
+    }
+    throw error; 
   }
 };
