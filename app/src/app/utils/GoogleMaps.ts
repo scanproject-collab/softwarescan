@@ -2,24 +2,28 @@ import axios from 'axios';
 
 const GOOGLE_GEOCODE_URL = 'https://maps.googleapis.com/maps/api/geocode/json';
 const GOOGLE_PLACES_URL = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
-const GOOGLE_API_KEY = "AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE";
+const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
 
 export const geocodeAddress = async (address: string): Promise<{ latitude: number; longitude: number }> => {
+  if (!address || typeof address !== 'string') {
+    throw new Error('Endereço inválido');
+  }
+
   try {
     console.log('Geocodificando endereço:', address);
-    console.log('Usando GOOGLE_API_KEY:', GOOGLE_API_KEY);
     const response = await axios.get(GOOGLE_GEOCODE_URL, {
       params: {
         address: address,
         key: GOOGLE_API_KEY,
         region: 'br',
+        language: 'pt-BR',
       },
+      timeout: 10000, // 10 segundos timeout
     });
 
-    console.log('Resposta da API:', response.data);
-
     if (response.data.status !== 'OK') {
-      throw new Error(`Erro na API de Geocodificação: ${response.data.status}`);
+      console.error('Erro na API de Geocodificação:', response.data.status);
+      throw new Error(`Erro na geocodificação: ${response.data.status}`);
     }
 
     const result = response.data.results[0];
@@ -28,54 +32,48 @@ export const geocodeAddress = async (address: string): Promise<{ latitude: numbe
     }
 
     const { lat, lng } = result.geometry.location;
-    console.log('Coordenadas encontradas:', { latitude: lat, longitude: lng });
-
     return {
       latitude: lat,
       longitude: lng,
     };
   } catch (error) {
     console.error('Erro ao geocodificar endereço:', error);
-    throw new Error('Falha ao geocodificar o endereço. Tente novamente ou selecione manualmente no mapa.');
+    throw new Error('Falha ao geocodificar o endereço. Verifique sua conexão ou tente novamente.');
   }
 };
 
 export const reverseGeocode = async (latitude: number, longitude: number): Promise<string> => {
+  if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+    return 'Coordenadas inválidas';
+  }
+
   try {
-    console.log('Fazendo reverse geocoding para:', { latitude, longitude });
-    console.log('Usando GOOGLE_API_KEY:', GOOGLE_API_KEY);
     const response = await axios.get(GOOGLE_GEOCODE_URL, {
       params: {
         latlng: `${latitude},${longitude}`,
         key: GOOGLE_API_KEY,
         region: 'br',
+        language: 'pt-BR',
       },
+      timeout: 10000,
     });
 
-    console.log('Resposta da API (reverse geocoding):', response.data);
-
     if (response.data.status !== 'OK') {
-      throw new Error(`Erro na API de Reverse Geocoding: ${response.data.status}`);
+      console.error('Status da API:', response.data.status);
+      return 'Endereço não encontrado';
     }
 
-    const result = response.data.results[0];
-    if (!result) {
-      throw new Error('Endereço não encontrado para essas coordenadas');
-    }
-
-    const address = result.formatted_address;
-    console.log('Endereço encontrado:', address);
-    return address;
+    return response.data.results[0]?.formatted_address || 'Endereço não disponível';
   } catch (error) {
-    console.error('Erro ao fazer reverse geocoding:', error);
-    throw new Error('Falha ao obter o endereço. Tente novamente.');
+    console.error('Erro no reverse geocoding:', error);
+    return 'Erro ao obter endereço';
   }
 };
 
 export const getPlaceSuggestions = async (input: string): Promise<string[]> => {
+  if (!input || input.length < 3) return [];
+
   try {
-    console.log('Buscando sugestões para:', input);
-    console.log('Usando GOOGLE_API_KEY:', GOOGLE_API_KEY);
     const response = await axios.get(GOOGLE_PLACES_URL, {
       params: {
         input: input,
@@ -84,12 +82,11 @@ export const getPlaceSuggestions = async (input: string): Promise<string[]> => {
         types: 'geocode',
         language: 'pt-BR',
       },
+      timeout: 10000,
     });
 
-    console.log('Resposta da Places API:', response.data);
-
     if (response.data.status !== 'OK') {
-      throw new Error(`Erro na Places API: ${response.data.status}`);
+      return [];
     }
 
     return response.data.predictions.map((prediction: any) => prediction.description);
