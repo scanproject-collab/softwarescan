@@ -1,4 +1,3 @@
-// routes/managerRoutes.ts
 import { Router } from 'express';
 import {
     listOperatorsForManager,
