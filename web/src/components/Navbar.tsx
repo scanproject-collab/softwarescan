@@ -10,14 +10,12 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import NotificationModal from './NotificationModal';
-import { useState } from 'react';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { setAuthToken, user } = useAuth();
-  const [notificationCount, setNotificationCount] = useState(0); // Contagem de notificações
-
+  
   const handleLogout = () => {
     console.log('Tentando fazer logout...');
     setAuthToken(null);
@@ -28,10 +26,6 @@ const Navbar: React.FC = () => {
     if (pathname !== '/') {
       navigate('/');
     }
-  };
-
-  const resetNotificationCount = () => {
-    setNotificationCount(0); // Reseta a contagem de notificações
   };
 
   const profilePath = user?.role === "MANAGER" ? "/manager/profile" : "/admin/profile";
@@ -91,7 +85,7 @@ const Navbar: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-2">
-        <NotificationModal onOpen={resetNotificationCount} />
+        <NotificationModal onOpen={() => {}} />
       </div>
     </nav>
   );
