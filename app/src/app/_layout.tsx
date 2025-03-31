@@ -15,8 +15,7 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Comentei a inicialização do OneSignal para testar
-        // await initializeOneSignalNotification();
+        await initializeOneSignalNotification();
         const isValid = await validateToken();
         setIsCheckingToken(false);
         setInitialCheckDone(true);
