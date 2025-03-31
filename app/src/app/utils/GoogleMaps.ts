@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const GOOGLE_GEOCODE_URL = 'https://maps.googleapis.com/maps/api/geocode/json';
 const GOOGLE_PLACES_URL = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
-const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
+const GOOGLE_API_KEY = "AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE";
 
 export const geocodeAddress = async (address: string): Promise<{ latitude: number; longitude: number }> => {
   try {
