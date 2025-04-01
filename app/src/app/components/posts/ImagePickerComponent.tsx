@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import React from "react";
-import { View, Pressable, Image, StyleSheet, Text } from "react-native";
+import { View, Pressable, Image, StyleSheet, Text, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 interface ImagePickerProps {
@@ -13,20 +13,32 @@ const ImagePickerComponent = ({ image, setImage }: ImagePickerProps) => {
   const pickImage = async () => {
     if (image) return;
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.7,  
-    });
+    // Verifica permissões
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão negada", "Precisamos de permissão para acessar a galeria.");
+      return;
+    }
 
-    if (!result.canceled) {
-      const compressedImage = await ImageManipulator.manipulateAsync(
-        result.assets[0].uri,  
-        [{ resize: { width: 800 } }], 
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }  
-      );
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
+      });
 
-      setImage(compressedImage.uri);  
+      if (!result.canceled) {
+        const compressedImage = await ImageManipulator.manipulateAsync(
+          result.assets[0].uri,
+          [{ resize: { width: 800 } }],
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+        );
+
+        setImage(compressedImage.uri);
+      }
+    } catch (error) {
+      console.error("Erro ao selecionar ou manipular a imagem:", error);
+      Alert.alert("Erro", "Ocorreu um problema ao selecionar ou cortar a imagem. Tente novamente.");
     }
   };
 
