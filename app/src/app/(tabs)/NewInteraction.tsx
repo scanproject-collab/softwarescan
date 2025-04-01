@@ -11,7 +11,7 @@ import ImagePickerComponent from "@/src/app/components/posts/ImagePickerComponen
 import SubmitButton from "@/src/app/components/posts/SubmitButton";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getPlayerId } from "@/src/app/utils/OneSignalNotification";
+// import { getPlayerId } from "@/src/app/utils/OneSignalNotification";
 import { validateToken } from "@/src/app/utils/ValidateAuth";
 import { useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
@@ -251,11 +251,11 @@ export default function NewInteraction() {
       const token = await AsyncStorage.getItem("userToken");
       let playerId = null;
       
-      try {
-        playerId = await getPlayerId();
-      } catch (error) {
-        console.error("Erro ao obter playerId:", error);
-      }
+      // try {
+      //   playerId = await getPlayerId();
+      // } catch (error) {
+      //   console.error("Erro ao obter playerId:", error);
+      // }
       
       const totalWeight = selectedTags.reduce((sum, tagName) => {
         const tag = availableTags.find((t) => t.name === tagName);
