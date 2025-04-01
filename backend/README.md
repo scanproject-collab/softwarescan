@@ -16,7 +16,7 @@ backend/
 │
 ├── api/
 │   ├── app.ts               # Arquivo principal de configuração do servidor
-│   ├── node_modules/        # Dependências do projeto
+|
 │
 ├── prisma/
 │   └── schema.prisma        # Arquivo de definição do banco de dados com Prisma
