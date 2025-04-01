@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 
 interface TagFilterDropdownProps {
-  uniqueTags: string[]; // ou um tipo mais específico, dependendo da estrutura de tag
-  selectedTags: string[]; // ou outro tipo, se for diferente
-  toggleTagSelection: (tag: string) => void; // ou ajuste o tipo, se necessário
+  uniqueTags: string[];
+  selectedTags: string[];
+  toggleTagSelection: (tag: string) => void;
 }
 
 const TagFilterDropdown: React.FC<TagFilterDropdownProps> = ({
@@ -11,10 +11,10 @@ const TagFilterDropdown: React.FC<TagFilterDropdownProps> = ({
   selectedTags,
   toggleTagSelection,
 }) => {
-  const [isOpen, setIsOpen] = useState(false); // Estado para controlar a abertura do dropdown
+  const [isOpen, setIsOpen] = useState(false);
 
   const toggleDropdown = () => {
-    setIsOpen(!isOpen); // Alterna o estado de aberto/fechado do dropdown
+    setIsOpen(!isOpen);
   };
 
   return (
