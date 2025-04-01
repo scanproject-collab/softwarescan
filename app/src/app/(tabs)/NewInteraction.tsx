@@ -11,7 +11,7 @@ import ImagePickerComponent from "@/src/app/components/posts/ImagePickerComponen
 import SubmitButton from "@/src/app/components/posts/SubmitButton";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { getPlayerId } from "@/src/app/utils/OneSignalNotification";
+import { getPlayerId } from "@/src/app/utils/OneSignalNotification";
 import { validateToken } from "@/src/app/utils/ValidateAuth";
 import { useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
@@ -38,7 +38,7 @@ export default function NewInteraction() {
   const [isManualLocation, setIsManualLocation] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(true);
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle'); // Novo estado para feedback
   const isMounted = useRef(true);
 
   const router = useRouter();
@@ -227,22 +227,26 @@ export default function NewInteraction() {
     if (loading || !isMounted.current) return;
     
     setLoading(true);
+    setStatus('saving'); // Feedback ao usuário
     try {
       const isValid = await validateToken();
       if (!isValid || !isMounted.current) {
         setLoading(false);
+        setStatus('error');
         return;
       }
 
       if (!image) {
         Alert.alert("Erro", "Uma foto é obrigatória.");
         setLoading(false);
+        setStatus('error');
         return;
       }
 
       if (!location.trim()) {
         Alert.alert("Erro", "A localização é obrigatória.");
         setLoading(false);
+        setStatus('error');
         return;
       }
 
@@ -251,11 +255,11 @@ export default function NewInteraction() {
       const token = await AsyncStorage.getItem("userToken");
       let playerId = null;
       
-      // try {
-      //   playerId = await getPlayerId();
-      // } catch (error) {
-      //   console.error("Erro ao obter playerId:", error);
-      // }
+      try {
+        playerId = await getPlayerId();
+      } catch (error) {
+        console.error("Erro ao obter playerId:", error);
+      }
       
       const totalWeight = selectedTags.reduce((sum, tagName) => {
         const tag = availableTags.find((t) => t.name === tagName);
@@ -302,11 +306,13 @@ export default function NewInteraction() {
 
           Alert.alert("Sucesso", "Postagem salva localmente.");
           if (isMounted.current) {
+            setStatus('saved');
             router.push("/");
           }
         } catch (error) {
           console.error("Erro ao salvar dados offline:", error);
           Alert.alert("Erro", "Falha ao salvar dados offline.");
+          setStatus('error');
         } finally {
           if (isMounted.current) {
             setLoading(false);
@@ -352,6 +358,7 @@ export default function NewInteraction() {
           }
           
           if (isMounted.current) {
+            setStatus('saved');
             router.push("/");
             setTitle("");
             setDescription("");
@@ -365,14 +372,17 @@ export default function NewInteraction() {
         } else {
           const data = await response.json();
           Alert.alert("Erro", data.message || "Falha ao criar interação.");
+          setStatus('error');
         }
       } catch (error) {
         console.error("Erro ao enviar dados para o servidor:", error);
         Alert.alert("Erro", "Ocorreu um problema ao enviar a interação para o servidor.");
+        setStatus('error');
       }
     } catch (error) {
       console.error("Erro geral em handleSubmit:", error);
       Alert.alert("Erro", "Ocorreu um problema ao salvar a interação.");
+      setStatus('error');
     } finally {
       if (isMounted.current) {
         setLoading(false);
@@ -408,7 +418,15 @@ export default function NewInteraction() {
           />
         );
         if (item === "image") return <ImagePickerComponent image={image} setImage={setImage} />;
-        if (item === "buttons") return <SubmitButton loading={loading} handleSubmit={handleSubmit} router={router} isOffline={isOffline} />;
+        if (item === "buttons") return (
+          <SubmitButton
+            loading={loading}
+            handleSubmit={handleSubmit}
+            router={router}
+            isOffline={isOffline}
+            status={status} 
+          />
+        );
         return null;
       }}
       keyExtractor={(item) => item}

@@ -10,10 +10,7 @@ interface MapViewComponentProps {
 }
 
 const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline }: MapViewComponentProps) => {
-  // State to manage error handling and map loading
   const [mapError, setMapError] = useState<string | null>(null);
-  
-  // More strict validation of coordinates
   const areCoordsValid = coords &&
                         typeof coords.latitude === 'number' &&
                         typeof coords.longitude === 'number' &&
@@ -25,7 +22,6 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
                         Math.abs(coords.longitude) <= 180;
 
   useEffect(() => {
-    // Reset error state when coords or other props change
     setMapError(null);
   }, [coords, isManualLocation, isOffline]);
 
@@ -55,9 +51,6 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
             longitudeDelta: 0.0421,
           }}
           liteMode={true}
-          scrollEnabled={false}
-          zoomEnabled={false}
-          onError={handleMapError}
         >
           <Marker coordinate={coords} />
         </MapView>

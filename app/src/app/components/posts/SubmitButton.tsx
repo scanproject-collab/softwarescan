@@ -6,23 +6,38 @@ interface SubmitButtonProps {
   handleSubmit: () => void;
   router: any;
   isOffline: boolean;
+  status: "idle" | "saving" | "saved" | "error"; // Prop status adicionada
 }
 
-const SubmitButton = ({ loading, handleSubmit, router, isOffline }: SubmitButtonProps) => {
+const SubmitButton = ({ loading, handleSubmit, router, isOffline, status }: SubmitButtonProps) => {
+  // Função para determinar o conteúdo do botão com base no status
+  const renderButtonContent = () => {
+    if (status === "saving") {
+      return <ActivityIndicator color="#fff" />;
+    } else if (status === "saved") {
+      return <Text style={styles.successText}>Salvo!</Text>;
+    } else if (status === "error") {
+      return <Text style={styles.errorText}>Erro ao salvar</Text>;
+    } else {
+      return (
+        <Text style={styles.submitButtonText}>
+          {isOffline ? "Salvar Localmente" : "Salvar"}
+        </Text>
+      );
+    }
+  };
+
   return (
     <View style={styles.buttonContainer}>
       <Pressable
-        style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+        style={[
+          styles.submitButton,
+          (loading || status === "saved" || status === "error") && styles.submitButtonDisabled,
+        ]}
         onPress={handleSubmit}
-        disabled={loading}
+        disabled={loading || status === "saved" || status === "error"}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.submitButtonText}>
-            {isOffline ? "Salvar Localmente" : "Salvar"}
-          </Text>
-        )}
+        {renderButtonContent()}
       </Pressable>
       <Pressable style={styles.backButton} onPress={() => router.back()}>
         <Text style={styles.backButtonText}>Cancelar</Text>
@@ -46,8 +61,24 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  submitButtonDisabled: { backgroundColor: "#99ccff" },
-  submitButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  submitButtonDisabled: {
+    backgroundColor: "#99ccff",
+  },
+  submitButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  successText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  errorText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   backButton: {
     padding: 14,
     backgroundColor: "#fff",
@@ -57,7 +88,11 @@ const styles = StyleSheet.create({
     borderColor: "#007AFF",
     flex: 1,
   },
-  backButtonText: { color: "#007AFF", fontSize: 16, fontWeight: "600" },
+  backButtonText: {
+    color: "#007AFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });
 
 export default SubmitButton;

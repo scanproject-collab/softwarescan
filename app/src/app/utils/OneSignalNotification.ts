@@ -2,127 +2,71 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { OneSignal } from 'react-native-onesignal';
 
-// Helper to safely execute a function and catch any errors
-const safeExecute = async <T>(fn: () => Promise<T>, errorMsg: string): Promise<T | null> => {
+async function initializeExpoNotifications() {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (status !== 'granted') {
+    console.log('Notification permissions not granted');
+    return false;
+  }
+  return true;
+}
+
+async function getPushSubscriptionId() {
   try {
-    return await fn();
+    const subscriptionId = await OneSignal.User.pushSubscription.getIdAsync();
+    if (subscriptionId) {
+      console.log('OneSignal Push Subscription ID:', subscriptionId);
+      await AsyncStorage.setItem('playerId', subscriptionId);
+      return subscriptionId;
+    } else {
+      console.log('OneSignal Push Subscription ID não disponível ainda.');
+      return null;
+    }
   } catch (error) {
-    console.error(errorMsg, error);
+    console.error('Erro ao obter o ID de subscrição push:', error);
     return null;
   }
-};
-
-async function initializeExpoNotifications() {
-  return await safeExecute(async () => {
-    await Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      }),
-    });
-    const { status } = await Notifications.requestPermissionsAsync();
-    return status === 'granted';
-  }, 'Erro ao configurar notificações do Expo:');
 }
 
 export async function initializeOneSignalNotification() {
-  return await safeExecute(async () => {
-    // Try to initialize Expo notifications
+  try {
     const permissionsGranted = await initializeExpoNotifications();
     if (!permissionsGranted) {
-      console.warn('Permissões de notificação não concedidas');
       return null;
     }
+    OneSignal.initialize('85a27f07-2069-4cae-94ac-e85afa04d321');
 
-    // Small delay to ensure everything is ready
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Configure OneSignal with error handling
-    try {
-      OneSignal.Debug.setLogLevel(OneSignal.LOG_LEVEL.VERBOSE);
-      
-      // Initialize with app ID
-      OneSignal.initialize('85a27f07-2069-4cae-94ac-e85afa04d321', {
-        kOSSettingsKeyAutoPrompt: false
-      });
-    } catch (error) {
-      console.error('Erro ao inicializar OneSignal:', error);
-      return null;
-    }
-
-    // Set up subscription monitoring with error handling
-    let subscription;
-    try {
-      subscription = OneSignal.User.pushSubscription.addEventListener('change', async (sub) => {
-        try {
-          if (sub?.id) {
-            console.log('ID de Subscription atualizado:', sub.id);
-            await AsyncStorage.setItem('playerId', sub.id);
-          }
-        } catch (error) {
-          console.error('Erro ao salvar subscription ID:', error);
-        }
-      });
-    } catch (error) {
-      console.error('Erro ao adicionar event listener ao OneSignal:', error);
-    }
-
-    // Try to get the current subscription ID
-    const getCurrentId = async () => {
-      try {
-        const pushSubscriptionId = await OneSignal.User.pushSubscription.getIdAsync();
-        if (pushSubscriptionId) {
-          console.log('ID de Subscription atual:', pushSubscriptionId);
-          await AsyncStorage.setItem('playerId', pushSubscriptionId);
-          return pushSubscriptionId;
-        }
-        return null;
-      } catch (error) {
-        console.error('Erro ao obter subscription ID:', error);
-        return null;
+    // Adicionar listener para mudanças na subscrição
+    OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
+      if (subscription?.id) {
+        const playerId = subscription.id;
+        console.log('OneSignal Push Subscription ID changed:', playerId);
+        AsyncStorage.setItem('playerId', playerId);
       }
-    };
+    });
 
-    // Return object with cleanup function and player ID
-    return {
-      cleanup: () => {
-        try {
-          if (subscription) {
-            subscription.remove();
-          }
-        } catch (error) {
-          console.error('Erro ao remover listener do OneSignal:', error);
-        }
-      },
-      playerId: await getCurrentId()
-    };
-  }, 'Erro crítico na inicialização do OneSignal:');
+    // Obter o ID de subscrição push usando getIdAsync
+    const pushSubscriptionId = await getPushSubscriptionId();
+    return pushSubscriptionId;
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error('Erro ao inicializar OneSignal/Notifications:', error.message);
+    } else {
+      console.error('Erro desconhecido ao inicializar OneSignal/Notifications:', error);
+    }
+    return null;
+  }
 }
 
 export async function getPlayerId() {
-  return await safeExecute(async () => {
-    const playerId = await AsyncStorage.getItem('playerId');
-    if (!playerId) {
-      console.warn('PlayerID não encontrado no AsyncStorage');
-      return null;
-    }
-    return playerId;
-  }, 'Erro ao recuperar PlayerID:');
-}
-
-export async function cleanupOneSignal() {
-  await safeExecute(async () => {
-    try {
-      OneSignal.Notifications.clearAll();
-    } catch (error) {
-      console.error('Erro ao limpar notificações do OneSignal:', error);
-    }
-    
-    try {
-      OneSignal.User.pushSubscription.removeAllListeners();
-    } catch (error) {
-      console.error('Erro ao remover listeners do OneSignal:', error);
-    }
-  }, 'Erro ao limpar OneSignal:');
+  const playerId = await AsyncStorage.getItem('playerId');
+  console.log('PlayerId recuperado do AsyncStorage:', playerId);
+  return playerId;
 }
