@@ -16,7 +16,7 @@ import TagFilterDropdown from "./components/admin/dropdownTagFilter";
 
 Modal.setAppElement("#root");
 
-const App: React.FC = () => {
+  const App: React.FC = () => {
   const { token, user } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -41,7 +41,6 @@ const App: React.FC = () => {
       );
     }
   };
-
 
   const {
     pendingOperators,
@@ -108,9 +107,9 @@ const App: React.FC = () => {
 
   const getWeightBadgeColor = (weight: string | number | undefined) => {
     const weightValue = parseFloat(String(weight)) || 0;
-    if (weightValue >= 10) return "bg-red-500 text-white"; // Urgente
-    if (weightValue >= 5) return "bg-orange-500 text-white"; // Mediano
-    return "bg-yellow-500 text-black"; // Baixo
+    if (weightValue >= 10) return "bg-red-500 text-white";
+    if (weightValue >= 5) return "bg-orange-500 text-white";
+    return "bg-yellow-500 text-black";
   };
 
   return (
@@ -129,9 +128,6 @@ const App: React.FC = () => {
           <div className="col-span-1 rounded-lg bg-white p-4 shadow">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Vínculos</h2>
-              <button className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">
-                Ver tudo
-              </button>
             </div>
             <div className="mb-4 flex items-center gap-2 rounded bg-blue-50 p-3">
               <div className="h-10 w-10 rounded-full bg-gray-300" />
@@ -184,9 +180,6 @@ const App: React.FC = () => {
                 >
                   <RefreshCw className="h-5 w-5" />
                 </button>
-                <button className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700">
-                  Ver tudo
-                </button>
               </div>
             </div>
             <div className="mb-4 flex gap-4 flex-wrap">
@@ -202,7 +195,7 @@ const App: React.FC = () => {
                 onChange={(e) => setSelectedRanking(e.target.value || null)}
                 className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
               >
-                <option value="">Todos os Rankings</option>
+                <option value="">Todas as Prioridades</option>
                 {uniqueRankings.map((ranking) => (
                   <option key={ranking} value={ranking}>
                     {ranking}
