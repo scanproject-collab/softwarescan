@@ -47,7 +47,7 @@ export default {
         projectId: '12e5445b-4dda-4718-9e78-5834fb41db9f',
       },
       apiUrl: process.env.EXPO_PUBLIC_API_URL,
-      googleApiKey: "AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE",
+      googleApiKey: process.env.EXPO_PUBLIC_GOOGLE_API_KEY,
       oneSignalAppId: process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID,
     },
     experiments: {
@@ -56,3 +56,9 @@ export default {
     "owner": "softwarescaan"
   },
 };
+
+import { writeFileSync } from 'fs';
+
+if (process.env.GOOGLE_SERVICES_JSON) {
+  writeFileSync('./google-services.json', Buffer.from(process.env.GOOGLE_SERVICES_JSON, 'base64'));
+}
