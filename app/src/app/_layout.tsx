@@ -14,6 +14,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     const initializeApp = async () => {
+      if (initialCheckDone) return; // Evita reexecução
+
       try {
         await initializeOneSignalNotification();
         const isValid = await validateToken();
@@ -32,10 +34,8 @@ export default function RootLayout() {
       }
     };
 
-    if (!initialCheckDone) {
-      initializeApp();
-    }
-  }, [initialCheckDone, segments]);
+    initializeApp();
+  }, []); // Dependências vazias para executar apenas uma vez
 
   useEffect(() => {
     if (shouldNavigate && !isCheckingToken) {

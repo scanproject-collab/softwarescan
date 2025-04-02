@@ -13,14 +13,16 @@ const ImagePickerComponent = ({ image, setImage }: ImagePickerProps) => {
   const pickImage = async () => {
     if (image) return;
 
-    // Verifica permissões
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permissão negada", "Precisamos de permissão para acessar a galeria.");
-      return;
-    }
-
     try {
+      // Verifica permissões
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permissão negada", "Precisamos de permissão para acessar a galeria.");
+        return;
+      }
+
+      console.log("Abrindo galeria para seleção de imagem...");
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -28,13 +30,18 @@ const ImagePickerComponent = ({ image, setImage }: ImagePickerProps) => {
       });
 
       if (!result.canceled) {
+        console.log("Imagem selecionada:", result.assets[0].uri);
+
         const compressedImage = await ImageManipulator.manipulateAsync(
           result.assets[0].uri,
           [{ resize: { width: 800 } }],
           { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
         );
 
+        console.log("Imagem comprimida:", compressedImage.uri);
         setImage(compressedImage.uri);
+      } else {
+        console.log("Seleção de imagem cancelada.");
       }
     } catch (error) {
       console.error("Erro ao selecionar ou manipular a imagem:", error);

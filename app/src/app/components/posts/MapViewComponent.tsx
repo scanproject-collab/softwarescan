@@ -12,7 +12,6 @@ interface MapViewComponentProps {
 const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline }: MapViewComponentProps) => {
   const [mapError, setMapError] = useState<string | null>(null);
 
-  // Verifica se as coordenadas são válidas
   const areCoordsValid = coords &&
     typeof coords.latitude === "number" &&
     typeof coords.longitude === "number" &&
@@ -24,14 +23,12 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
     Math.abs(coords.longitude) <= 180;
 
   useEffect(() => {
-    setMapError(null); // Reseta o erro ao mudar as props
+    setMapError(null); 
   }, [coords, isManualLocation, isOffline]);
 
   const handleMapError = () => {
     setMapError("Erro ao carregar o mapa. Tente novamente.");
   };
-
-  // Caso de localização manual sem coordenadas válidas
   if (isManualLocation && !areCoordsValid) {
     return (
       <View style={styles.mapPlaceholder}>
@@ -42,7 +39,7 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
     );
   }
 
-  // Modo offline
+  
   if (isOffline) {
     return areCoordsValid ? (
       <View style={styles.mapContainer}>
@@ -54,7 +51,7 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
           }}
-          liteMode={true} // Modo leve para offline
+          liteMode={true} 
         >
           <Marker coordinate={coords} />
         </MapView>
@@ -73,7 +70,6 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
     );
   }
 
-  // Coordenadas inválidas no modo online
   if (!areCoordsValid) {
     return (
       <View style={styles.mapPlaceholder}>
@@ -82,7 +78,6 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
     );
   }
 
-  // Renderização normal do mapa
   return (
     <View style={styles.mapContainer}>
       <MapView

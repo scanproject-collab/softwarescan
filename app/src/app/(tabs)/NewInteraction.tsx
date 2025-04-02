@@ -6,7 +6,7 @@ import TagSelector from "@/src/app/components/posts/TagSelector";
 import DatePicker from "@/src/app/components/posts/DatePicker";
 import TimeInput from "@/src/app/components/posts/TimeInput";
 import LocationPicker from "@/src/app/components/posts/LocationPicker";
-// import MapViewComponent from "@/src/app/components/posts/MapViewComponent";
+// import MapViewComponent from "@/src/app/components/posts/MapViewComponent"; // Mantido comentado
 import ImagePickerComponent from "@/src/app/components/posts/ImagePickerComponent";
 import SubmitButton from "@/src/app/components/posts/SubmitButton";
 import * as Location from "expo-location";
@@ -38,7 +38,8 @@ export default function NewInteraction() {
   const [isManualLocation, setIsManualLocation] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle'); // Novo estado para feedback
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [isImageLoading, setIsImageLoading] = useState(false); // Controle de carregamento da imagem
   const isMounted = useRef(true);
 
   const router = useRouter();
@@ -46,9 +47,9 @@ export default function NewInteraction() {
 
   const checkActualConnectivity = async () => {
     try {
-      const response = await fetch(`${API_URL}/ping`, { 
-        method: "GET", 
-        timeout: 5000 
+      const response = await fetch(`${API_URL}/ping`, {
+        method: "GET",
+        timeout: 5000,
       }).catch(() => null);
       return response && response.ok;
     } catch {
@@ -78,20 +79,20 @@ export default function NewInteraction() {
 
   useEffect(() => {
     isMounted.current = true;
-    
+
     const initialize = async () => {
       try {
         const isValid = await validateToken();
         if (!isValid || !isMounted.current) return;
-      
+
         await checkConnection();
         if (!isMounted.current) return;
-      
+
         const cachedTags = await AsyncStorage.getItem("cachedTags");
         if (cachedTags && isMounted.current) {
           setAvailableTags(JSON.parse(cachedTags));
         }
-      
+
         if (!isOffline && isMounted.current) {
           try {
             const token = await AsyncStorage.getItem("userToken");
@@ -107,7 +108,7 @@ export default function NewInteraction() {
             console.log("Erro ao carregar tags online, usando cache:", error);
           }
         }
-      
+
         if (!isOffline && isMounted.current) {
           try {
             const { status } = await Location.requestForegroundPermissionsAsync();
@@ -116,12 +117,12 @@ export default function NewInteraction() {
                 const locationData = await Location.getCurrentPositionAsync({
                   accuracy: Location.Accuracy.High,
                 });
-                
+
                 if (!isMounted.current) return;
-                
+
                 const { latitude, longitude } = locationData.coords;
                 setCoords({ latitude, longitude });
-                
+
                 try {
                   const address = await reverseGeocode(latitude, longitude);
                   if (isMounted.current) {
@@ -156,19 +157,19 @@ export default function NewInteraction() {
         console.error("Erro na inicialização:", error);
       }
     };
-    
+
     initialize();
-  
+
     const unsubscribe = NetInfo.addEventListener(async (state) => {
       if (!isMounted.current) return;
-      
+
       const isConnected = state.isConnected && (await checkActualConnectivity());
       if (isMounted.current) {
         setIsOffline(!isConnected);
         if (!isConnected) setIsManualLocation(true);
       }
     });
-  
+
     return () => {
       isMounted.current = false;
       unsubscribe();
@@ -197,19 +198,19 @@ export default function NewInteraction() {
         }
       }
     };
-    
+
     syncPendingGeocode();
   }, [isOffline]);
 
   const handleMapPress = async (event: any) => {
     if (isOffline || !isMounted.current) return;
-    
+
     try {
       const { latitude, longitude } = event.nativeEvent.coordinate;
-      
+
       if (!isMounted.current) return;
       setCoords({ latitude, longitude });
-      
+
       try {
         const address = await reverseGeocode(latitude, longitude);
         if (isMounted.current) {
@@ -224,10 +225,10 @@ export default function NewInteraction() {
   };
 
   const handleSubmit = async () => {
-    if (loading || !isMounted.current) return;
-    
+    if (loading || !isMounted.current || isImageLoading) return; // Impede submit se a imagem estiver carregando
+
     setLoading(true);
-    setStatus('saving'); // Feedback ao usuário
+    setStatus('saving');
     try {
       const isValid = await validateToken();
       if (!isValid || !isMounted.current) {
@@ -254,18 +255,18 @@ export default function NewInteraction() {
       const isConnected = netInfo.isConnected && (await checkActualConnectivity());
       const token = await AsyncStorage.getItem("userToken");
       let playerId = null;
-      
+
       try {
         playerId = await getPlayerId();
       } catch (error) {
         console.error("Erro ao obter playerId:", error);
       }
-      
+
       const totalWeight = selectedTags.reduce((sum, tagName) => {
         const tag = availableTags.find((t) => t.name === tagName);
         return sum + (tag && tag.weight ? parseFloat(tag.weight) : 0);
       }, 0);
-      
+
       const rankingLabel = totalWeight <= 120 ? "Baixo" : totalWeight <= 250 ? "Mediano" : "Urgente";
 
       const offlineId = Date.now().toString();
@@ -356,7 +357,7 @@ export default function NewInteraction() {
             offlinePostsArray = offlinePostsArray.filter((post: any) => post.offlineId !== postData.offlineId);
             await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
           }
-          
+
           if (isMounted.current) {
             setStatus('saved');
             router.push("/");
@@ -390,45 +391,56 @@ export default function NewInteraction() {
     }
   };
 
+  const renderItem = ({ item }: { item: string }) => {
+    if (item === "title") return <TitleInput title={title} setTitle={setTitle} isOffline={isOffline} />;
+    if (item === "date") return <DatePicker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />;
+    if (item === "time") return <TimeInput selectedTime={selectedTime} setSelectedTime={setSelectedTime} />;
+    if (item === "description") return <DescriptionInput description={description} setDescription={setDescription} />;
+    if (item === "tags") return <TagSelector selectedTags={selectedTags} setSelectedTags={setSelectedTags} availableTags={availableTags} />;
+    if (item === "location") return (
+      <LocationPicker
+        location={location}
+        setLocation={setLocation}
+        isManualLocation={isManualLocation}
+        setIsManualLocation={setIsManualLocation}
+        isOffline={isOffline}
+        setCoords={setCoords}
+      />
+    );
+    // if (item === "map") return (
+    //   <MapViewComponent
+    //     coords={coords}
+    //     handleMapPress={handleMapPress}
+    //     isManualLocation={isManualLocation}
+    //     isOffline={isOffline}
+    //   />
+    // );
+    if (item === "image") return (
+      <ImagePickerComponent
+        image={image}
+        setImage={(uri) => {
+          setIsImageLoading(true); // Inicia o loading da imagem
+          setImage(uri);
+          setIsImageLoading(false); // Finaliza o loading da imagem
+        }}
+      />
+    );
+    if (item === "buttons") return (
+      <SubmitButton
+        loading={loading || isImageLoading} // Inclui o loading da imagem
+        handleSubmit={handleSubmit}
+        router={router}
+        isOffline={isOffline}
+        status={status}
+      />
+    );
+    return null;
+  };
+
   return (
     <FlatList
-      data={["title", "date", "time", "description", "tags", "location", "map", "image", "buttons"]}
-      renderItem={({ item }) => {
-        if (item === "title") return <TitleInput title={title} setTitle={setTitle} isOffline={isOffline} />;
-        if (item === "date") return <DatePicker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />;
-        if (item === "time") return <TimeInput selectedTime={selectedTime} setSelectedTime={setSelectedTime} />;
-        if (item === "description") return <DescriptionInput description={description} setDescription={setDescription} />;
-        if (item === "tags") return <TagSelector selectedTags={selectedTags} setSelectedTags={setSelectedTags} availableTags={availableTags} />;
-        if (item === "location") return (
-          <LocationPicker
-            location={location}
-            setLocation={setLocation}
-            isManualLocation={isManualLocation}
-            setIsManualLocation={setIsManualLocation}
-            isOffline={isOffline}
-            setCoords={setCoords}
-          />
-        );
-        // if (item === "map") return (
-        //   <MapViewComponent
-        //     coords={coords}
-        //     handleMapPress={handleMapPress}
-        //     isManualLocation={isManualLocation}
-        //     isOffline={isOffline}
-        //   />
-        // );
-        if (item === "image") return <ImagePickerComponent image={image} setImage={setImage} />;
-        if (item === "buttons") return (
-          <SubmitButton
-            loading={loading}
-            handleSubmit={handleSubmit}
-            router={router}
-            isOffline={isOffline}
-            status={status} 
-          />
-        );
-        return null;
-      }}
+      data={["title", "date", "time", "description", "tags", "location", "image", "buttons"]}
+      renderItem={renderItem}
       keyExtractor={(item) => item}
       contentContainerStyle={styles.container}
     />
