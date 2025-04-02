@@ -15,7 +15,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { setAuthToken, user } = useAuth();
-  
+
   const handleLogout = () => {
     console.log('Tentando fazer logout...');
     setAuthToken(null);
@@ -56,12 +56,20 @@ const Navbar: React.FC = () => {
             Perfil
           </DropdownMenuItem>
           {user?.role === "ADMIN" && (
-            <DropdownMenuItem
-              onClick={() => navigate('/tags')}
-              className="cursor-pointer hover:bg-gray-100"
-            >
-              Gerenciar Tags
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem
+                onClick={() => navigate('/tags')}
+                className="cursor-pointer hover:bg-gray-100"
+              >
+                Gerenciar Tags
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate('/institutions')}
+                className="cursor-pointer hover:bg-gray-100"
+              >
+                Gerenciar Instituições
+              </DropdownMenuItem>
+            </>
           )}
           <DropdownMenuItem
             onClick={() => navigate('/polygons')}

@@ -40,11 +40,11 @@ const TagManagement: React.FC = () => {
     if (!token) return;
     try {
       setLoading(true);
-      const response = await api.get<TagResponse>("/tags", { // Use local API path
+      const response = await api.get<TagResponse>("/tags", { 
         headers: { Authorization: `Bearer ${token}` },
       });
       const tagList = response.data.tags || [];
-      console.log("Fetched tags:", tagList); // For debugging
+      console.log("Fetched tags:", tagList); 
       setTags(tagList);
     } catch (err) {
       toast.error("Erro ao carregar tags.");
@@ -56,8 +56,8 @@ const TagManagement: React.FC = () => {
 
   useEffect(() => {
     fetchTags();
-    const interval = setInterval(fetchTags, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval); // Cleanup on unmount
+    const interval = setInterval(fetchTags, 30000); 
+    return () => clearInterval(interval); 
   }, [token]);
 
   const handleCreateTag = async () => {
@@ -169,7 +169,7 @@ const TagManagement: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Peso da tag (opcional)"
+                  placeholder="Peso da tag (obrigatorio)"
                   value={newTagWeight}
                   onChange={(e) => setNewTagWeight(e.target.value)}
                   className="w-full rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
