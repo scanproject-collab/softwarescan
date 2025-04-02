@@ -1,22 +1,46 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, FlatList, Alert, StyleSheet, Text } from "react-native";
-import TitleInput from "@/src/app/components/posts/TitleInput";
-import DescriptionInput from "@/src/app/components/posts/DescriptionInput";
-import TagSelector from "@/src/app/components/posts/TagSelector";
-import DatePicker from "@/src/app/components/posts/DatePicker";
-import TimeInput from "@/src/app/components/posts/TimeInput";
-import LocationPicker from "@/src/app/components/posts/LocationPicker";
-import MapViewComponent from "@/src/app/components/posts/MapViewComponent";
-import ImagePickerComponent from "@/src/app/components/posts/ImagePickerComponent";
-import SubmitButton from "@/src/app/components/posts/SubmitButton";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  Pressable,
+  Image,
+  Alert,
+  FlatList,
+  ActivityIndicator,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getPlayerId } from "@/src/app/utils/OneSignalNotification";
-import { validateToken } from "@/src/app/utils/ValidateAuth";
-import { useRouter } from "expo-router";
+import { getPlayerId } from "../utils/OneSignalNotification";
+import { validateToken } from "../utils/ValidateAuth";
+import { Calendar, LocaleConfig } from "react-native-calendars";
+import MapView, { Marker } from "react-native-maps";
+import { geocodeAddress, reverseGeocode, getPlaceSuggestions } from "../utils/GoogleMaps";
+import { Ionicons } from "@expo/vector-icons";
+import moment from "moment";
+import "moment/locale/pt-br";
+import { useFocusEffect } from "@react-navigation/native";
 import NetInfo from "@react-native-community/netinfo";
 import * as FileSystem from "expo-file-system";
-import { reverseGeocode, geocodeAddress } from "@/src/app/utils/GoogleMaps";
+
+moment.locale("pt-br");
+
+LocaleConfig.locales["pt-br"] = {
+  monthNames: [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  ],
+  monthNamesShort: [
+    "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+    "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+  ],
+  dayNames: ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"],
+  dayNamesShort: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
+};
+LocaleConfig.defaultLocale = "pt-br";
 
 interface Tag {
   name: string;
@@ -31,249 +55,267 @@ export default function NewInteraction() {
   const [image, setImage] = useState<string | null>(null);
   const [location, setLocation] = useState("");
   const [coords, setCoords] = useState({ latitude: 0, longitude: 0 });
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
-  const [selectedTime, setSelectedTime] = useState(
-    new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-  );
+  const [selectedTime, setSelectedTime] = useState(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
   const [isManualLocation, setIsManualLocation] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [isImageLoading, setIsImageLoading] = useState(false);
-  const isMounted = useRef(true);
-
   const router = useRouter();
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
   const checkActualConnectivity = async () => {
     try {
-      const response = await fetch(`${API_URL}/ping`, {
-        method: "GET",
-        timeout: 5000,
-      }).catch(() => null);
-      return response && response.ok;
+      const response = await fetch(`${API_URL}/ping`, { method: 'GET', timeout: 5000 });
+      return response.ok;
     } catch {
       return false;
     }
   };
 
   const checkConnection = async () => {
-    try {
-      const netInfo = await NetInfo.fetch();
-      const isConnected = netInfo.isConnected && (await checkActualConnectivity());
-      if (isMounted.current) {
-        setIsOffline(!isConnected);
-        if (!isConnected) {
-          setIsManualLocation(true);
-          Alert.alert("Você está offline", "A localização será inserida manualmente.");
-        }
-      }
-    } catch (error) {
-      console.log("Erro ao verificar conexão:", error);
-      if (isMounted.current) {
-        setIsOffline(true);
-        setIsManualLocation(true);
-      }
+    const netInfo = await NetInfo.fetch();
+    const isConnected = netInfo.isConnected && (await checkActualConnectivity());
+    setIsOffline(!isConnected);
+    if (!isConnected) {
+      setIsManualLocation(true);
+      Alert.alert("Você está offline", "A localização será inserida manualmente.");
     }
   };
 
-  useEffect(() => {
-    isMounted.current = true;
+  useFocusEffect(
+    React.useCallback(() => {
+      setTitle("");
+      setDescription("");
+      setSelectedTags([]);
+      setImage(null);
+      setLocation("");
+      setCoords({ latitude: 0, longitude: 0 });
+      setSelectedDate(new Date().toISOString().split("T")[0]);
+      setSelectedTime(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      setSuggestions([]);
+      setIsManualLocation(false);
+      checkConnection();
 
-    const initialize = async () => {
-      try {
-        const isValid = await validateToken();
-        if (!isValid || !isMounted.current) return;
-
-        await checkConnection();
-        if (!isMounted.current) return;
-
-        const cachedTags = await AsyncStorage.getItem("cachedTags");
-        if (cachedTags && isMounted.current) {
-          setAvailableTags(JSON.parse(cachedTags));
-        }
-
-        if (!isOffline && isMounted.current) {
-          try {
-            const token = await AsyncStorage.getItem("userToken");
-            const response = await fetch(`${API_URL}/tags`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await response.json();
-            if (response.ok && isMounted.current) {
-              setAvailableTags(data.tags || []);
-              await AsyncStorage.setItem("cachedTags", JSON.stringify(data.tags));
-            }
-          } catch (error) {
-            console.log("Erro ao carregar tags online, usando cache:", error);
-          }
-        }
-
-        if (!isOffline && isMounted.current) {
-          try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status === "granted" && isMounted.current) {
-              try {
-                const locationData = await Location.getCurrentPositionAsync({
-                  accuracy: Location.Accuracy.High,
-                });
-
-                if (!isMounted.current) return;
-
-                const { latitude, longitude } = locationData.coords;
-                setCoords({ latitude, longitude });
-
-                try {
-                  const address = await reverseGeocode(latitude, longitude);
-                  if (isMounted.current) {
-                    setLocation(address);
-                  }
-                } catch (error) {
-                  console.error("Erro ao obter endereço via reverse geocoding:", error);
-                  if (isMounted.current) {
-                    setLocation("Localização não disponível");
-                  }
-                }
-              } catch (error) {
-                console.error("Erro ao obter localização:", error);
-                if (isMounted.current) {
-                  setLocation("Localização não disponível");
-                }
-              }
-            } else {
-              console.log("Permissão de localização não concedida");
-              if (isMounted.current) {
-                setLocation("Permissão de localização não concedida");
-              }
-            }
-          } catch (error) {
-            console.error("Erro ao obter permissão de localização:", error);
-            if (isMounted.current) {
-              setLocation("Erro ao obter permissão de localização");
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Erro na inicialização:", error);
-      }
-    };
-
-    initialize();
-
-    const unsubscribe = NetInfo.addEventListener(async (state) => {
-      if (!isMounted.current) return;
-
-      const isConnected = state.isConnected && (await checkActualConnectivity());
-      if (isMounted.current) {
+      const unsubscribe = NetInfo.addEventListener(async state => {
+        const isConnected = state.isConnected && (await checkActualConnectivity());
         setIsOffline(!isConnected);
         if (!isConnected) setIsManualLocation(true);
-      }
-    });
+      });
 
-    return () => {
-      console.log("NewInteraction desmontado");
-      isMounted.current = false;
-      unsubscribe();
-    };
-  }, []);
+      return () => unsubscribe();
+    }, [])
+  );
 
   useEffect(() => {
-    const syncPendingGeocode = async () => {
-      if (!isOffline && isMounted.current) {
+    const initialize = async () => {
+      const isValid = await validateToken();
+      if (!isValid) return;
+
+      const cachedTags = await AsyncStorage.getItem("cachedTags");
+      if (cachedTags) {
+        setAvailableTags(JSON.parse(cachedTags));
+      }
+
+      if (!isOffline) {
         try {
-          const pendingGeocode = await AsyncStorage.getItem("pendingGeocode");
-          if (pendingGeocode && isMounted.current) {
-            try {
-              const response = await geocodeAddress(pendingGeocode);
-              if (isMounted.current) {
-                setCoords(response);
-                setLocation(pendingGeocode);
-                await AsyncStorage.removeItem("pendingGeocode");
-              }
-            } catch (error) {
-              console.error("Erro ao geocodificar endereço pendente:", error);
-            }
+          const token = await AsyncStorage.getItem("userToken");
+          const response = await fetch(`${API_URL}/tags`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await response.json();
+          if (response.ok) {
+            setAvailableTags(data.tags || []);
+            await AsyncStorage.setItem("cachedTags", JSON.stringify(data.tags));
           }
         } catch (error) {
-          console.error("Erro ao buscar pendingGeocode:", error);
+          console.log("Erro ao carregar tags online, usando cache:", error);
         }
       }
-    };
 
-    syncPendingGeocode();
+      if (!isOffline) {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          try {
+            const locationData = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.High,
+            });
+            const { latitude, longitude } = locationData.coords;
+            setCoords({ latitude, longitude });
+            setMapLoaded(true);
+            const address = await reverseGeocode(latitude, longitude);
+            setLocation(address);
+          } catch (error) {
+            setMapLoaded(true);
+            setLocation("");
+          }
+        }
+      } else {
+        setMapLoaded(true);
+      }
+
+      syncOfflinePosts();
+    };
+    initialize();
   }, [isOffline]);
 
+  const pickImage = async () => {
+    if (image) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
+    if (!result.canceled) setImage(result.assets[0].uri);
+  };
+
+  const removeImage = () => {
+    setImage(null);
+  };
+
+  const handleToggleTag = (tagName: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName]
+    );
+  };
+
+  const handleAddressChange = async (text: string) => {
+    setLocation(text);
+    if (!isManualLocation && text.trim().length >= 3 && !isOffline) {
+      const suggestionsList = await getPlaceSuggestions(text);
+      setSuggestions(suggestionsList);
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const handleSuggestionSelect = async (suggestion: string) => {
+    setLocation(suggestion);
+    setSuggestions([]);
+    if (!isOffline && !isManualLocation) {
+      try {
+        const response = await geocodeAddress(suggestion);
+        setCoords(response);
+      } catch (error) {
+        Alert.alert("Erro", "Endereço não encontrado.");
+      }
+    } else {
+      Alert.alert("Aviso", "Localização manual salva. Coordenadas não serão obtidas até que haja conexão.");
+    }
+  };
+
   const handleMapPress = async (event: any) => {
-    if (isOffline || !isMounted.current) return;
+    if (isOffline) return;
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setCoords({ latitude, longitude });
+    const address = await reverseGeocode(latitude, longitude);
+    setLocation(address);
+  };
 
-    try {
-      const { latitude, longitude } = event.nativeEvent.coordinate;
+  const getRankingLabel = (totalWeight: number): string => {
+    if (totalWeight <= 5) return "Baixo";
+    if (totalWeight <= 10) return "Mediano";
+    return "Urgente";
+  };
 
-      if (!isMounted.current) return;
-      setCoords({ latitude, longitude });
+  const getRankingFromTags = () => {
+    const totalWeight = selectedTags.reduce((sum, tagName) => {
+      const tag = availableTags.find((t) => t.name === tagName);
+      return sum + (tag && tag.weight ? parseFloat(tag.weight) : 0);
+    }, 0);
+    return { totalWeight, rankingLabel: getRankingLabel(totalWeight) };
+  };
+
+  const syncOfflinePosts = async () => {
+    const netInfo = await NetInfo.fetch();
+    const isConnected = netInfo.isConnected && (await checkActualConnectivity());
+    if (!isConnected) return;
+
+    const token = await AsyncStorage.getItem("userToken");
+    const offlinePosts = await AsyncStorage.getItem("offlinePosts");
+    if (!offlinePosts) return;
+
+    let posts = JSON.parse(offlinePosts);
+    for (let i = posts.length - 1; i >= 0; i--) {
+      const post = posts[i];
+      if (post.syncFailed) continue;
+
+      const formData = new FormData();
+      formData.append("title", post.title || "Interação sem título");
+      formData.append("content", post.description || "");
+      formData.append("tags", post.tags.join(","));
+      formData.append("location", post.location);
+      formData.append("latitude", post.latitude?.toString() || "");
+      formData.append("longitude", post.longitude?.toString() || "");
+      formData.append("weight", post.weight);
+      formData.append("ranking", post.ranking);
+
+      if (post.image) {
+        const fileName = post.image.split("/").pop();
+        formData.append("image", {
+          uri: post.image,
+          type: "image/jpeg",
+          name: fileName || "image.jpg",
+        } as any);
+      }
 
       try {
-        const address = await reverseGeocode(latitude, longitude);
-        if (isMounted.current) {
-          setLocation(address);
+        const response = await fetch(`${API_URL}/posts/create`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+
+        if (response.ok) {
+          posts.splice(i, 1);
+          await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
+        } else {
+          posts[i].syncFailed = true;
+          await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
         }
       } catch (error) {
-        console.error('Erro no reverseGeocode durante handleMapPress:', error);
+        console.error("Erro ao sincronizar post:", post.id, error);
+        posts[i].syncFailed = true;
+        await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
       }
-    } catch (error) {
-      console.error('Erro no handleMapPress:', error);
     }
   };
 
   const handleSubmit = async () => {
-    if (loading || !isMounted.current || isImageLoading) return;
-
     setLoading(true);
-    setStatus('saving');
     try {
+      console.log("Iniciando handleSubmit");
       const isValid = await validateToken();
-      if (!isValid || !isMounted.current) {
-        setLoading(false);
-        setStatus('error');
+      if (!isValid) {
+        console.log("Token inválido");
         return;
       }
 
+      console.log("Imagem selecionada:", image);
       if (!image) {
         Alert.alert("Erro", "Uma foto é obrigatória.");
         setLoading(false);
-        setStatus('error');
         return;
       }
 
+      console.log("Localização inserida:", location);
       if (!location.trim()) {
         Alert.alert("Erro", "A localização é obrigatória.");
         setLoading(false);
-        setStatus('error');
         return;
       }
 
       const netInfo = await NetInfo.fetch();
       const isConnected = netInfo.isConnected && (await checkActualConnectivity());
+      console.log("Status da conexão:", isConnected ? "online" : "offline");
+
       const token = await AsyncStorage.getItem("userToken");
-      let playerId = null;
+      const playerId = await getPlayerId();
+      const { totalWeight, rankingLabel } = getRankingFromTags();
 
-      try {
-        playerId = await getPlayerId();
-      } catch (error) {
-        console.error("Erro ao obter playerId:", error);
-      }
-
-      const totalWeight = selectedTags.reduce((sum, tagName) => {
-        const tag = availableTags.find((t) => t.name === tagName);
-        return sum + (tag && tag.weight ? parseFloat(tag.weight) : 0);
-      }, 0);
-
-      const rankingLabel = totalWeight <= 120 ? "Baixo" : totalWeight <= 250 ? "Mediano" : "Urgente";
-
-      const offlineId = Date.now().toString();
       const postData = {
-        id: offlineId,
-        offlineId: offlineId,
+        id: Date.now().toString(),
         title: title || "Interação sem título",
         description,
         tags: selectedTags,
@@ -288,159 +330,330 @@ export default function NewInteraction() {
       };
 
       if (!isConnected) {
-        try {
-          let imageUri = image;
-          if (image) {
+        console.log("Salvando post offline:", postData);
+        let imageUri = image;
+        if (image) {
+          try {
             const fileName = image.split("/").pop();
             const newUri = `${FileSystem.documentDirectory}${fileName}`;
+            console.log("Copiando imagem de", image, "para", newUri);
             await FileSystem.copyAsync({ from: image, to: newUri });
             imageUri = newUri;
             postData.image = imageUri;
-          }
-
-          const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
-          const offlinePostsArray = offlinePostsStr ? JSON.parse(offlinePostsStr) : [];
-          const alreadyExists = offlinePostsArray.find((p: any) => p.offlineId === postData.offlineId);
-          if (!alreadyExists) {
-            offlinePostsArray.push(postData);
-            await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
-          }
-
-          Alert.alert("Sucesso", "Postagem salva localmente.");
-          if (isMounted.current) {
-            setStatus('saved');
-            router.push("/");
-          }
-        } catch (error) {
-          console.error("Erro ao salvar dados offline:", error);
-          Alert.alert("Erro", "Falha ao salvar dados offline.");
-          setStatus('error');
-        } finally {
-          if (isMounted.current) {
+            console.log("Imagem copiada com sucesso para:", imageUri);
+          } catch (error) {
+            console.error("Erro ao copiar imagem com FileSystem.copyAsync:", error);
+            Alert.alert("Erro", "Falha ao processar a imagem. Tente novamente.");
             setLoading(false);
+            return;
           }
         }
+
+        const offlinePosts = await AsyncStorage.getItem("offlinePosts");
+        const posts = offlinePosts ? JSON.parse(offlinePosts) : [];
+        posts.push(postData);
+        await AsyncStorage.setItem("offlinePosts", JSON.stringify(posts));
+        console.log("Post salvo offline com sucesso:", postData);
+        Alert.alert("Sucesso", "Postagem salva localmente.");
+        router.push("/");
+        setLoading(false);
         return;
       }
 
-      try {
-        const formData = new FormData();
-        formData.append("title", postData.title);
-        formData.append("content", postData.description || "");
-        formData.append("tags", postData.tags.join(","));
-        formData.append("location", postData.location);
-        formData.append("latitude", postData.latitude?.toString() || "");
-        formData.append("longitude", postData.longitude?.toString() || "");
-        formData.append("playerId", playerId || "");
-        formData.append("weight", postData.weight);
-        formData.append("ranking", postData.ranking);
-        formData.append("offlineId", postData.offlineId);
+      const formData = new FormData();
+      formData.append("title", postData.title);
+      formData.append("content", postData.description || "");
+      formData.append("tags", postData.tags.join(","));
+      formData.append("location", postData.location);
+      formData.append("latitude", postData.latitude?.toString() || "");
+      formData.append("longitude", postData.longitude?.toString() || "");
+      formData.append("playerId", playerId || "");
+      formData.append("weight", postData.weight);
+      formData.append("ranking", postData.ranking);
 
-        if (postData.image) {
-          const fileName = postData.image.split("/").pop();
-          formData.append("image", {
-            uri: postData.image,
-            type: "image/jpeg",
-            name: fileName || "image.jpg",
-          } as any);
-        }
+      if (postData.image) {
+        const fileName = postData.image.split("/").pop();
+        formData.append("image", {
+          uri: postData.image,
+          type: "image/jpeg",
+          name: fileName || "image.jpg",
+        } as any);
+      }
 
-        const response = await fetch(`${API_URL}/posts/create`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
+      const response = await fetch(`${API_URL}/posts/create`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
 
-        if (response.ok) {
-          const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
-          if (offlinePostsStr) {
-            let offlinePostsArray = JSON.parse(offlinePostsStr);
-            offlinePostsArray = offlinePostsArray.filter((post: any) => post.offlineId !== postData.offlineId);
-            await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
-          }
-
-          if (isMounted.current) {
-            setStatus('saved');
-            router.push("/");
-            setTitle("");
-            setDescription("");
-            setSelectedTags([]);
-            setLocation("");
-            setCoords({ latitude: 0, longitude: 0 });
-            setImage(null);
-            setSelectedDate(new Date().toISOString().split("T")[0]);
-            setSelectedTime(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
-          }
-        } else {
-          const data = await response.json();
-          Alert.alert("Erro", data.message || "Falha ao criar interação.");
-          setStatus('error');
-        }
-      } catch (error) {
-        console.error("Erro ao enviar dados para o servidor:", error);
-        Alert.alert("Erro", "Ocorreu um problema ao enviar a interação para o servidor.");
-        setStatus('error');
+      if (response.ok) {
+        router.push("/");
+      } else {
+        const data = await response.json();
+        Alert.alert("Erro", data.message || "Falha ao criar interação.");
       }
     } catch (error) {
       console.error("Erro geral em handleSubmit:", error);
       Alert.alert("Erro", "Ocorreu um problema ao salvar a interação.");
-      setStatus('error');
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    const syncPendingGeocode = async () => {
+      if (!isOffline) {
+        const pendingGeocode = await AsyncStorage.getItem('pendingGeocode');
+        if (pendingGeocode) {
+          try {
+            const response = await geocodeAddress(pendingGeocode);
+            setCoords(response);
+            setLocation(pendingGeocode);
+            await AsyncStorage.removeItem('pendingGeocode');
+          } catch (error) {
+            console.error('Erro ao geocodificar endereço pendente:', error);
+          }
+        }
+      }
+    };
+    syncPendingGeocode();
+  }, [isOffline]);
+
   const renderItem = ({ item }: { item: string }) => {
-    if (item === "title") return <TitleInput title={title} setTitle={setTitle} isOffline={isOffline} />;
-    if (item === "date") return <DatePicker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />;
-    if (item === "time") return <TimeInput selectedTime={selectedTime} setSelectedTime={setSelectedTime} />;
-    if (item === "description") return <DescriptionInput description={description} setDescription={setDescription} />;
-    if (item === "tags") return <TagSelector selectedTags={selectedTags} setSelectedTags={setSelectedTags} availableTags={availableTags} />;
-    if (item === "location") return (
-      <LocationPicker
-        location={location}
-        setLocation={setLocation}
-        isManualLocation={isManualLocation}
-        setIsManualLocation={setIsManualLocation}
-        isOffline={isOffline}
-        setCoords={setCoords}
-      />
-    );
-    if (item === "map") return (
-      <MapViewComponent
-        coords={coords}
-        handleMapPress={handleMapPress}
-        isManualLocation={isManualLocation}
-        isOffline={isOffline}
-      />
-    );
-    if (item === "image") return (
-      <ImagePickerComponent
-        image={image}
-        setImage={(uri) => {
-          setIsImageLoading(true);
-          setImage(uri);
-          setIsImageLoading(false);
-        }}
-      />
-    );
-    if (item === "buttons") return (
-      <SubmitButton
-        loading={loading || isImageLoading}
-        handleSubmit={handleSubmit}
-        router={router}
-        isOffline={isOffline}
-        status={status}
-      />
-    );
+    if (item === "title") {
+      return (
+        <>
+          {isOffline && (
+            <View style={styles.offlineMessage}>
+              <Text style={styles.offlineText}>Você está offline</Text>
+            </View>
+          )}
+          <Text style={styles.sectionTitle}>Título</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Digite o título da interação"
+            value={title}
+            onChangeText={setTitle}
+          />
+        </>
+      );
+    }
+    if (item === "date") {
+      return (
+        <>
+          <Text style={styles.sectionTitle}>Data</Text>
+          <Calendar
+            onDayPress={(day) => setSelectedDate(day.dateString)}
+            markedDates={{ [selectedDate]: { selected: true, disableTouchEvent: true, selectedColor: "#007AFF" } }}
+            style={styles.calendar}
+            firstDay={1}
+            theme={{
+              calendarBackground: "#fff",
+              textSectionTitleColor: "#333",
+              selectedDayBackgroundColor: "#007AFF",
+              selectedDayTextColor: "#fff",
+              todayTextColor: "#007AFF",
+              dayTextColor: "#333",
+              textDisabledColor: "#d9e1e8",
+              monthTextColor: "#333",
+              textMonthFontWeight: "bold",
+            }}
+          />
+          <Text style={styles.hint}>* Selecione a data em que a foto foi tirada.</Text>
+        </>
+      );
+    }
+    if (item === "time") {
+      return (
+        <>
+          <Text style={styles.sectionTitle}>Hora</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="hh:mm (ex.: 14:30)"
+            value={selectedTime}
+            onChangeText={setSelectedTime}
+          />
+          <Text style={styles.hint}>* Insira a hora em que a foto foi tirada.</Text>
+        </>
+      );
+    }
+    if (item === "description") {
+      return (
+        <>
+          <Text style={styles.sectionTitle}>Observações</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Campo de texto longo"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+          />
+        </>
+      );
+    }
+    if (item === "tags") {
+      const { totalWeight, rankingLabel } = getRankingFromTags();
+      return (
+        <>
+          <Text style={styles.sectionTitle}>Tags</Text>
+          <View style={styles.tagContainer}>
+            {availableTags.map((tag) => {
+              let tagBackgroundColor = "#e0e0e0";
+              if (tag.weight) {
+                const weight = parseFloat(tag.weight);
+                if (weight >= 10) tagBackgroundColor = "#ff4d4f";
+                else if (weight >= 5) tagBackgroundColor = "#ffeb3b";
+                else tagBackgroundColor = "#52c41a";
+              }
+              return (
+                <Pressable
+                  key={tag.name}
+                  style={[
+                    styles.tagChip,
+                    { backgroundColor: tagBackgroundColor },
+                    selectedTags.includes(tag.name) && styles.tagChipSelected,
+                  ]}
+                  onPress={() => handleToggleTag(tag.name)}
+                >
+                  <Text style={[styles.tagText, selectedTags.includes(tag.name) && styles.tagTextSelected]}>
+                    {tag.weight ? `${tag.name} (${tag.weight})` : tag.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.rankingDisplay}>
+            Prioridade Atual: <Text style={styles.rankingValue}>Peso: {totalWeight} | Ranking: {rankingLabel}</Text>
+          </Text>
+        </>
+      );
+    }
+    if (item === "location") {
+      return (
+        <>
+          <Text style={styles.sectionTitle}>Local</Text>
+          <View style={styles.locationModeContainer}>
+            <Pressable
+              style={[styles.modeButton, !isManualLocation && styles.modeButtonActive]}
+              onPress={() => !isOffline && setIsManualLocation(false)}
+              disabled={isOffline}
+            >
+              <Text style={!isManualLocation ? styles.modeButtonTextActive : styles.modeButtonText}>
+                Automático
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.modeButton, isManualLocation && styles.modeButtonActive]}
+              onPress={() => setIsManualLocation(true)}
+            >
+              <Text style={isManualLocation ? styles.modeButtonTextActive : styles.modeButtonText}>
+                Manual
+              </Text>
+            </Pressable>
+          </View>
+          <TextInput
+            style={styles.input}
+            placeholder={isManualLocation ? "Digite a localização manualmente" : "Digite um endereço ou selecione no mapa"}
+            value={location}
+            onChangeText={handleAddressChange}
+          />
+          {!isManualLocation && !isOffline && suggestions.length > 0 && (
+            <FlatList
+              data={suggestions}
+              renderItem={({ item }) => (
+                <Pressable style={styles.suggestionItem} onPress={() => handleSuggestionSelect(item)}>
+                  <Text>{item}</Text>
+                </Pressable>
+              )}
+              keyExtractor={(item) => item}
+              style={styles.suggestionList}
+            />
+          )}
+          {!isManualLocation && !isOffline && mapLoaded && coords.latitude !== 0 && coords.longitude !== 0 ? (
+            <MapView
+              style={styles.map}
+              region={{ latitude: coords.latitude, longitude: coords.longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }}
+              onPress={handleMapPress}
+            >
+              <Marker coordinate={{ latitude: coords.latitude, longitude: coords.longitude }} />
+            </MapView>
+          ) : isManualLocation && coords.latitude === 0 && coords.longitude === 0 ? (
+            <Text style={styles.mapLoading}>Localização manual selecionada. O mapa não será exibido sem coordenadas.</Text>
+          ) : isOffline ? (
+            <MapView
+              style={styles.map}
+              region={{
+                latitude: coords.latitude || -23.5505,
+                longitude: coords.longitude || -46.6333,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              }}
+              liteMode={true}
+            >
+              <Marker
+                coordinate={{
+                  latitude: coords.latitude || -23.5505,
+                  longitude: coords.longitude || -46.6333,
+                }}
+              />
+            </MapView>
+          ) : !isManualLocation && !isOffline ? (
+            <Text style={styles.mapLoading}>Carregando mapa...</Text>
+          ) : null}
+        </>
+      );
+    }
+    if (item === "image") {
+      return (
+        <>
+          <Pressable
+            onPress={pickImage}
+            style={[styles.imagePicker, image && styles.imagePickerDisabled]}
+            disabled={!!image}
+          >
+            <Ionicons name="camera-outline" size={24} color="#fff" />
+          </Pressable>
+          {image && (
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: image }} style={styles.imagePreview} />
+              <Pressable onPress={removeImage} style={styles.removeImageButton}>
+                <Text style={styles.removeImageText}>x</Text>
+              </Pressable>
+            </View>
+          )}
+        </>
+      );
+    }
+    if (item === "buttons") {
+      return (
+        <View style={styles.buttonContainer}>
+          <Pressable
+            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.submitButtonText}>
+                {isOffline ? "Salvar Localmente" : "Salvar"}
+              </Text>
+            )}
+          </Pressable>
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>Cancelar</Text>
+          </Pressable>
+        </View>
+      );
+    }
     return null;
   };
 
+  const sections = ["title", "date", "time", "description", "tags", "location", "image", "buttons"];
+
   return (
     <FlatList
-      data={["title", "date", "time", "description", "tags", "location", "map", "image", "buttons"]}
+      data={sections}
       renderItem={renderItem}
       keyExtractor={(item) => item}
       contentContainerStyle={styles.container}
@@ -450,4 +663,39 @@ export default function NewInteraction() {
 
 const styles = StyleSheet.create({
   container: { backgroundColor: "#fff", padding: 16, paddingBottom: 80 },
+  sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#333", marginTop: 16, marginBottom: 8 },
+  calendar: { borderWidth: 1, borderColor: "#ddd", borderRadius: 8, marginBottom: 12 },
+  input: { height: 50, borderColor: "#ddd", borderWidth: 1, borderRadius: 8, marginBottom: 12, paddingHorizontal: 12, backgroundColor: "#f8f9fa", fontSize: 16 },
+  textArea: { height: 100, textAlignVertical: "top", paddingVertical: 12 },
+  map: { width: "100%", height: 300, borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: "#ddd" },
+  mapLoading: { textAlign: "center", color: "#666", marginBottom: 16 },
+  suggestionList: { maxHeight: 150, borderWidth: 1, borderColor: "#ddd", borderRadius: 8, marginBottom: 12, backgroundColor: "#fff" },
+  suggestionItem: { padding: 10, borderBottomWidth: 1, borderBottomColor: "#ddd" },
+  tagContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 12 },
+  tagChip: { borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8, marginBottom: 8 },
+  tagChipSelected: { backgroundColor: "#FF6633" },
+  tagText: { color: "#333", fontSize: 14 },
+  tagTextSelected: { color: "#fff" },
+  rankingDisplay: { fontSize: 16, color: "#333", marginBottom: 12 },
+  rankingValue: { fontWeight: "bold", color: "#092B6E" },
+  imagePicker: { backgroundColor: "#FF6633", padding: 12, borderRadius: 50, alignItems: "center", justifyContent: "center", marginBottom: 16, marginTop: 20, width: 50, height: 50, elevation: 5, shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 5 },
+  imagePickerDisabled: { backgroundColor: "#99ccff", opacity: 0.6 },
+  imageContainer: { position: "relative", marginBottom: 16, alignSelf: "center" },
+  imagePreview: { width: 200, height: 200, borderRadius: 12, marginBottom: 16, alignSelf: "center" },
+  removeImageButton: { position: "absolute", top: 5, right: 5, backgroundColor: "rgba(255, 59, 48, 0.8)", borderRadius: 10, width: 20, height: 20, justifyContent: "center", alignItems: "center" },
+  removeImageText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
+  buttonContainer: { flexDirection: "row", justifyContent: "space-between", marginTop: 16, marginBottom: 80 },
+  submitButton: { backgroundColor: "#FF6633", padding: 14, borderRadius: 8, alignItems: "center", flex: 1, marginRight: 8 },
+  submitButtonDisabled: { backgroundColor: "#99ccff" },
+  submitButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  backButton: { padding: 14, backgroundColor: "#fff", borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#007AFF", flex: 1 },
+  backButtonText: { color: "#007AFF", fontSize: 16, fontWeight: "600" },
+  hint: { fontSize: 12, color: "#666", marginBottom: 12 },
+  locationModeContainer: { flexDirection: "row", marginBottom: 12 },
+  modeButton: { padding: 8, borderWidth: 1, borderColor: "#ddd", borderRadius: 8, marginRight: 8 },
+  modeButtonActive: { backgroundColor: "#FF6633" },
+  modeButtonText: { color: "#333" },
+  modeButtonTextActive: { color: "#fff" },
+  offlineMessage: { backgroundColor: "#ffeb3b", padding: 10, borderRadius: 8, marginBottom: 12 },
+  offlineText: { color: "#333", fontWeight: "500", textAlign: "center" },
 });
