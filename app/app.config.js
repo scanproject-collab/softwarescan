@@ -47,7 +47,7 @@ export default {
         projectId: '12e5445b-4dda-4718-9e78-5834fb41db9f',
       },
       apiUrl: process.env.EXPO_PUBLIC_API_URL,
-      googleApiKey: process.env.EXPO_PUBLIC_GOOGLE_API_KEY,
+      googleApiKey: "AIzaSyCfLlShC9EMKLBOlmjCJcxivCeUrvfUinE",
       oneSignalAppId: process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID,
     },
     experiments: {
