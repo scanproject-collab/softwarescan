@@ -1,45 +1,22 @@
-import { Stack, router, useSegments } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'react-native';
-import { useEffect, useState } from 'react';
-import { initializeOneSignalNotification } from './utils/OneSignalNotification';
-import { validateToken } from '@/src/app/utils/ValidateAuth';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
 
 export default function RootLayout() {
-  const segments = useSegments();
-  const [isCheckingToken, setIsCheckingToken] = useState(true);
-  const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const [isCheckingToken, setIsCheckingToken] = useState(false); // Remover checagem de token
+  const [initialCheckDone, setInitialCheckDone] = useState(true); // Não precisamos verificar token agora
   const [shouldNavigate, setShouldNavigate] = useState<string | null>(null);
 
   useEffect(() => {
-    const initializeApp = async () => {
-      if (initialCheckDone) return; 
-
-      try {
-        await initializeOneSignalNotification();
-        const isValid = await validateToken();
-        setIsCheckingToken(false);
-        setInitialCheckDone(true);
-
-        if (!isValid) {
-          setShouldNavigate('/pages/auth');
-        } else if (segments.length === 0 || (segments[0] === 'pages' && segments[1] === 'auth')) {
-          setShouldNavigate('/');
-        }
-      } catch (error) {
-        console.error('Erro ao inicializar o app:', error);
-        setIsCheckingToken(false);
-        setInitialCheckDone(true);
-      }
-    };
-
-    initializeApp();
-  }, [initialCheckDone]); 
+    // Removido código de verificação do token
+    setInitialCheckDone(true);
+    setIsCheckingToken(false);
+  }, []);
 
   useEffect(() => {
     if (shouldNavigate && !isCheckingToken) {
-      router.replace(shouldNavigate); 
+      router.replace(shouldNavigate);
     }
   }, [shouldNavigate, isCheckingToken]);
 

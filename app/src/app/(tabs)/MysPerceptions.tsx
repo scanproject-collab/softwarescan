@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -86,7 +86,6 @@ export default function MyPerceptions() {
     );
   }
 
-  // Use the first valid post's coordinates as the initial region
   const initialRegion = {
     latitude: postsWithCoordinates[0].latitude,
     longitude: postsWithCoordinates[0].longitude,

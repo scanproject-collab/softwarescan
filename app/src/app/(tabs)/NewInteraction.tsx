@@ -6,7 +6,7 @@ import TagSelector from "@/src/app/components/posts/TagSelector";
 import DatePicker from "@/src/app/components/posts/DatePicker";
 import TimeInput from "@/src/app/components/posts/TimeInput";
 import LocationPicker from "@/src/app/components/posts/LocationPicker";
-// import MapViewComponent from "@/src/app/components/posts/MapViewComponent"; // Mantido comentado
+import MapViewComponent from "@/src/app/components/posts/MapViewComponent"; 
 import ImagePickerComponent from "@/src/app/components/posts/ImagePickerComponent";
 import SubmitButton from "@/src/app/components/posts/SubmitButton";
 import * as Location from "expo-location";
@@ -408,23 +408,23 @@ export default function NewInteraction() {
         setCoords={setCoords}
       />
     );
-    // if (item === "map") return (
-    //   <MapViewComponent
-    //     coords={coords}
-    //     handleMapPress={handleMapPress}
-    //     isManualLocation={isManualLocation}
-    //     isOffline={isOffline}
-    //   />
-    // );
-    if (item === "image") return (
-      <ImagePickerComponent
-        image={image}
-        setImage={(uri) => {
-          setIsImageLoading(true); // Inicia o loading da imagem
-          setImage(uri);
-          setIsImageLoading(false); // Finaliza o loading da imagem
-        }}
+    if (item === "map") return (
+      <MapViewComponent
+        coords={coords}
+        handleMapPress={handleMapPress}
+        isManualLocation={isManualLocation}
+        isOffline={isOffline}
       />
+    );
+    if (item === "image") return (
+  <ImagePickerComponent
+    image={image}
+    setImage={(uri) => {
+      setIsImageLoading(true); 
+      setImage(uri);
+      setIsImageLoading(false); 
+    }}
+  />
     );
     if (item === "buttons") return (
       <SubmitButton
