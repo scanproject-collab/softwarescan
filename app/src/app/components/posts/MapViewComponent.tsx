@@ -1,6 +1,6 @@
 import React from "react";
-import MapView, { Marker } from "react-native-maps"; 
-import { Text, StyleSheet } from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import { Text, StyleSheet, View } from "react-native";
 
 interface MapViewComponentProps {
   coords: { latitude: number; longitude: number };
@@ -10,8 +10,15 @@ interface MapViewComponentProps {
 }
 
 const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline }: MapViewComponentProps) => {
+  console.log("MapViewComponent - Coords:", coords);
+  console.log("MapViewComponent - isManualLocation:", isManualLocation, "isOffline:", isOffline);
 
-  if (isManualLocation && coords.latitude === 0 && coords.longitude === 0) {
+  // Verifica se as coordenadas são válidas (não 0 e números reais)
+  const areCoordsValid = coords.latitude !== 0 && coords.longitude !== 0 && 
+                        !isNaN(coords.latitude) && !isNaN(coords.longitude);
+
+  if (isManualLocation && !areCoordsValid) {
+    console.log("Mapa não exibido: localização manual sem coordenadas válidas");
     return (
       <Text style={styles.mapLoading}>
         Localização manual selecionada. O mapa não será exibido sem coordenadas.
@@ -20,31 +27,34 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
   }
 
   if (isOffline) {
+    console.log("Renderizando mapa em modo offline com liteMode");
     return (
       <MapView
         style={styles.map}
         region={{
-          latitude: coords.latitude || -23.5505, 
-          longitude: coords.longitude || -46.6333,
+          latitude: areCoordsValid ? coords.latitude : -23.5505, // Fallback para São Paulo
+          longitude: areCoordsValid ? coords.longitude : -46.6333,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}
-        liteMode={true} 
+        liteMode={true}
       >
         <Marker
           coordinate={{
-            latitude: coords.latitude || -23.5505,
-            longitude: coords.longitude || -46.6333,
+            latitude: areCoordsValid ? coords.latitude : -23.5505,
+            longitude: areCoordsValid ? coords.longitude : -46.6333,
           }}
         />
       </MapView>
     );
   }
 
-  if (!isManualLocation && !isOffline && coords.latitude === 0 && coords.longitude === 0) {
+  if (!areCoordsValid) {
+    console.log("Mapa não exibido: coordenadas inválidas ou não carregadas");
     return <Text style={styles.mapLoading}>Carregando mapa...</Text>;
   }
 
+  console.log("Renderizando mapa com coordenadas válidas");
   return (
     <MapView
       style={styles.map}

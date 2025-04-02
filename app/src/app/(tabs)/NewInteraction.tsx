@@ -79,20 +79,20 @@ export default function NewInteraction() {
 
   useEffect(() => {
     isMounted.current = true;
-
+  
     const initialize = async () => {
       try {
         const isValid = await validateToken();
         if (!isValid || !isMounted.current) return;
-
+  
         await checkConnection();
         if (!isMounted.current) return;
-
+  
         const cachedTags = await AsyncStorage.getItem("cachedTags");
         if (cachedTags && isMounted.current) {
           setAvailableTags(JSON.parse(cachedTags));
         }
-
+  
         if (!isOffline && isMounted.current) {
           try {
             const token = await AsyncStorage.getItem("userToken");
@@ -108,68 +108,64 @@ export default function NewInteraction() {
             console.log("Erro ao carregar tags online, usando cache:", error);
           }
         }
-
+  
         if (!isOffline && isMounted.current) {
           try {
+            console.log("Solicitando permissões de localização...");
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === "granted" && isMounted.current) {
+              console.log("Permissão concedida, obtendo localização...");
               try {
                 const locationData = await Location.getCurrentPositionAsync({
                   accuracy: Location.Accuracy.High,
+                  timeInterval: 10000, // Aguarda até 10s
+                  distanceInterval: 10,
                 });
-
                 if (!isMounted.current) return;
-
+  
                 const { latitude, longitude } = locationData.coords;
+                console.log("Coordenadas obtidas:", { latitude, longitude });
                 setCoords({ latitude, longitude });
-
+  
                 try {
                   const address = await reverseGeocode(latitude, longitude);
                   if (isMounted.current) {
+                    console.log("Endereço obtido:", address);
                     setLocation(address);
                   }
                 } catch (error) {
-                  console.error("Erro ao obter endereço via reverse geocoding:", error);
-                  if (isMounted.current) {
-                    setLocation("Localização não disponível");
-                  }
+                  console.error("Erro no reverse geocoding:", error);
+                  if (isMounted.current) setLocation("Localização não disponível");
                 }
               } catch (error) {
                 console.error("Erro ao obter localização:", error);
-                if (isMounted.current) {
-                  setLocation("Localização não disponível");
-                }
+                if (isMounted.current) setLocation("Localização não disponível");
               }
             } else {
               console.log("Permissão de localização não concedida");
-              if (isMounted.current) {
-                setLocation("Permissão de localização não concedida");
-              }
+              if (isMounted.current) setLocation("Permissão de localização não concedida");
             }
           } catch (error) {
-            console.error("Erro ao obter permissão de localização:", error);
-            if (isMounted.current) {
-              setLocation("Erro ao obter permissão de localização");
-            }
+            console.error("Erro ao solicitar permissão de localização:", error);
+            if (isMounted.current) setLocation("Erro ao obter permissão de localização");
           }
         }
       } catch (error) {
         console.error("Erro na inicialização:", error);
       }
     };
-
+  
     initialize();
-
+  
     const unsubscribe = NetInfo.addEventListener(async (state) => {
       if (!isMounted.current) return;
-
       const isConnected = state.isConnected && (await checkActualConnectivity());
       if (isMounted.current) {
         setIsOffline(!isConnected);
         if (!isConnected) setIsManualLocation(true);
       }
     });
-
+  
     return () => {
       console.log("NewInteraction desmontado");
       isMounted.current = false;
