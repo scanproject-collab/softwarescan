@@ -2,26 +2,9 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet } from 'react-native';
-import { useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { validateToken } from '@/src/app/utils/ValidateAuth';
-import { router } from 'expo-router';
 import Navbar from '../components/Navbar';
 
 export default function TabsLayout() {
-  useEffect(() => {
-    const checkToken = async () => {
-      const isValid = await validateToken();
-      if (!isValid) {
-        console.log('Token inválido ou expirado, redirecionando para login');
-        await AsyncStorage.removeItem('userToken');
-        router.replace('/pages/auth');
-      }
-    };
-
-    checkToken();
-  }, []);
-
   return (
     <Tabs
       screenOptions={{

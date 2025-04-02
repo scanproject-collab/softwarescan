@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import React from "react";
-import { View, Pressable, Image, StyleSheet, Text, Alert } from "react-native";
+import { View, TouchableOpacity, Image, StyleSheet, Text, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 interface ImagePickerProps {
@@ -14,23 +14,23 @@ const ImagePickerComponent = ({ image, setImage }: ImagePickerProps) => {
     if (image) return;
 
     try {
-      // Verifica permissões
+      // Check permissions
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permissão negada", "Precisamos de permissão para acessar a galeria.");
+        Alert.alert("Permission denied", "We need permission to access the gallery.");
         return;
       }
 
-      console.log("Abrindo galeria para seleção de imagem...");
+      console.log("Opening gallery for image selection...");
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ["images"],
         allowsEditing: true,
         quality: 0.7,
       });
-
+      
       if (!result.canceled) {
-        console.log("Imagem selecionada:", result.assets[0].uri);
+        console.log("Image selected:", result.assets[0].uri);
 
         const compressedImage = await ImageManipulator.manipulateAsync(
           result.assets[0].uri,
@@ -38,14 +38,14 @@ const ImagePickerComponent = ({ image, setImage }: ImagePickerProps) => {
           { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
         );
 
-        console.log("Imagem comprimida:", compressedImage.uri);
+        console.log("Image compressed:", compressedImage.uri);
         setImage(compressedImage.uri);
       } else {
-        console.log("Seleção de imagem cancelada.");
+        console.log("Image selection cancelled.");
       }
     } catch (error) {
-      console.error("Erro ao selecionar ou manipular a imagem:", error);
-      Alert.alert("Erro", "Ocorreu um problema ao selecionar ou cortar a imagem. Tente novamente.");
+      console.error("Error selecting or manipulating image:", error);
+      Alert.alert("Error", "There was a problem selecting or cropping the image. Please try again.");
     }
   };
 
@@ -55,19 +55,19 @@ const ImagePickerComponent = ({ image, setImage }: ImagePickerProps) => {
 
   return (
     <View>
-      <Pressable
+      <TouchableOpacity
         onPress={pickImage}
         style={[styles.imagePicker, image && styles.imagePickerDisabled]}
         disabled={!!image}
       >
         <Ionicons name="camera-outline" size={24} color="#fff" />
-      </Pressable>
+      </TouchableOpacity>
       {image && (
         <View style={styles.imageContainer}>
           <Image source={{ uri: image }} style={styles.imagePreview} />
-          <Pressable onPress={removeImage} style={styles.removeImageButton}>
+          <TouchableOpacity onPress={removeImage} style={styles.removeImageButton}>
             <Text style={styles.removeImageText}>x</Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
       )}
     </View>

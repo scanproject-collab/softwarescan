@@ -30,15 +30,17 @@ const LocationPicker = ({
       setSuggestions([]);
     }
   };
-
   const handleSuggestionSelect = async (suggestion: string) => {
     setLocation(suggestion);
     setSuggestions([]);
     if (!isOffline && !isManualLocation) {
       try {
+        console.log("Tentando geocodificar:", suggestion);
         const response = await geocodeAddress(suggestion);
+        console.log("Coordenadas obtidas:", response);
         setCoords(response);
       } catch (error) {
+        console.error("Erro ao geocodificar:", error);
         Alert.alert("Erro", "Endereço não encontrado.");
       }
     } else {
