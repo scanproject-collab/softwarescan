@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Platform } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import Navbar from '../components/Navbar';
 
 export default function TabsLayout() {

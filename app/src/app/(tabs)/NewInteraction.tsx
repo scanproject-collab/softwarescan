@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, FlatList, Alert, StyleSheet, Text } from "react-native";
+import { FlatList, Alert, StyleSheet, Text } from "react-native";
 import TitleInput from "@/src/app/components/posts/TitleInput";
 import DescriptionInput from "@/src/app/components/posts/DescriptionInput";
 import TagSelector from "@/src/app/components/posts/TagSelector";
@@ -48,10 +48,13 @@ export default function NewInteraction() {
 
   const checkActualConnectivity = async () => {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       const response = await fetch(`${API_URL}/ping`, {
         method: "GET",
-        timeout: 5000,
+        signal: controller.signal,
       }).catch(() => null);
+      clearTimeout(timeoutId);
       return response && response.ok;
     } catch {
       return false;
@@ -356,15 +359,15 @@ export default function NewInteraction() {
             offlinePostsArray = offlinePostsArray.filter((post: any) => post.offlineId !== postData.offlineId);
             await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
           }
-
+          
           if (isMounted.current) {
-            setStatus('saved66');
+            setStatus('saved');
             router.push("/");
             setTitle("");
             setDescription("");
             setSelectedTags([]);
             setLocation("");
-            setCoords(null); // Resetar para null
+            setCoords(null); 
             setImage(null);
             setSelectedDate(new Date().toISOString().split("T")[0]);
             setSelectedTime(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));

@@ -10,7 +10,6 @@ interface SubmitButtonProps {
 }
 
 const SubmitButton = ({ loading, handleSubmit, router, isOffline, status }: SubmitButtonProps) => {
-  // Função para determinar o conteúdo do botão com base no status
   const renderButtonContent = () => {
     if (status === "saving") {
       return <ActivityIndicator color="#fff" />;
