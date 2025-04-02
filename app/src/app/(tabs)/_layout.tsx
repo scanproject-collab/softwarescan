@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, Platform } from 'react-native';
 import Navbar from '../components/Navbar';
 
 export default function TabsLayout() {
@@ -92,6 +92,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  leftTab: {
+    marginRight: 30,
+  },
+  rightTab: {
+    marginLeft: 30,
+  },
   addButton: {
     top: -5,
     justifyContent: 'center',
@@ -109,5 +115,4 @@ const styles = StyleSheet.create({
     left: '50%',
     transform: [{ translateX: -25 }],
   },
-
 });

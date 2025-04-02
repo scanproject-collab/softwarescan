@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, FlatList, Alert, StyleSheet } from "react-native";
+import { View, FlatList, Alert, StyleSheet, Text } from "react-native";
 import TitleInput from "@/src/app/components/posts/TitleInput";
 import DescriptionInput from "@/src/app/components/posts/DescriptionInput";
 import TagSelector from "@/src/app/components/posts/TagSelector";
@@ -417,18 +417,18 @@ export default function NewInteraction() {
       />
     );
     if (item === "image") return (
-  <ImagePickerComponent
-    image={image}
-    setImage={(uri) => {
-      setIsImageLoading(true); 
-      setImage(uri);
-      setIsImageLoading(false); 
-    }}
-  />
+      <ImagePickerComponent
+        image={image}
+        setImage={(uri) => {
+          setIsImageLoading(true); 
+          setImage(uri);
+          setIsImageLoading(false); 
+        }}
+      />
     );
     if (item === "buttons") return (
       <SubmitButton
-        loading={loading || isImageLoading} // Inclui o loading da imagem
+        loading={loading || isImageLoading} 
         handleSubmit={handleSubmit}
         router={router}
         isOffline={isOffline}
