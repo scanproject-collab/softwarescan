@@ -130,7 +130,9 @@ Modal.setAppElement("#root");
               <h2 className="text-lg font-semibold">Vínculos</h2>
             </div>
             <div className="mb-4 flex items-center gap-2 rounded bg-blue-50 p-3">
-              <div className="h-10 w-10 rounded-full bg-gray-300" />
+            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-gray-300 text-gray-700 font-bold">
+              {user?.name?.charAt(0)?.toUpperCase() || "G"}
+            </div>
               <div>
                 <p className="font-medium">{user?.name || "Gestor"}</p>
                 <p className="text-sm text-gray-600">{user?.institution?.title || "DINT PMAL"}</p>

@@ -40,8 +40,8 @@ const PolygonManagement: React.FC = () => {
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [filterDateStart, setFilterDateStart] = useState<string>('');
     const [filterDateEnd, setFilterDateEnd] = useState<string>(''); // Novo estado para data de fim
-    const [filterWeight, setFilterWeight] = useState<string>('');
-    const [weights, setWeights] = useState<string[]>([]);
+    const [filterTag, setFilterTag] = useState<string>(''); // Substitui filterWeight
+    const [tags, setTags] = useState<string[]>([]); // Substitui weights
     const [loadingPosts, setLoadingPosts] = useState(true);
     const [loadingPolygons, setLoadingPolygons] = useState(true);
     const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>('');
@@ -106,20 +106,22 @@ const PolygonManagement: React.FC = () => {
             }
         };
 
-        const fetchWeights = async () => {
+        const fetchTags = async () => {
             try {
-                const response = await api.get('/tags/weights', {
+                const response = await api.get('/tags', {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                setWeights(response.data.weights || []);
+                const tagList = response.data.tags.map((tag: any) => tag.name);
+                setTags(tagList);
             } catch (error) {
-                console.error('Erro ao carregar pesos:', error);
+                console.error('Erro ao carregar tags:', error);
+                toast.error('Erro ao carregar tags.');
             }
         };
 
         fetchPosts();
         fetchPolygons();
-        fetchWeights();
+        fetchTags(); // Busca as tags
     }, [token, user?.role]);
 
     const filteredPosts = useMemo(() => {
@@ -127,7 +129,7 @@ const PolygonManagement: React.FC = () => {
             const postDate = new Date(post.createdAt);
             const matchesDateStart = filterDateStart ? postDate >= new Date(filterDateStart) : true;
             const matchesDateEnd = filterDateEnd ? postDate <= new Date(filterDateEnd) : true;
-            const matchesWeight = filterWeight ? post.weight === filterWeight : true;
+            const matchesTag = filterTag ? post.tags.some((tag: any) => tag.name === filterTag) : true; // Filtra por tags
             const matchesSelectedLocation = selectedLocation ? post.location === selectedLocation : true;
 
             let matchesLocation = true;
@@ -141,9 +143,9 @@ const PolygonManagement: React.FC = () => {
                 matchesLocation = distance <= 5;
             }
 
-            return matchesDateStart && matchesDateEnd && matchesWeight && matchesLocation && matchesSelectedLocation;
+            return matchesDateStart && matchesDateEnd && matchesTag && matchesLocation && matchesSelectedLocation;
         });
-    }, [posts, filterDateStart, filterDateEnd, filterWeight, selectedLocation, filterCoords]);
+    }, [posts, filterDateStart, filterDateEnd, filterTag, selectedLocation, filterCoords]);
 
     useEffect(() => {
         if (mapRef.current && googleMapsApiKey && window.google?.maps?.geometry) {
@@ -579,7 +581,7 @@ const PolygonManagement: React.FC = () => {
                                 {suggestions.map((suggestion) => (
                                     <li
                                         key={suggestion}
-                                        onClick={() => handleSuggestionSelect(suggestion)}
+ majestic                                        onClick={() => handleSuggestionSelect(suggestion)}
                                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                                     >
                                         {suggestion}
@@ -589,14 +591,14 @@ const PolygonManagement: React.FC = () => {
                         )}
                     </div>
                     <select
-                        value={filterWeight}
-                        onChange={(e) => setFilterWeight(e.target.value)}
+                        value={filterTag}
+                        onChange={(e) => setFilterTag(e.target.value)}
                         className="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                        <option value="">Todos os Pesos</option>
-                        {weights.map((weight) => (
-                            <option key={weight} value={weight}>
-                                {weight}
+                        <option value="">Todas as Tags</option>
+                        {tags.map((tag) => (
+                            <option key={tag} value={tag}>
+                                {tag}
                             </option>
                         ))}
                     </select>
