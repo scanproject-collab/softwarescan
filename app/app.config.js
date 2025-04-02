@@ -53,6 +53,6 @@ export default {
     experiments: {
       typedRoutes: true,
     },
-    owner: 'softwarescan',
+    "owner": "softwarescaan"
   },
 };
