@@ -14,10 +14,10 @@ const ImagePickerComponent = ({ image, setImage }: ImagePickerProps) => {
     if (image) return;
 
     try {
-      // Check permissions
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log("Status da permissão:", status);
       if (status !== "granted") {
-        Alert.alert("Permission denied", "We need permission to access the gallery.");
+        Alert.alert("Permissão negada", "Precisamos de permissão para acessar a galeria.");
         return;
       }
 

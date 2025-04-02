@@ -109,10 +109,5 @@ const styles = StyleSheet.create({
     left: '50%',
     transform: [{ translateX: -25 }],
   },
-  leftTab: {
-    // Adicione estilos específicos para o botão da aba esquerda, se necessário
-  },
-  rightTab: {
-    // Adicione estilos específicos para o botão da aba direita, se necessário
-  },
+
 });

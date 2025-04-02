@@ -171,6 +171,7 @@ export default function NewInteraction() {
     });
 
     return () => {
+      console.log("NewInteraction desmontado");
       isMounted.current = false;
       unsubscribe();
     };

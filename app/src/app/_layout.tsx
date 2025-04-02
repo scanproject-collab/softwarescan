@@ -14,7 +14,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     const initializeApp = async () => {
-      if (initialCheckDone) return; // Evita reexecução desnecessária
+      if (initialCheckDone) return; 
 
       try {
         await initializeOneSignalNotification();
@@ -35,11 +35,11 @@ export default function RootLayout() {
     };
 
     initializeApp();
-  }, []); // Executa apenas uma vez na montagem
+  }, [initialCheckDone]); 
 
   useEffect(() => {
     if (shouldNavigate && !isCheckingToken) {
-      router.replace(shouldNavigate); // Navega apenas quando necessário
+      router.replace(shouldNavigate); 
     }
   }, [shouldNavigate, isCheckingToken]);
 
