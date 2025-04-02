@@ -6,7 +6,7 @@ import TagSelector from "@/src/app/components/posts/TagSelector";
 import DatePicker from "@/src/app/components/posts/DatePicker";
 import TimeInput from "@/src/app/components/posts/TimeInput";
 import LocationPicker from "@/src/app/components/posts/LocationPicker";
-import MapViewComponent from "@/src/app/components/posts/MapViewComponent"; 
+import MapViewComponent from "@/src/app/components/posts/MapViewComponent";
 import ImagePickerComponent from "@/src/app/components/posts/ImagePickerComponent";
 import SubmitButton from "@/src/app/components/posts/SubmitButton";
 import * as Location from "expo-location";
@@ -39,7 +39,7 @@ export default function NewInteraction() {
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [isImageLoading, setIsImageLoading] = useState(false); // Controle de carregamento da imagem
+  const [isImageLoading, setIsImageLoading] = useState(false);
   const isMounted = useRef(true);
 
   const router = useRouter();
@@ -226,7 +226,7 @@ export default function NewInteraction() {
   };
 
   const handleSubmit = async () => {
-    if (loading || !isMounted.current || isImageLoading) return; // Impede submit se a imagem estiver carregando
+    if (loading || !isMounted.current || isImageLoading) return;
 
     setLoading(true);
     setStatus('saving');
@@ -420,15 +420,15 @@ export default function NewInteraction() {
       <ImagePickerComponent
         image={image}
         setImage={(uri) => {
-          setIsImageLoading(true); 
+          setIsImageLoading(true);
           setImage(uri);
-          setIsImageLoading(false); 
+          setIsImageLoading(false);
         }}
       />
     );
     if (item === "buttons") return (
       <SubmitButton
-        loading={loading || isImageLoading} 
+        loading={loading || isImageLoading}
         handleSubmit={handleSubmit}
         router={router}
         isOffline={isOffline}
@@ -440,7 +440,7 @@ export default function NewInteraction() {
 
   return (
     <FlatList
-      data={["title", "date", "time", "description", "tags", "location", "image", "buttons"]}
+      data={["title", "date", "time", "description", "tags", "location", "map", "image", "buttons"]}
       renderItem={renderItem}
       keyExtractor={(item) => item}
       contentContainerStyle={styles.container}
