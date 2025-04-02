@@ -15,7 +15,7 @@ export default {
     },
     android: {
       package: 'com.anonymous.softwarescan',
-      permissions: ["NOTIFICATIONS", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      permissions: ["NOTIFICATIONS", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "CAMERA", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "INTERNET", "FOREGROUND_SERVICE"],
       googleServicesFile: './google-services.json',
     },
     web: {
@@ -44,7 +44,7 @@ export default {
     ],
     extra: {
       eas: {
-        projectId: '2ad9aa1c-f80d-4558-8a5a-d02752d160e3',
+        projectId: '12e5445b-4dda-4718-9e78-5834fb41db9f',
       },
       apiUrl: process.env.EXPO_PUBLIC_API_URL,
       googleApiKey: process.env.EXPO_PUBLIC_GOOGLE_API_KEY,
