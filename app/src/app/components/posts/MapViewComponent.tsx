@@ -3,7 +3,7 @@ import MapView, { Marker } from "react-native-maps";
 import { Text, StyleSheet, View } from "react-native";
 
 interface MapViewComponentProps {
-  coords: { latitude: number; longitude: number };
+  coords: { latitude: number; longitude: number } | null; // Aceita null
   handleMapPress: (event: any) => void;
   isManualLocation: boolean;
   isOffline: boolean;
@@ -13,9 +13,14 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
   console.log("MapViewComponent - Coords:", coords);
   console.log("MapViewComponent - isManualLocation:", isManualLocation, "isOffline:", isOffline);
 
-  // Verifica se as coordenadas são válidas (não 0 e números reais)
-  const areCoordsValid = coords.latitude !== 0 && coords.longitude !== 0 && 
+  // Verifica se as coordenadas são válidas
+  const areCoordsValid = coords && coords.latitude !== 0 && coords.longitude !== 0 && 
                         !isNaN(coords.latitude) && !isNaN(coords.longitude);
+
+  if (!coords || !areCoordsValid) {
+    console.log("Mapa não exibido: coordenadas inválidas ou não carregadas");
+    return <Text style={styles.mapLoading}>Carregando mapa...</Text>;
+  }
 
   if (isManualLocation && !areCoordsValid) {
     console.log("Mapa não exibido: localização manual sem coordenadas válidas");
@@ -47,11 +52,6 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
         />
       </MapView>
     );
-  }
-
-  if (!areCoordsValid) {
-    console.log("Mapa não exibido: coordenadas inválidas ou não carregadas");
-    return <Text style={styles.mapLoading}>Carregando mapa...</Text>;
   }
 
   console.log("Renderizando mapa com coordenadas válidas");

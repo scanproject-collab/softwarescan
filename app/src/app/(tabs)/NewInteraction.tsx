@@ -30,7 +30,7 @@ export default function NewInteraction() {
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [image, setImage] = useState<string | null>(null);
   const [location, setLocation] = useState("");
-  const [coords, setCoords] = useState({ latitude: 0, longitude: 0 });
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null); // Inicialmente null
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedTime, setSelectedTime] = useState(
     new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
@@ -38,6 +38,7 @@ export default function NewInteraction() {
   const [isManualLocation, setIsManualLocation] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isLocationLoading, setIsLocationLoading] = useState(true); // Novo estado para carregamento da localização
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isImageLoading, setIsImageLoading] = useState(false);
   const isMounted = useRef(true);
@@ -79,20 +80,20 @@ export default function NewInteraction() {
 
   useEffect(() => {
     isMounted.current = true;
-  
+
     const initialize = async () => {
       try {
         const isValid = await validateToken();
         if (!isValid || !isMounted.current) return;
-  
+
         await checkConnection();
         if (!isMounted.current) return;
-  
+
         const cachedTags = await AsyncStorage.getItem("cachedTags");
         if (cachedTags && isMounted.current) {
           setAvailableTags(JSON.parse(cachedTags));
         }
-  
+
         if (!isOffline && isMounted.current) {
           try {
             const token = await AsyncStorage.getItem("userToken");
@@ -108,37 +109,32 @@ export default function NewInteraction() {
             console.log("Erro ao carregar tags online, usando cache:", error);
           }
         }
-  
+
         if (!isOffline && isMounted.current) {
           try {
             console.log("Solicitando permissões de localização...");
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === "granted" && isMounted.current) {
               console.log("Permissão concedida, obtendo localização...");
+              const locationData = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.High,
+                timeInterval: 10000,
+                distanceInterval: 10,
+              });
+              if (!isMounted.current) return;
+
+              const { latitude, longitude } = locationData.coords;
+              console.log("Coordenadas obtidas:", { latitude, longitude });
+              setCoords({ latitude, longitude });
+
               try {
-                const locationData = await Location.getCurrentPositionAsync({
-                  accuracy: Location.Accuracy.High,
-                  timeInterval: 10000, // Aguarda até 10s
-                  distanceInterval: 10,
-                });
-                if (!isMounted.current) return;
-  
-                const { latitude, longitude } = locationData.coords;
-                console.log("Coordenadas obtidas:", { latitude, longitude });
-                setCoords({ latitude, longitude });
-  
-                try {
-                  const address = await reverseGeocode(latitude, longitude);
-                  if (isMounted.current) {
-                    console.log("Endereço obtido:", address);
-                    setLocation(address);
-                  }
-                } catch (error) {
-                  console.error("Erro no reverse geocoding:", error);
-                  if (isMounted.current) setLocation("Localização não disponível");
+                const address = await reverseGeocode(latitude, longitude);
+                if (isMounted.current) {
+                  console.log("Endereço obtido:", address);
+                  setLocation(address);
                 }
               } catch (error) {
-                console.error("Erro ao obter localização:", error);
+                console.error("Erro no reverse geocoding:", error);
                 if (isMounted.current) setLocation("Localização não disponível");
               }
             } else {
@@ -146,17 +142,23 @@ export default function NewInteraction() {
               if (isMounted.current) setLocation("Permissão de localização não concedida");
             }
           } catch (error) {
-            console.error("Erro ao solicitar permissão de localização:", error);
+            console.error("Erro ao obter localização:", error);
             if (isMounted.current) setLocation("Erro ao obter permissão de localização");
+          } finally {
+            if (isMounted.current) setIsLocationLoading(false); // Finaliza o carregamento
           }
+        } else {
+          if (isMounted.current) setIsLocationLoading(false);
         }
       } catch (error) {
         console.error("Erro na inicialização:", error);
+      } finally {
+        if (isMounted.current) setIsLocationLoading(false);
       }
     };
-  
+
     initialize();
-  
+
     const unsubscribe = NetInfo.addEventListener(async (state) => {
       if (!isMounted.current) return;
       const isConnected = state.isConnected && (await checkActualConnectivity());
@@ -165,7 +167,7 @@ export default function NewInteraction() {
         if (!isConnected) setIsManualLocation(true);
       }
     });
-  
+
     return () => {
       console.log("NewInteraction desmontado");
       isMounted.current = false;
@@ -274,8 +276,8 @@ export default function NewInteraction() {
         description,
         tags: selectedTags,
         location,
-        latitude: !isManualLocation && isConnected ? coords.latitude : null,
-        longitude: !isManualLocation && isConnected ? coords.longitude : null,
+        latitude: !isManualLocation && isConnected && coords ? coords.latitude : null,
+        longitude: !isManualLocation && isConnected && coords ? coords.longitude : null,
         weight: totalWeight.toString(),
         ranking: rankingLabel,
         image,
@@ -356,13 +358,13 @@ export default function NewInteraction() {
           }
 
           if (isMounted.current) {
-            setStatus('saved');
+            setStatus('saved66');
             router.push("/");
             setTitle("");
             setDescription("");
             setSelectedTags([]);
             setLocation("");
-            setCoords({ latitude: 0, longitude: 0 });
+            setCoords(null); // Resetar para null
             setImage(null);
             setSelectedDate(new Date().toISOString().split("T")[0]);
             setSelectedTime(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
@@ -404,7 +406,7 @@ export default function NewInteraction() {
         setCoords={setCoords}
       />
     );
-    if (item === "map") return (
+    if (item === "map" && !isLocationLoading && coords) return (
       <MapViewComponent
         coords={coords}
         handleMapPress={handleMapPress}
@@ -440,10 +442,12 @@ export default function NewInteraction() {
       renderItem={renderItem}
       keyExtractor={(item) => item}
       contentContainerStyle={styles.container}
+      ListHeaderComponent={isLocationLoading ? <Text style={styles.loadingText}>Carregando localização...</Text> : null}
     />
   );
 }
 
 const styles = StyleSheet.create({
   container: { backgroundColor: "#fff", padding: 16, paddingBottom: 80 },
+  loadingText: { textAlign: "center", color: "#666", marginVertical: 16 },
 });
