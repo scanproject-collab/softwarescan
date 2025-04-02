@@ -528,7 +528,7 @@ const PolygonManagement: React.FC = () => {
                         </button>
                     )}
                     <div className="mt-4">
-                        <label className="blockBond text-sm font-medium text-gray-700">Importar Shapefile</label>
+                        <label className="block text-sm font-medium text-gray-700">Importar Shapefile</label>
                         <input
                             type="file"
                             multiple
@@ -581,7 +581,7 @@ const PolygonManagement: React.FC = () => {
                                 {suggestions.map((suggestion) => (
                                     <li
                                         key={suggestion}
- majestic                                        onClick={() => handleSuggestionSelect(suggestion)}
+                                        onClick={() => handleSuggestionSelect(suggestion)}
                                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                                     >
                                         {suggestion}
