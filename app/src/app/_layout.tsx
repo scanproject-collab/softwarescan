@@ -43,9 +43,9 @@ export default function RootLayout() {
     }
   }, [shouldNavigate, isCheckingToken]);
 
-  // if (isCheckingToken) {
-  //   return <LoadingScreen />;
-  // }
+  if (isCheckingToken) {
+    return <LoadingScreen />;
+  }
 
   return (
     <>
