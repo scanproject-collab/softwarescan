@@ -16,7 +16,6 @@ export default {
     android: {
       package: 'com.anonymous.softwarescan',
       permissions: ["NOTIFICATIONS", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "CAMERA", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "INTERNET", "FOREGROUND_SERVICE"],
-      googleServicesFile: './google-services.json',
     },
     web: {
       bundler: 'metro',
@@ -56,9 +55,3 @@ export default {
     "owner": "softwarescaan"
   },
 };
-
-import { writeFileSync } from 'fs';
-
-if (process.env.GOOGLE_SERVICES_JSON) {
-  writeFileSync('./google-services.json', Buffer.from(process.env.GOOGLE_SERVICES_JSON, 'base64'));
-}
