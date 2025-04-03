@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { writeFileSync } from 'fs';
 
 export default {
   expo: {
@@ -55,3 +56,14 @@ export default {
     "owner": "softwarescaan"
   },
 };
+
+
+if (process.env.GOOGLE_SERVICES_JSON) {
+  try {
+    const jsonString = Buffer.from(process.env.GOOGLE_SERVICES_JSON, 'base64').toString('utf8');
+    JSON.parse(jsonString); // Verifica se é um JSON válido
+    writeFileSync('./google-services.json', jsonString, 'utf8');
+  } catch (error) {
+    console.error('Erro ao decodificar GOOGLE_SERVICES_JSON:', error);
+  }
+}
