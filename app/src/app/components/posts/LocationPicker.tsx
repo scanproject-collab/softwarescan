@@ -51,7 +51,7 @@ const LocationPicker = ({
         setCoords(response);
       } catch (error) {
         console.error("Erro ao geocodificar:", error);
-        Alert.alert("Erro", "Endereço não encontrado.");
+        Alert.alert("Erro", "Endereço não encontrado. Verifique sua conexão de internet.");
       }
     } else {
       Alert.alert("Aviso", "Localização manual salva. Coordenadas não serão obtidas até que haja conexão.");
@@ -82,7 +82,13 @@ const LocationPicker = ({
       </View>
       <TextInput
         style={styles.input}
-        placeholder={isManualLocation ? "Digite a localização manualmente" : "Digite um endereço ou selecione no mapa"}
+        placeholder={
+          isManualLocation && isOffline
+            ? "Digite o endereço completo, ex: Rua Exemplo, 123, Cidade - UF, 57348-345"
+            : isManualLocation
+            ? "Digite a localização manualmente"
+            : "Digite um endereço ou selecione no mapa"
+        }
         value={location}
         onChangeText={handleAddressChange}
       />

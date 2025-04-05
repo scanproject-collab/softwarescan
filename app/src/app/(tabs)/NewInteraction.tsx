@@ -139,17 +139,24 @@ export default function NewInteraction() {
 
             if (locationData && locationData.coords) {
               const { latitude, longitude } = locationData.coords;
+              console.log("Coordenadas obtidas:", latitude, longitude);
               setCoords({ latitude, longitude });
 
               try {
                 const address = await reverseGeocode(latitude, longitude);
                 if (isMounted.current) {
-                  setLocation(address);
+                  if (address.includes("Erro")) {
+                    Alert.alert("Erro", address);
+                    setLocation("Endereço não encontrado");
+                  } else {
+                    setLocation(address);
+                  }
                 }
               } catch (error) {
                 console.error("Erro no reverse geocoding:", error);
                 if (isMounted.current) {
-                  setLocation("Endereço não encontrado");
+                  setLocation("Erro ao obter endereço");
+                  Alert.alert("Erro", "Não foi possível obter o endereço. Verifique sua conexão de internet.");
                 }
               }
             }
@@ -227,7 +234,7 @@ export default function NewInteraction() {
 
       if (isOffline) {
         const offlinePost = {
-          id: Date.now().toString(), // ID temporário único
+          id: Date.now().toString(),
           title,
           content: description,
           tags: selectedTags,
@@ -238,7 +245,7 @@ export default function NewInteraction() {
           weight: totalWeight.toString(),
           ranking,
           createdAt: new Date().toISOString(),
-          offlineId: Date.now().toString(), // Garante um offlineId único para postagens offline
+          offlineId: Date.now().toString(),
         };
 
         const offlinePosts = JSON.parse(await AsyncStorage.getItem("offlinePosts") || "[]");
@@ -266,7 +273,6 @@ export default function NewInteraction() {
         weight: totalWeight.toString(),
         ranking,
         createdAt: new Date().toISOString(),
-        // Não inclui offlineId para postagens online
       };
 
       const formData = new FormData();

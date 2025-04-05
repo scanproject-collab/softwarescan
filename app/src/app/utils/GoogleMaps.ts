@@ -1,4 +1,5 @@
 import axios from 'axios';
+import NetInfo from "@react-native-community/netinfo";
 
 const GOOGLE_GEOCODE_URL = 'https://maps.googleapis.com/maps/api/geocode/json';
 const GOOGLE_PLACES_URL = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
@@ -18,7 +19,7 @@ export const geocodeAddress = async (address: string): Promise<{ latitude: numbe
         region: 'br',
         language: 'pt-BR',
       },
-      timeout: 10000, // 10 segundos timeout
+      timeout: 15000, 
     });
 
     if (response.data.status !== 'OK') {
@@ -42,36 +43,58 @@ export const geocodeAddress = async (address: string): Promise<{ latitude: numbe
   }
 };
 
-export const reverseGeocode = async (latitude: number, longitude: number): Promise<string> => {
+export const reverseGeocode = async (latitude: number, longitude: number, retries = 3): Promise<string> => {
   if (typeof latitude !== 'number' || typeof longitude !== 'number') {
     return 'Coordenadas inválidas';
   }
 
-  try {
-    const response = await axios.get(GOOGLE_GEOCODE_URL, {
-      params: {
-        latlng: `${latitude},${longitude}`,
-        key: GOOGLE_API_KEY,
-        region: 'br',
-        language: 'pt-BR',
-      },
-      timeout: 10000,
-    });
 
-    if (response.data.status !== 'OK') {
-      console.error('Status da API:', response.data.status);
-      return 'Endereço não encontrado';
+  const netInfo = await NetInfo.fetch();
+  if (!netInfo.isConnected) {
+    console.warn("Sem conexão de rede para reverse geocoding.");
+    return 'Sem conexão de rede. Endereço não disponível.';
+  }
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      console.log(`Tentativa ${attempt + 1} de reverse geocoding para: ${latitude}, ${longitude}`);
+      const response = await axios.get(GOOGLE_GEOCODE_URL, {
+        params: {
+          latlng: `${latitude},${longitude}`,
+          key: GOOGLE_API_KEY,
+          region: 'br',
+          language: 'pt-BR',
+        },
+        timeout: 15000, // Aumentado para 15 segundos
+      });
+
+      if (response.data.status !== 'OK') {
+        console.error('Status da API:', response.data.status);
+        return 'Endereço não encontrado';
+      }
+
+      return response.data.results[0]?.formatted_address || 'Endereço não disponível';
+    } catch (error) {
+      console.error(`Erro no reverse geocoding (tentativa ${attempt + 1}):`, error);
+      if (attempt === retries - 1) {
+        if (error.message.includes('Network Error')) {
+          return 'Erro de rede ao obter endereço. Verifique sua conexão.';
+        }
+        return 'Erro ao obter endereço';
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Espera 1 segundo antes da próxima tentativa
     }
-
-    return response.data.results[0]?.formatted_address || 'Endereço não disponível';
-  } catch (error) {
-    console.error('Erro no reverse geocoding:', error);
-    return 'Erro ao obter endereço';
   }
 };
 
 export const getPlaceSuggestions = async (input: string): Promise<string[]> => {
   if (!input || input.length < 3) return [];
+
+  const netInfo = await NetInfo.fetch();
+  if (!netInfo.isConnected) {
+    console.warn("Sem conexão de rede para buscar sugestões.");
+    return [];
+  }
 
   try {
     const response = await axios.get(GOOGLE_PLACES_URL, {
@@ -82,7 +105,7 @@ export const getPlaceSuggestions = async (input: string): Promise<string[]> => {
         types: 'geocode',
         language: 'pt-BR',
       },
-      timeout: 10000,
+      timeout: 15000, 
     });
 
     if (response.data.status !== 'OK') {
