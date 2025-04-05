@@ -220,27 +220,38 @@ export default function NewInteraction() {
         return;
       }
 
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await AsyncStorage.getItem("userToken");  
       const postData = {  
         title,  
-        content: description, 
+        content: description,  
         tags: selectedTags.join(","),  
         location,  
         latitude: coords?.latitude || null,  
         longitude: coords?.longitude || null,  
-        image,  
         createdAt: new Date().toISOString(),  
-      };
+      };  
+    
+      const formData = new FormData();  
+      Object.keys(postData).forEach((key) => {  
+        formData.append(key, postData[key]);  
+      });  
 
-      const formData = new FormData();
-      Object.keys(postData).forEach((key) => {
-        formData.append(key, postData[key]);
-      });
-
-      const response = await fetch(`${API_URL}/posts/create`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+      if (image) {  
+        const fileName = image.split("/").pop();  
+        formData.append("image", {  
+          uri: image,  
+          type: "image/jpeg", 
+          name: fileName || "image.jpg",  
+        } as any);  
+      }  
+    
+      const response = await fetch(`${API_URL}/posts/create`, {  
+        method: "POST",  
+        headers: {  
+          Authorization: `Bearer ${token}`,  
+          "Content-Type": "multipart/form-data",
+        },  
+        body: formData,  
       });
 
       if (response.ok) {
