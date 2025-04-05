@@ -87,9 +87,17 @@ O **Softwarescan** é um projeto que visa a criação de uma plataforma onde usu
 
 ## **Integrações de Serviços Externos**
 
-### 1. **Notificações Expo**
+### 1. **Notificações via OneSignal e Expo**
 
-A plataforma usa o **Expo Notifications** para enviar notificações push para os usuários. Isso é feito ao registrar o **playerId** do usuário, que é usado para enviar notificações.
+A plataforma utiliza uma combinação de **OneSignal** e **Expo Notifications** para enviar notificações push para os usuários. O sistema funciona da seguinte forma:
+
+- **OneSignal**: Serviço de notificações push cross-platform que permite o envio de notificações para dispositivos iOS e Android.
+  - Utiliza um **App ID** único para identificar a aplicação dentro do painel do OneSignal.
+  - Para dispositivos Android, requer o **Google Project Number** para comunicação com o Firebase Cloud Messaging (FCM).
+  
+- **Expo Notifications**: Integração nativa que facilita o registro do dispositivo para receber notificações.
+  - O sistema registra o **playerId** (também conhecido como token do dispositivo) do usuário.
+  - Este playerId é armazenado no servidor e utilizado para direcionar notificações para usuários específicos.
 
 ### 2. **Google Maps API**
 
@@ -114,7 +122,17 @@ EXPO_PUBLIC_API_URL=http://localhost:3000
 EXPO_PUBLIC_API_URL_LOCAL=http://localhost:3000
 EXPO_PUBLIC_EAS_PROJECT_ID=your_eas_project_id_here
 EXPO_PUBLIC_GOOGLE_API_KEY=your_google_api_key_here
+EXPO_PUBLIC_ONESIGNAL_APP_ID=your_onesignal_app_id_here
+EXPO_ONESIGNAL_GOOGLE_PROJECT_NUMBER=your_google_project_number_here
 ```
+
+Descrição das variáveis:
+- `EXPO_PUBLIC_API_URL`: URL da API em produção
+- `EXPO_PUBLIC_API_URL_LOCAL`: URL da API em ambiente local
+- `EXPO_PUBLIC_EAS_PROJECT_ID`: ID do projeto no Expo Application Services
+- `EXPO_PUBLIC_GOOGLE_API_KEY`: Chave da API do Google Maps para integração de mapas
+- `EXPO_PUBLIC_ONESIGNAL_APP_ID`: ID da aplicação no OneSignal para notificações push
+- `EXPO_ONESIGNAL_GOOGLE_PROJECT_NUMBER`: Número do projeto Google/Firebase para notificações no Android
 
 ---
 
@@ -134,9 +152,11 @@ A estrutura do banco de dados é gerenciada pelo **Prisma**, que é uma ORM para
 ### Requisitos
 
 - **Node.js**: 18.x.x
-- **Expo CLI**: `npm install -g expo-cli`
-- **Prisma**: `npm install @prisma/client`
+- **pnpm**: Gerenciador de pacotes preferido para este projeto
+- **Expo CLI**: `pnpm install -g expo-cli`
+- **Prisma**: `pnpm install @prisma/client`
 - **AWS CLI**: Para configuração do bucket S3
+- **Conta OneSignal**: Para configuração das notificações push
 
 ### Passos para Rodar o Projeto
 
@@ -145,7 +165,7 @@ A estrutura do banco de dados é gerenciada pelo **Prisma**, que é uma ORM para
    pnpm install
    ```
 
-2. **Configuração do `.env`**: Preencha as variáveis de ambiente no arquivo `.env` com as chaves apropriadas.
+2. **Configuração do `.env`**: Preencha as variáveis de ambiente no arquivo `.env` com as chaves apropriadas. Certifique-se de incluir as chaves do OneSignal para as notificações funcionarem corretamente.
 
 3. **Rodar o Backend**: Execute o backend utilizando o Prisma.
    ```bash
