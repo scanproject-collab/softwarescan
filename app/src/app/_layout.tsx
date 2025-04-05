@@ -1,10 +1,21 @@
 import { Stack, router, useSegments } from 'expo-router';
-import { StatusBar } from 'react-native';
+import { StatusBar, View, Button, Text } from 'react-native';
 import { useEffect, useState } from 'react';
 import { initializeOneSignalNotification } from './utils/OneSignalNotification';
 import { validateToken } from '@/src/app/utils/ValidateAuth';
 import React from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
+import { ErrorBoundary } from 'react-error-boundary';
+
+function ErrorFallback({error, resetErrorBoundary}) {
+  return (
+    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20}}>
+      <Text style={{color: 'red', fontSize: 16, marginBottom: 10}}>Algo deu errado:</Text>
+      <Text style={{color: 'red', marginBottom: 20}}>{error.message}</Text>
+      <Button onPress={resetErrorBoundary} title="Tentar novamente" />
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const segments = useSegments();
@@ -48,7 +59,13 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <ErrorBoundary 
+      FallbackComponent={ErrorFallback}
+      onReset={() => {
+        // Ação de reset quando o usuário clicar em "Tentar novamente"
+        router.replace('/');
+      }}
+    >
       <StatusBar barStyle="light-content" backgroundColor="#092B6E" />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -62,6 +79,6 @@ export default function RootLayout() {
         <Stack.Screen name="pages/users/ProfileUser" options={{ title: 'Perfil' }} />
         <Stack.Screen name="pages/users/ProfileEditUser" options={{ title: 'Editar Perfil' }} />
       </Stack>
-    </>
+    </ErrorBoundary>
   );
 }

@@ -30,7 +30,7 @@ export default function NewInteraction() {
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [image, setImage] = useState<string | null>(null);
   const [location, setLocation] = useState("");
-  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null); 
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedTime, setSelectedTime] = useState(
     new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
@@ -38,8 +38,8 @@ export default function NewInteraction() {
   const [isManualLocation, setIsManualLocation] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isLocationLoading, setIsLocationLoading] = useState(true); 
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [isLocationLoading, setIsLocationLoading] = useState(true);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isImageLoading, setIsImageLoading] = useState(false);
   const isMounted = useRef(true);
 
@@ -115,48 +115,62 @@ export default function NewInteraction() {
 
         if (!isOffline && isMounted.current) {
           try {
-            console.log("Solicitando permissões de localização...");
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status === "granted" && isMounted.current) {
-              console.log("Permissão concedida, obtendo localização...");
-              const locationData = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.High,
-                timeInterval: 10000,
-                distanceInterval: 10,
-              });
-              if (!isMounted.current) return;
+            const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+            let finalStatus = existingStatus;
 
+            if (existingStatus !== "granted") {
+              const { status } = await Location.requestForegroundPermissionsAsync();
+              finalStatus = status;
+            }
+
+            if (finalStatus !== "granted") {
+              if (isMounted.current) {
+                setLocation("Permissão de localização não concedida");
+                setIsLocationLoading(false);
+              }
+              return;
+            }
+
+            const locationData = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+              timeInterval: 5000,
+              distanceInterval: 0,
+            });
+
+            if (!isMounted.current) return;
+
+            if (locationData && locationData.coords) {
               const { latitude, longitude } = locationData.coords;
-              console.log("Coordenadas obtidas:", { latitude, longitude });
               setCoords({ latitude, longitude });
 
               try {
                 const address = await reverseGeocode(latitude, longitude);
                 if (isMounted.current) {
-                  console.log("Endereço obtido:", address);
                   setLocation(address);
                 }
               } catch (error) {
                 console.error("Erro no reverse geocoding:", error);
-                if (isMounted.current) setLocation("Localização não disponível");
+                if (isMounted.current) {
+                  setLocation("Endereço não encontrado");
+                }
               }
-            } else {
-              console.log("Permissão de localização não concedida");
-              if (isMounted.current) setLocation("Permissão de localização não concedida");
             }
           } catch (error) {
             console.error("Erro ao obter localização:", error);
-            if (isMounted.current) setLocation("Erro ao obter permissão de localização");
+            if (isMounted.current) {
+              setLocation("Erro ao obter localização");
+            }
           } finally {
-            if (isMounted.current) setIsLocationLoading(false); // Finaliza o carregamento
+            if (isMounted.current) {
+              setIsLocationLoading(false);
+            }
           }
-        } else {
-          if (isMounted.current) setIsLocationLoading(false);
         }
       } catch (error) {
         console.error("Erro na inicialização:", error);
-      } finally {
-        if (isMounted.current) setIsLocationLoading(false);
+        if (isMounted.current) {
+          setIsLocationLoading(false);
+        }
       }
     };
 
@@ -178,32 +192,6 @@ export default function NewInteraction() {
     };
   }, []);
 
-  useEffect(() => {
-    const syncPendingGeocode = async () => {
-      if (!isOffline && isMounted.current) {
-        try {
-          const pendingGeocode = await AsyncStorage.getItem("pendingGeocode");
-          if (pendingGeocode && isMounted.current) {
-            try {
-              const response = await geocodeAddress(pendingGeocode);
-              if (isMounted.current) {
-                setCoords(response);
-                setLocation(pendingGeocode);
-                await AsyncStorage.removeItem("pendingGeocode");
-              }
-            } catch (error) {
-              console.error("Erro ao geocodificar endereço pendente:", error);
-            }
-          }
-        } catch (error) {
-          console.error("Erro ao buscar pendingGeocode:", error);
-        }
-      }
-    };
-
-    syncPendingGeocode();
-  }, [isOffline]);
-
   const handleMapPress = async (event: any) => {
     if (isOffline || !isMounted.current) return;
 
@@ -219,177 +207,10 @@ export default function NewInteraction() {
           setLocation(address);
         }
       } catch (error) {
-        console.error('Erro no reverseGeocode durante handleMapPress:', error);
+        console.error("Erro no reverseGeocode durante handleMapPress:", error);
       }
     } catch (error) {
-      console.error('Erro no handleMapPress:', error);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (loading || !isMounted.current || isImageLoading) return;
-
-    setLoading(true);
-    setStatus('saving');
-    try {
-      const isValid = await validateToken();
-      if (!isValid || !isMounted.current) {
-        setLoading(false);
-        setStatus('error');
-        return;
-      }
-
-      if (!image) {
-        Alert.alert("Erro", "Uma foto é obrigatória.");
-        setLoading(false);
-        setStatus('error');
-        return;
-      }
-
-      if (!location.trim()) {
-        Alert.alert("Erro", "A localização é obrigatória.");
-        setLoading(false);
-        setStatus('error');
-        return;
-      }
-
-      const netInfo = await NetInfo.fetch();
-      const isConnected = netInfo.isConnected && (await checkActualConnectivity());
-      const token = await AsyncStorage.getItem("userToken");
-      let playerId = null;
-
-      try {
-        playerId = await getPlayerId();
-      } catch (error) {
-        console.error("Erro ao obter playerId:", error);
-      }
-
-      const totalWeight = selectedTags.reduce((sum, tagName) => {
-        const tag = availableTags.find((t) => t.name === tagName);
-        return sum + (tag && tag.weight ? parseFloat(tag.weight) : 0);
-      }, 0);
-
-      const rankingLabel = totalWeight <= 120 ? "Baixo" : totalWeight <= 250 ? "Mediano" : "Urgente";
-
-      const offlineId = Date.now().toString();
-      const postData = {
-        id: offlineId,
-        offlineId: offlineId,
-        title: title || "Interação sem título",
-        description,
-        tags: selectedTags,
-        location,
-        latitude: !isManualLocation && isConnected && coords ? coords.latitude : null,
-        longitude: !isManualLocation && isConnected && coords ? coords.longitude : null,
-        weight: totalWeight.toString(),
-        ranking: rankingLabel,
-        image,
-        isOffline: !isConnected,
-        createdAt: new Date().toISOString(),
-      };
-
-      if (!isConnected) {
-        try {
-          let imageUri = image;
-          if (image) {
-            const fileName = image.split("/").pop();
-            const newUri = `${FileSystem.documentDirectory}${fileName}`;
-            await FileSystem.copyAsync({ from: image, to: newUri });
-            imageUri = newUri;
-            postData.image = imageUri;
-          }
-
-          const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
-          const offlinePostsArray = offlinePostsStr ? JSON.parse(offlinePostsStr) : [];
-          const alreadyExists = offlinePostsArray.find((p: any) => p.offlineId === postData.offlineId);
-          if (!alreadyExists) {
-            offlinePostsArray.push(postData);
-            await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
-          }
-
-          Alert.alert("Sucesso", "Postagem salva localmente.");
-          if (isMounted.current) {
-            setStatus('saved');
-            router.push("/");
-          }
-        } catch (error) {
-          console.error("Erro ao salvar dados offline:", error);
-          Alert.alert("Erro", "Falha ao salvar dados offline.");
-          setStatus('error');
-        } finally {
-          if (isMounted.current) {
-            setLoading(false);
-          }
-        }
-        return;
-      }
-
-      try {
-        const formData = new FormData();
-        formData.append("title", postData.title);
-        formData.append("content", postData.description || "");
-        formData.append("tags", postData.tags.join(","));
-        formData.append("location", postData.location);
-        formData.append("latitude", postData.latitude?.toString() || "");
-        formData.append("longitude", postData.longitude?.toString() || "");
-        formData.append("playerId", playerId || "");
-        formData.append("weight", postData.weight);
-        formData.append("ranking", postData.ranking);
-        formData.append("offlineId", postData.offlineId);
-
-        if (postData.image) {
-          const fileName = postData.image.split("/").pop();
-          formData.append("image", {
-            uri: postData.image,
-            type: "image/jpeg",
-            name: fileName || "image.jpg",
-          } as any);
-        }
-
-        const response = await fetch(`${API_URL}/posts/create`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-
-        if (response.ok) {
-          const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
-          if (offlinePostsStr) {
-            let offlinePostsArray = JSON.parse(offlinePostsStr);
-            offlinePostsArray = offlinePostsArray.filter((post: any) => post.offlineId !== postData.offlineId);
-            await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
-          }
-          
-          if (isMounted.current) {
-            setStatus('saved');
-            router.push("/");
-            setTitle("");
-            setDescription("");
-            setSelectedTags([]);
-            setLocation("");
-            setCoords(null); 
-            setImage(null);
-            setSelectedDate(new Date().toISOString().split("T")[0]);
-            setSelectedTime(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
-          }
-        } else {
-          const data = await response.json();
-          Alert.alert("Erro", data.message || "Falha ao criar interação.");
-          setStatus('error');
-        }
-      } catch (error) {
-        console.error("Erro ao enviar dados para o servidor:", error);
-        Alert.alert("Erro", "Ocorreu um problema ao enviar a interação para o servidor.");
-        setStatus('error');
-      }
-    } catch (error) {
-      console.error("Erro geral em handleSubmit:", error);
-      Alert.alert("Erro", "Ocorreu um problema ao salvar a interação.");
-      setStatus('error');
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      console.error("Erro no handleMapPress:", error);
     }
   };
 
@@ -409,14 +230,14 @@ export default function NewInteraction() {
         setCoords={setCoords}
       />
     );
-    // if (item === "map" && !isLocationLoading && coords) return (
-    //   <MapViewComponent
-    //     coords={coords}
-    //     handleMapPress={handleMapPress}
-    //     isManualLocation={isManualLocation}
-    //     isOffline={isOffline}
-    //   />
-    // );
+    if (item === "map" && !isLocationLoading && coords) return (
+      <MapViewComponent
+        coords={coords}
+        handleMapPress={handleMapPress}
+        isManualLocation={isManualLocation}
+        isOffline={isOffline}
+      />
+    );
     if (item === "image") return (
       <ImagePickerComponent
         image={image}
@@ -430,7 +251,7 @@ export default function NewInteraction() {
     if (item === "buttons") return (
       <SubmitButton
         loading={loading || isImageLoading}
-        handleSubmit={handleSubmit}
+        handleSubmit={() => {}}
         router={router}
         isOffline={isOffline}
         status={status}

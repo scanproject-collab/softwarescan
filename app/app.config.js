@@ -13,10 +13,30 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.anonymous.softwarescan',
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription: "Este aplicativo precisa acessar a localização para mostrar sua posição no mapa.",
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Este aplicativo precisa acessar a localização para mostrar sua posição no mapa.",
+        NSLocationAlwaysUsageDescription: "Este aplicativo precisa acessar a localização para mostrar sua posição no mapa.",
+      }
     },
     android: {
       package: 'com.anonymous.softwarescan',
-      permissions: ["NOTIFICATIONS", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "CAMERA", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "INTERNET", "FOREGROUND_SERVICE"],
+      permissions: [
+        "NOTIFICATIONS",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "INTERNET",
+        "FOREGROUND_SERVICE"
+      ],
+      config: {
+        googleMaps: {
+          apiKey: process.env.EXPO_PUBLIC_GOOGLE_API_KEY
+        }
+      }
     },
     web: {
       bundler: 'metro',
@@ -40,6 +60,16 @@ export default {
           backgroundColor: '#ffffff',
         },
       ],
+      [
+        'expo-location',
+        {
+          locationAlwaysAndWhenInUsePermission: "Permitir que $(PRODUCT_NAME) use sua localização.",
+          locationWhenInUsePermission: "Permitir que $(PRODUCT_NAME) use sua localização enquanto você está usando o aplicativo.",
+          locationAlwaysPermission: "Permitir que $(PRODUCT_NAME) use sua localização em segundo plano.",
+          isIosBackgroundLocationEnabled: true,
+          isAndroidBackgroundLocationEnabled: true
+        }
+      ],
       'expo-asset',
     ],
     extra: {
@@ -56,7 +86,6 @@ export default {
     "owner": "softwarescaan"
   },
 };
-
 
 if (process.env.GOOGLE_SERVICES_JSON) {  
   try {
