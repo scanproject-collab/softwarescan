@@ -30,7 +30,7 @@ export default function NewInteraction() {
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [image, setImage] = useState<string | null>(null);
   const [location, setLocation] = useState("");
-  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null); // Inicialmente null
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null); 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedTime, setSelectedTime] = useState(
     new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
@@ -38,7 +38,7 @@ export default function NewInteraction() {
   const [isManualLocation, setIsManualLocation] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isLocationLoading, setIsLocationLoading] = useState(true); // Novo estado para carregamento da localização
+  const [isLocationLoading, setIsLocationLoading] = useState(true); 
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isImageLoading, setIsImageLoading] = useState(false);
   const isMounted = useRef(true);
@@ -409,14 +409,14 @@ export default function NewInteraction() {
         setCoords={setCoords}
       />
     );
-    if (item === "map" && !isLocationLoading && coords) return (
-      <MapViewComponent
-        coords={coords}
-        handleMapPress={handleMapPress}
-        isManualLocation={isManualLocation}
-        isOffline={isOffline}
-      />
-    );
+    // if (item === "map" && !isLocationLoading && coords) return (
+    //   <MapViewComponent
+    //     coords={coords}
+    //     handleMapPress={handleMapPress}
+    //     isManualLocation={isManualLocation}
+    //     isOffline={isOffline}
+    //   />
+    // );
     if (item === "image") return (
       <ImagePickerComponent
         image={image}
