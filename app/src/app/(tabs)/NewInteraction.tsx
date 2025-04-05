@@ -9,6 +9,7 @@ import LocationPicker from "@/src/app/components/posts/LocationPicker";
 import MapViewComponent from "@/src/app/components/posts/MapViewComponent";
 import ImagePickerComponent from "@/src/app/components/posts/ImagePickerComponent";
 import SubmitButton from "@/src/app/components/posts/SubmitButton";
+import { reverseGeocode } from "@/src/app/utils/GoogleMaps";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { validateToken } from "@/src/app/utils/ValidateAuth";
@@ -217,17 +218,14 @@ export default function NewInteraction() {
         return;
       }
 
-      // Calcular o peso total das tags selecionadas
       const totalWeight = selectedTags.reduce((sum, tagName) => {
         const tag = availableTags.find((t) => t.name === tagName);
         return sum + (tag && tag.weight ? parseFloat(tag.weight) : 0);
       }, 0);
 
-      // Determinar o ranking com base no peso total
       const ranking = totalWeight <= 250 ? "Baixo" : totalWeight <= 350 ? "Mediano" : "Urgente";
 
       if (isOffline) {
-        // Salvar postagem offline no AsyncStorage
         const offlinePost = {
           id: Date.now().toString(), // ID temporário único
           title,
@@ -256,7 +254,6 @@ export default function NewInteraction() {
         return;
       }
 
-      // Enviar postagem online
       const token = await AsyncStorage.getItem("userToken");
       const postData = {
         title,
