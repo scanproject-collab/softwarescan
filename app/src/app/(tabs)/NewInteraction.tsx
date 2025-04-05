@@ -16,7 +16,7 @@ import { validateToken } from "@/src/app/utils/ValidateAuth";
 import { useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
 import * as FileSystem from "expo-file-system";
-import { reverseGeocode, geocodeAddress } from "@/src/app/utils/GoogleMaps";
+import { reverseGeocode } from "@/src/app/utils/GoogleMaps";
 
 interface Tag {
   name: string;
@@ -192,25 +192,70 @@ export default function NewInteraction() {
     };
   }, []);
 
-  const handleMapPress = async (event: any) => {
-    if (isOffline || !isMounted.current) return;
+  const handleSubmit = async () => {
+    if (loading || !isMounted.current || isImageLoading) return;
+
+    setLoading(true);
+    setStatus("saving");
 
     try {
-      const { latitude, longitude } = event.nativeEvent.coordinate;
+      const isValid = await validateToken();
+      if (!isValid || !isMounted.current) {
+        setLoading(false);
+        setStatus("error");
+        return;
+      }
 
-      if (!isMounted.current) return;
-      setCoords({ latitude, longitude });
+      if (!image) {
+        Alert.alert("Erro", "Uma foto é obrigatória.");
+        setLoading(false);
+        setStatus("error");
+        return;
+      }
 
-      try {
-        const address = await reverseGeocode(latitude, longitude);
-        if (isMounted.current) {
-          setLocation(address);
-        }
-      } catch (error) {
-        console.error("Erro no reverseGeocode durante handleMapPress:", error);
+      if (!location.trim()) {
+        Alert.alert("Erro", "A localização é obrigatória.");
+        setLoading(false);
+        setStatus("error");
+        return;
+      }
+
+      const token = await AsyncStorage.getItem("userToken");
+      const postData = {
+        title,
+        description,
+        tags: selectedTags,
+        location,
+        latitude: coords?.latitude || null,
+        longitude: coords?.longitude || null,
+        image,
+        createdAt: new Date().toISOString(),
+      };
+
+      const formData = new FormData();
+      Object.keys(postData).forEach((key) => {
+        formData.append(key, postData[key]);
+      });
+
+      const response = await fetch(`${API_URL}/posts/create`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (response.ok) {
+        Alert.alert("Sucesso", "Postagem criada com sucesso!");
+        router.push("/");
+      } else {
+        const errorData = await response.json();
+        Alert.alert("Erro", errorData.message || "Erro ao criar postagem.");
       }
     } catch (error) {
-      console.error("Erro no handleMapPress:", error);
+      console.error("Erro ao enviar postagem:", error);
+      Alert.alert("Erro", "Ocorreu um problema ao salvar a postagem.");
+    } finally {
+      setLoading(false);
+      setStatus("idle");
     }
   };
 
@@ -233,7 +278,10 @@ export default function NewInteraction() {
     if (item === "map" && !isLocationLoading && coords) return (
       <MapViewComponent
         coords={coords}
-        handleMapPress={handleMapPress}
+        handleMapPress={(event) => {
+          const { latitude, longitude } = event.nativeEvent.coordinate;
+          setCoords({ latitude, longitude });
+        }}
         isManualLocation={isManualLocation}
         isOffline={isOffline}
       />
@@ -251,7 +299,7 @@ export default function NewInteraction() {
     if (item === "buttons") return (
       <SubmitButton
         loading={loading || isImageLoading}
-        handleSubmit={() => {}}
+        handleSubmit={handleSubmit}
         router={router}
         isOffline={isOffline}
         status={status}

@@ -20,8 +20,8 @@ const TagSelector = ({ selectedTags, setSelectedTags, availableTags }: TagSelect
   };
 
   const getRankingLabel = (totalWeight: number): string => {
-    if (totalWeight <= 5) return "Baixo";
-    if (totalWeight <= 10) return "Mediano";
+    if (totalWeight <= 250) return "Baixo";
+    if (totalWeight <= 350) return "Mediano";
     return "Urgente";
   };
 
@@ -40,8 +40,8 @@ const TagSelector = ({ selectedTags, setSelectedTags, availableTags }: TagSelect
           let tagBackgroundColor = "#e0e0e0";
           if (tag.weight) {
             const weight = parseFloat(tag.weight);
-            if (weight >= 10) tagBackgroundColor = "#ff4d4f";
-            else if (weight >= 5) tagBackgroundColor = "#ffeb3b";
+            if (weight >= 350) tagBackgroundColor = "#ff4d4f";
+            else if (weight >= 250) tagBackgroundColor = "#ffeb3b";
             else tagBackgroundColor = "#52c41a";
           }
           return (
