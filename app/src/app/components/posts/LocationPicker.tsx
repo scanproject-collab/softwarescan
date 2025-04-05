@@ -82,7 +82,13 @@ const LocationPicker = ({
       </View>
       <TextInput
         style={styles.input}
-        placeholder={isManualLocation ? "Digite a localização manualmente" : "Digite um endereço ou selecione no mapa"}
+        placeholder={
+          isManualLocation && isOffline
+            ? "Digite o endereço completo, ex: Rua Exemplo, 123, Cidade - UF, 57348-345"
+            : isManualLocation
+            ? "Digite a localização manualmente"
+            : "Digite um endereço ou selecione no mapa"
+        }
         value={location}
         onChangeText={handleAddressChange}
       />
