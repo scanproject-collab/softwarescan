@@ -72,30 +72,33 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
     } else {  
       console.log("Nenhum arquivo foi enviado.");  
     }  
-  
+
+    const postData: any = {  
+      title,  
+      content,  
+      imageUrl,  
+      tags: tagsArray,  
+      location,  
+      latitude: latitude ? parseFloat(latitude) : null,  
+      longitude: longitude ? parseFloat(longitude) : null,  
+      authorId: req.user.id,  
+      ranking: ranking || 'Baixo',  
+      weight: weight || '0',  
+    };  
+    if (offlineId) {  
+      postData.offlineId = offlineId;  
+    }  
+
     const post = await prisma.post.create({  
-      data: {  
-        title,  
-        content,  
-        imageUrl,  
-        tags: tagsArray,  
-        location,  
-        latitude: latitude ? parseFloat(latitude) : null,  
-        longitude: longitude ? parseFloat(longitude) : null,  
-        authorId: req.user.id,  
-        ranking: ranking || 'Baixo',  
-        weight: weight || '0',  
-        offlineId: offlineId || null,  
-      },  
+      data: postData,  
     });  
-  
+
     res.status(201).json({ message: 'Post created successfully', post });  
   } catch (error) {  
     console.error("Erro ao criar postagem:", error);  
     res.status(400).json({ message: 'Error creating post: ' + (error as Error).message });  
   }  
 };
-
 
 export const uploadImage = upload.single('image');
 
