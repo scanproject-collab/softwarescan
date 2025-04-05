@@ -9,10 +9,10 @@ interface DescriptionInputProps {
 const DescriptionInput = ({ description, setDescription }: DescriptionInputProps) => {
   return (
     <View>
-      <Text style={styles.sectionTitle}>Observações</Text>
+      <Text style={styles.sectionTitle}>Descrição</Text>
       <TextInput
         style={[styles.input, styles.textArea]}
-        placeholder="Campo de texto longo"
+        placeholder="Digite a descrição da interação"
         value={description}
         onChangeText={setDescription}
         multiline

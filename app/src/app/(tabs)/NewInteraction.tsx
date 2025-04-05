@@ -221,15 +221,15 @@ export default function NewInteraction() {
       }
 
       const token = await AsyncStorage.getItem("userToken");
-      const postData = {
-        title,
-        description,
-        tags: selectedTags,
-        location,
-        latitude: coords?.latitude || null,
-        longitude: coords?.longitude || null,
-        image,
-        createdAt: new Date().toISOString(),
+      const postData = {  
+        title,  
+        content: description, 
+        tags: selectedTags.join(","),  
+        location,  
+        latitude: coords?.latitude || null,  
+        longitude: coords?.longitude || null,  
+        image,  
+        createdAt: new Date().toISOString(),  
       };
 
       const formData = new FormData();
