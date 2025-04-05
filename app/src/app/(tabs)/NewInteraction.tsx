@@ -11,12 +11,9 @@ import ImagePickerComponent from "@/src/app/components/posts/ImagePickerComponen
 import SubmitButton from "@/src/app/components/posts/SubmitButton";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getPlayerId } from "@/src/app/utils/OneSignalNotification";
 import { validateToken } from "@/src/app/utils/ValidateAuth";
 import { useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
-import * as FileSystem from "expo-file-system";
-import { reverseGeocode } from "@/src/app/utils/GoogleMaps";
 
 interface Tag {
   name: string;
@@ -220,38 +217,80 @@ export default function NewInteraction() {
         return;
       }
 
-      const token = await AsyncStorage.getItem("userToken");  
-      const postData = {  
-        title,  
-        content: description,  
-        tags: selectedTags.join(","),  
-        location,  
-        latitude: coords?.latitude || null,  
-        longitude: coords?.longitude || null,  
-        createdAt: new Date().toISOString(),  
-      };  
-    
-      const formData = new FormData();  
-      Object.keys(postData).forEach((key) => {  
-        formData.append(key, postData[key]);  
-      });  
+      // Calcular o peso total das tags selecionadas
+      const totalWeight = selectedTags.reduce((sum, tagName) => {
+        const tag = availableTags.find((t) => t.name === tagName);
+        return sum + (tag && tag.weight ? parseFloat(tag.weight) : 0);
+      }, 0);
 
-      if (image) {  
-        const fileName = image.split("/").pop();  
-        formData.append("image", {  
-          uri: image,  
-          type: "image/jpeg", 
-          name: fileName || "image.jpg",  
-        } as any);  
-      }  
-    
-      const response = await fetch(`${API_URL}/posts/create`, {  
-        method: "POST",  
-        headers: {  
-          Authorization: `Bearer ${token}`,  
+      // Determinar o ranking com base no peso total
+      const ranking = totalWeight <= 250 ? "Baixo" : totalWeight <= 350 ? "Mediano" : "Urgente";
+
+      if (isOffline) {
+        // Salvar postagem offline no AsyncStorage
+        const offlinePost = {
+          id: Date.now().toString(), // ID temporário único
+          title,
+          content: description,
+          tags: selectedTags,
+          location,
+          image,
+          latitude: coords?.latitude || null,
+          longitude: coords?.longitude || null,
+          weight: totalWeight.toString(),
+          ranking,
+          createdAt: new Date().toISOString(),
+        };
+
+        const offlinePosts = JSON.parse(await AsyncStorage.getItem("offlinePosts") || "[]");
+        offlinePosts.push(offlinePost);
+        await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePosts));
+
+        Alert.alert(
+          "Sucesso",
+          "Postagem salva offline. Será enviada ao servidor quando a conexão for restabelecida."
+        );
+        router.push("/");
+        setLoading(false);
+        setStatus("saved");
+        return;
+      }
+
+      // Enviar postagem online
+      const token = await AsyncStorage.getItem("userToken");
+      const postData = {
+        title,
+        content: description,
+        tags: selectedTags.join(","),
+        location,
+        latitude: coords?.latitude || null,
+        longitude: coords?.longitude || null,
+        weight: totalWeight.toString(),
+        ranking,
+        createdAt: new Date().toISOString(),
+      };
+
+      const formData = new FormData();
+      Object.keys(postData).forEach((key) => {
+        formData.append(key, postData[key]);
+      });
+
+      if (image) {
+        const fileName = image.split("/").pop();
+        formData.append("image", {
+          uri: image,
+          type: "image/jpeg",
+          name: fileName || "image.jpg",
+        } as any);
+      }
+
+      const response = await fetch(`${API_URL}/posts/create`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
-        },  
-        body: formData,  
+        },
+        body: formData,
       });
 
       if (response.ok) {

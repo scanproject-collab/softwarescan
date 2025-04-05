@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TextInput, Text, View, Pressable, FlatList, StyleSheet, Alert } from "react-native";
 import { getPlaceSuggestions, geocodeAddress } from "@/src/app/utils/GoogleMaps";
 
@@ -21,6 +21,15 @@ const LocationPicker = ({
 }: LocationPickerProps) => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
+  useEffect(() => {
+    if (isOffline && isManualLocation) {
+      Alert.alert(
+        "Localização Manual",
+        "Você está offline. Por favor, forneça um endereço completo, incluindo o CEP, para facilitar a localização quando a conexão for restabelecida."
+      );
+    }
+  }, [isOffline, isManualLocation]);
+
   const handleAddressChange = async (text: string) => {
     setLocation(text);
     if (!isManualLocation && text.trim().length >= 3 && !isOffline) {
@@ -30,6 +39,7 @@ const LocationPicker = ({
       setSuggestions([]);
     }
   };
+
   const handleSuggestionSelect = async (suggestion: string) => {
     setLocation(suggestion);
     setSuggestions([]);
