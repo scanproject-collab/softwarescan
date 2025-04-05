@@ -58,7 +58,7 @@ export default {
 };
 
 
-if (process.env.GOOGLE_SERVICES_JSON) {
+if (process.env.GOOGLE_SERVICES_JSON) {  
   try {
     const jsonString = Buffer.from(process.env.GOOGLE_SERVICES_JSON, 'base64').toString('utf8');
     JSON.parse(jsonString); // Verifica se é um JSON válido
