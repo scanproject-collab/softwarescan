@@ -115,64 +115,59 @@ export default function Home() {
         return;
       }
 
-      const offlinePostsStr = await AsyncStorage.getItem("offlinePosts");
+      const offlinePostsStr = await AsyncStorage.getItem('offlinePosts');
       if (!offlinePostsStr) return;
 
       let offlinePostsArray = JSON.parse(offlinePostsStr);
       if (offlinePostsArray.length === 0) return;
 
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await AsyncStorage.getItem('userToken');
       for (let i = offlinePostsArray.length - 1; i >= 0; i--) {
         const post = offlinePostsArray[i];
         if (post.syncFailed) continue;
 
         const formData = new FormData();
-        formData.append("title", post.title || "Interação sem título");
-        formData.append("content", post.content || "");
-        formData.append("tags", post.tags.join(","));
-        formData.append("location", post.location);
-        formData.append("latitude", post.latitude?.toString() || "");
-        formData.append("longitude", post.longitude?.toString() || "");
-        formData.append("weight", post.weight || "0");
-        formData.append("ranking", post.ranking || "Baixo");
-        formData.append("offlineId", post.id || "");
+        formData.append('title', post.title || 'Interação sem título');
+        formData.append('content', post.description || '');
+        formData.append('tags', post.tags.join(','));
+        formData.append('location', post.location);
+        formData.append('latitude', post.latitude?.toString() || '');
+        formData.append('longitude', post.longitude?.toString() || '');
+        formData.append('weight', post.weight);
+        formData.append('ranking', post.ranking);
+        formData.append('offlineId', post.offlineId || post.id || '');
 
         if (post.image) {
-          const fileName = post.image.split("/").pop();
-          formData.append("image", {
+          const fileName = post.image.split('/').pop();
+          formData.append('image', {
             uri: post.image,
-            type: "image/jpeg",
-            name: fileName || "image.jpg",
+            type: 'image/jpeg',
+            name: fileName || 'image.jpg',
           } as any);
         }
 
         try {
           const response = await fetch(`${API_URL}/posts/create`, {
-            method: "POST",
+            method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
             body: formData,
           });
 
           if (response.ok) {
             offlinePostsArray.splice(i, 1);
-            await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
+            await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePostsArray));
             setOfflinePosts([...offlinePostsArray]);
           } else {
-            const errorData = await response.json();
-            console.error("Erro ao sincronizar postagem:", errorData);
             offlinePostsArray[i].syncFailed = true;
-            await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
+            await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePostsArray));
           }
         } catch (error) {
-          console.error("Erro na sincronização:", error);
           offlinePostsArray[i].syncFailed = true;
-          await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePostsArray));
+          await AsyncStorage.setItem('offlinePosts', JSON.stringify(offlinePostsArray));
         }
       }
 
       await fetchPosts();
-    } catch (error) {
-      console.error("Erro geral na sincronização:", error);
     } finally {
       syncingRef.current = false;
     }

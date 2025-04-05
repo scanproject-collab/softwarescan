@@ -238,6 +238,7 @@ export default function NewInteraction() {
           weight: totalWeight.toString(),
           ranking,
           createdAt: new Date().toISOString(),
+          offlineId: Date.now().toString(), // Garante um offlineId único para postagens offline
         };
 
         const offlinePosts = JSON.parse(await AsyncStorage.getItem("offlinePosts") || "[]");
@@ -265,6 +266,7 @@ export default function NewInteraction() {
         weight: totalWeight.toString(),
         ranking,
         createdAt: new Date().toISOString(),
+        // Não inclui offlineId para postagens online
       };
 
       const formData = new FormData();
