@@ -39,86 +39,61 @@ const uploadImageToS3 = async (file: Express.Multer.File, userId: string) => {
   return `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
 };
 
-export const createPost = async (req: Request & { user?: { id: string } }, res: Response) => {
-  try {
-    if (!req.user?.id) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    const { title, content, tags, location, latitude, longitude, playerId, weight, ranking, offlineId } = req.body;
-    let tagsArray = tags ? tags.split(',') : [];
-
-    if (offlineId) {
-      const existingPost = await prisma.post.findFirst({
-        where: {
-          authorId: req.user.id,
-          offlineId: offlineId
-        }
-      });
-
-      if (existingPost) {
-        return res.status(200).json({
-          message: 'Post already created or duplicated, returning existing one',
-          post: existingPost
-        });
-      }
-    }
-
-    if (req.file) {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
-
-      const postsToday = await prisma.post.count({
-        where: {
-          authorId: req.user.id,
-          createdAt: {
-            gte: todayStart,
-            lte: todayEnd,
-          },
-          imageUrl: { not: null },
-        },
-      });
-
-      if (postsToday >= 3) {
-        if (playerId) {
-          await sendOneSignalNotification(
-            playerId,
-            'Limite de Imagens Atingido',
-            'Você atingiu o limite de 3 imagens por dia. Tente novamente amanhã!',
-            { type: 'limit_exceeded' }
-          );
-        }
-        return res.status(403).json({ message: 'Limite de 3 imagens por dia atingido. Tente novamente amanhã.' });
-      }
-    }
-
-    let imageUrl: string | undefined;
-    if (req.file) {
-      imageUrl = await uploadImageToS3(req.file, req.user.id);
-    }
-
-    const post = await prisma.post.create({
-      data: {
-        title,
-        content,
-        imageUrl,
-        tags: tagsArray,
-        location,
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
-        authorId: req.user.id,
-        ranking: ranking || 'Baixo',
-        weight: weight || '0',
-        offlineId: offlineId || null,
-      },
-    });
-
-    res.status(201).json({ message: 'Post created successfully', post });
-  } catch (error) {
-    res.status(400).json({ message: 'Error creating post: ' + (error as Error).message });
-  }
+export const createPost = async (req: Request & { user?: { id: string } }, res: Response) => {  
+  try {  
+    if (!req.user?.id) {  
+      return res.status(401).json({ message: 'Unauthorized' });  
+    }  
+  
+    const { title, content, tags, location, latitude, longitude, playerId, weight, ranking, offlineId } = req.body;  
+    let tagsArray = tags ? tags.split(',') : [];  
+  
+    if (offlineId) {  
+      const existingPost = await prisma.post.findFirst({  
+        where: {  
+          authorId: req.user.id,  
+          offlineId: offlineId,  
+        },  
+      });  
+  
+      if (existingPost) {  
+        return res.status(200).json({  
+          message: 'Post already created or duplicated, returning existing one',  
+          post: existingPost,  
+        });  
+      }  
+    }  
+  
+    let imageUrl: string | undefined;  
+    if (req.file) {  
+      console.log("Arquivo recebido:", req.file);  
+      imageUrl = await uploadImageToS3(req.file, req.user.id);  
+      console.log("URL da imagem:", imageUrl);  
+    } else {  
+      console.log("Nenhum arquivo foi enviado.");  
+    }  
+  
+    const post = await prisma.post.create({  
+      data: {  
+        title,  
+        content,  
+        imageUrl,  
+        tags: tagsArray,  
+        location,  
+        latitude: latitude ? parseFloat(latitude) : null,  
+        longitude: longitude ? parseFloat(longitude) : null,  
+        authorId: req.user.id,  
+        ranking: ranking || 'Baixo',  
+        weight: weight || '0',  
+        offlineId: offlineId || null,  
+      },  
+    });  
+  
+    res.status(201).json({ message: 'Post created successfully', post });  
+  } catch (error) {  
+    console.error("Erro ao criar postagem:", error);  
+    res.status(400).json({ message: 'Error creating post: ' + (error as Error).message });  
+  }  
 };
 
 
