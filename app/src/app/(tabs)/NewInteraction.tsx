@@ -44,6 +44,22 @@ export default function NewInteraction() {
   const router = useRouter();
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
+  // Função para resetar todos os estados
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setSelectedTags([]);
+    setImage(null);
+    setLocation("");
+    setCoords(null);
+    setSelectedDate(new Date().toISOString().split("T")[0]);
+    setSelectedTime(
+      new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    );
+    setIsManualLocation(false);
+    setStatus("idle");
+  };
+
   const checkActualConnectivity = async () => {
     try {
       const controller = new AbortController();
@@ -254,9 +270,17 @@ export default function NewInteraction() {
 
         Alert.alert(
           "Sucesso",
-          "Postagem salva offline. Será enviada ao servidor quando a conexão for restabelecida."
+          "Postagem salva offline. Será enviada ao servidor quando a conexão for restabelecida.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                resetForm();
+                router.push("/");
+              }
+            }
+          ]
         );
-        router.push("/");
         setLoading(false);
         setStatus("saved");
         return;
@@ -299,8 +323,19 @@ export default function NewInteraction() {
       });
 
       if (response.ok) {
-        Alert.alert("Sucesso", "Postagem criada com sucesso!");
-        router.push("/");
+        Alert.alert(
+          "Sucesso",
+          "Postagem criada com sucesso!",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                resetForm();
+                router.push("/");
+              }
+            }
+          ]
+        );
       } else {
         const errorData = await response.json();
         Alert.alert("Erro", errorData.message || "Erro ao criar postagem.");
