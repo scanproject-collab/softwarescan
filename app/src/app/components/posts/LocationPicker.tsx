@@ -86,8 +86,8 @@ const LocationPicker = ({
           isManualLocation && isOffline
             ? "Digite o endereço completo, ex: Rua Exemplo, 123, Cidade - UF, 57348-345"
             : isManualLocation
-            ? "Digite a localização manualmente"
-            : "Digite um endereço ou selecione no mapa"
+            ? "Digite a localização manualmente, digite o endereço completo: ex: Rua Exemplo, 123, Cidade - UF, 57348-345"
+            : "Digite um endereço (ex: Rua Exemplo, 123, Cidade - UF, 57348-345) ou selecione no mapa"
         }
         value={location}
         onChangeText={handleAddressChange}
