@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import axios from 'axios';
@@ -22,12 +22,19 @@ const EditProfileScreen = () => {
   const [user, setUser] = useState<DecodedToken | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [originalEmail, setOriginalEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [institutionTitle, setInstitutionTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  
+  // Email verification states
+  const [isEmailChanged, setIsEmailChanged] = useState(false);
+  const [isVerificationSent, setIsVerificationSent] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [showVerificationInput, setShowVerificationInput] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -38,6 +45,7 @@ const EditProfileScreen = () => {
           setUser(decoded);
           setName(decoded.name || '');
           setEmail(decoded.email || '');
+          setOriginalEmail(decoded.email || '');
           setInstitutionTitle(decoded.institution?.title || 'Nenhuma instituição');
         } catch (error) {
           console.error('Error decoding token:', error);
@@ -47,34 +55,43 @@ const EditProfileScreen = () => {
     fetchUserData();
   }, []);
 
-  const handleUpdate = async () => {
-    if (!name || !email || !email.includes('@')) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erro',
-        text2: 'Nome e e-mail válido são obrigatórios',
-        position: 'top',
-      });
+  // Show toast utility function
+  const showToast = (type: 'success' | 'error' | 'info', text1: string, text2: string) => {
+    Toast.show({
+      type,
+      text1,
+      text2,
+      position: 'top',
+      visibilityTime: 4000,
+      autoHide: true,
+    });
+  };
+
+  // Handle email verification code sending
+  const handleSendVerificationCode = async () => {
+    if (!email || !email.includes('@')) {
+      showToast('error', 'Erro', 'Por favor, insira um email válido.');
       return;
     }
 
-    if (newPassword && newPassword !== confirmNewPassword) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erro',
-        text2: 'As senhas não coincidem',
-        position: 'top',
-      });
-      return;
+    setLoading(true);
+    try {
+      await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/send-verification-code`, { email });
+      setIsVerificationSent(true);
+      setShowVerificationInput(true);
+      showToast('info', 'Código Enviado', 'Um código de verificação foi enviado para o seu email.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Erro ao enviar código de verificação.';
+      showToast('error', 'Erro', errorMessage);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (newPassword && !currentPassword) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erro',
-        text2: 'A senha atual é obrigatória para alterar a senha',
-        position: 'top',
-      });
+  // Handle name update only
+  const handleNameUpdate = async () => {
+    if (!name) {
+      showToast('error', 'Erro', 'Nome é obrigatório');
       return;
     }
 
@@ -83,40 +100,161 @@ const EditProfileScreen = () => {
       const token = await AsyncStorage.getItem('userToken');
       const response = await axios.put(
         `${process.env.EXPO_PUBLIC_API_URL}/operator/update`,
-        {
-          name,
-          email,
-          currentPassword: currentPassword || undefined,
-          newPassword: newPassword || undefined,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { name },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+      
       if (response.status === 200) {
-        // Atualiza o token com o novo retornado
+        // Update token with the new one
         if (response.data.token) {
           await AsyncStorage.setItem('userToken', response.data.token);
         }
 
-        Toast.show({
-          type: 'success',
-          text1: 'Sucesso',
-          text2: 'Perfil atualizado com sucesso!',
-          position: 'top',
-        });
+        showToast('success', 'Sucesso', 'Nome atualizado com sucesso!');
         router.push('/pages/users/ProfileUser');
       }
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erro',
-        text2: error.response?.data?.message || 'Erro ao atualizar o perfil',
-        position: 'top',
-      });
+    } catch (error: any) {
+      showToast('error', 'Erro', error.response?.data?.message || 'Erro ao atualizar o nome');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle email update with verification
+  const handleEmailUpdate = async () => {
+    if (!email || !email.includes('@')) {
+      showToast('error', 'Erro', 'E-mail válido é obrigatório');
+      return;
+    }
+
+    if (email === originalEmail) {
+      showToast('info', 'Informação', 'O e-mail não foi alterado');
+      return;
+    }
+
+    if (!isVerificationSent) {
+      // First step: send verification code
+      setIsEmailChanged(true);
+      handleSendVerificationCode();
+      return;
+    }
+
+    if (!verificationCode) {
+      showToast('error', 'Erro', 'Código de verificação é obrigatório');
+      return;
+    }
+
+    // Second step: verify code and update email
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await axios.put(
+        `${process.env.EXPO_PUBLIC_API_URL}/operator/update`,
+        { 
+          email,
+          verificationCode
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.status === 200) {
+        // Update token with the new one
+        if (response.data.token) {
+          await AsyncStorage.setItem('userToken', response.data.token);
+        }
+
+        showToast('success', 'Sucesso', 'E-mail atualizado com sucesso!');
+        setIsVerificationSent(false);
+        setShowVerificationInput(false);
+        setVerificationCode('');
+        setIsEmailChanged(false);
+        setOriginalEmail(email);
+        router.push('/pages/users/ProfileUser');
+      }
+    } catch (error: any) {
+      showToast('error', 'Erro', error.response?.data?.message || 'Erro ao atualizar o e-mail');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle password update with confirmation
+  const handlePasswordUpdate = async () => {
+    if (!currentPassword) {
+      showToast('error', 'Erro', 'A senha atual é obrigatória para alterar a senha');
+      return;
+    }
+
+    if (!newPassword) {
+      showToast('error', 'Erro', 'A nova senha é obrigatória');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      showToast('error', 'Erro', 'As senhas não coincidem');
+      return;
+    }
+
+    // Show confirmation dialog
+    Alert.alert(
+      "Aviso de Logout",
+      "Alterar a senha irá desconectar você do aplicativo. Deseja continuar?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Continuar", 
+          onPress: async () => {
+            // Proceed with password update
+            setLoading(true);
+            try {
+              const token = await AsyncStorage.getItem('userToken');
+              const response = await axios.put(
+                `${process.env.EXPO_PUBLIC_API_URL}/operator/update`,
+                {
+                  currentPassword,
+                  newPassword
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              
+              if (response.status === 200) {
+                showToast('success', 'Sucesso', 'Senha atualizada com sucesso! Você será redirecionado para o login.');
+                
+                // Force logout after successful password change
+                setTimeout(async () => {
+                  await AsyncStorage.removeItem('userToken');
+                  router.replace('/pages/auth');
+                }, 1500);
+              }
+            } catch (error: any) {
+              showToast('error', 'Erro', error.response?.data?.message || 'Erro ao atualizar a senha');
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Main update handler that delegates to specific update functions
+  const handleUpdate = () => {
+    // Check if email is being updated
+    if (email !== originalEmail) {
+      handleEmailUpdate();
+      return;
+    }
+    
+    // Check if password is being updated
+    if (newPassword) {
+      handlePasswordUpdate();
+      return;
+    }
+    
+    // If only name is being updated
+    handleNameUpdate();
   };
 
   return (
@@ -133,10 +271,42 @@ const EditProfileScreen = () => {
         style={styles.input}
         placeholder="E-mail"
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(text) => {
+          setEmail(text);
+          if (text !== originalEmail) {
+            setIsEmailChanged(true);
+          } else {
+            setIsEmailChanged(false);
+            setIsVerificationSent(false);
+            setShowVerificationInput(false);
+          }
+        }}
         keyboardType="email-address"
         autoCapitalize="none"
       />
+      
+      {isEmailChanged && !isVerificationSent && (
+        <TouchableOpacity 
+          style={[styles.submitButton, { marginBottom: 15 }]} 
+          onPress={handleSendVerificationCode}
+          disabled={loading}
+        >
+          <Text style={styles.submitButtonText}>
+            {loading ? 'Enviando...' : 'Enviar Código de Verificação'}
+          </Text>
+        </TouchableOpacity>
+      )}
+      
+      {showVerificationInput && (
+        <TextInput
+          style={styles.input}
+          placeholder="Código de Verificação"
+          value={verificationCode}
+          onChangeText={setVerificationCode}
+          keyboardType="numeric"
+        />
+      )}
+      
       <TextInput
         style={styles.input}
         placeholder="Senha atual (obrigatória para alterar a senha)"
