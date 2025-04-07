@@ -11,6 +11,7 @@ interface InteractionCardProps {
   onPress: PressableProps['onPress'];
   onDelete?: () => void;
   isOffline?: boolean;
+  isRecent?: boolean;
 }
 
 const InteractionCard: React.FC<InteractionCardProps> = ({
@@ -22,6 +23,7 @@ const InteractionCard: React.FC<InteractionCardProps> = ({
   onDelete,
   location,
   isOffline = false,
+  isRecent = false,
 }) => (
   <Pressable onPress={onPress}>
     <View style={styles.card}>
@@ -30,6 +32,11 @@ const InteractionCard: React.FC<InteractionCardProps> = ({
         {isOffline && (
           <View style={styles.offlineBadge}>
             <Text style={styles.offlineBadgeText}>Pendente</Text>
+          </View>
+        )}
+        {isRecent && !isOffline && (
+          <View style={styles.recentBadge}>
+            <Text style={styles.recentBadgeText}>Recente</Text>
           </View>
         )}
         {onDelete && (
@@ -56,8 +63,20 @@ const InteractionCard: React.FC<InteractionCardProps> = ({
           <Text key={index} style={styles.tagText}>{tag}</Text>
         ))}
       </View>
-      <View>
-        <Text>{location}</Text>
+      <View style={styles.locationContainer}>
+        <Text style={styles.locationValue}>{location}</Text>
+      </View>
+      <View style={styles.detailsButtonContainer}>
+        <Pressable 
+          style={styles.detailsButton}
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel="Ver detalhes da postagem"
+          accessibilityHint="Navega para a página de detalhes desta postagem"
+        >
+          <Text style={styles.detailsButtonText}>Ver Detalhes</Text>
+          <Ionicons name="chevron-forward" size={16} color="#fff" />
+        </Pressable>
       </View>
     </View>
   </Pressable>
@@ -143,6 +162,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
+  recentBadge: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginLeft: 8,
+  },
+  recentBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  locationContainer: {
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  locationValue: {
+    fontSize: 14,
+    color: '#555',
+  },
+  detailsButtonContainer: {
+    marginTop: 8,
+    alignItems: 'flex-end',
+  },
+  detailsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+  },
+  detailsButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 4,
+  },
 });
-
 export default InteractionCard;

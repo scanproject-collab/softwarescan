@@ -44,7 +44,7 @@ export default function NewInteraction() {
   const router = useRouter();
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-  // Função para resetar todos os estados
+  
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -127,17 +127,14 @@ export default function NewInteraction() {
           }
         }
 
-        // Handle location with cached data priority
         if (!isOffline && isMounted.current) {
           try {
             console.log("Verificando dados de localização em cache...");
-            
-            // Try to get cached location data first
+          
             const cachedLocationJson = await AsyncStorage.getItem("userLocation");
             const cachedAddress = await AsyncStorage.getItem("userLocationAddress");
             
             if (cachedLocationJson && cachedAddress && isMounted.current) {
-              // Use cached data if available
               const cachedLocation = JSON.parse(cachedLocationJson);
               console.log("Usando localização em cache:", cachedLocation);
               
@@ -149,7 +146,6 @@ export default function NewInteraction() {
             
             console.log("Não há dados de localização em cache ou estão incompletos. Buscando novos...");
             
-            // No cached data, request permissions and get location
             const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
             let finalStatus = existingStatus;
 
@@ -179,7 +175,6 @@ export default function NewInteraction() {
               console.log("Novas coordenadas obtidas:", latitude, longitude);
               setCoords({ latitude, longitude });
 
-              // Store the new coordinates
               await AsyncStorage.setItem("userLocation", JSON.stringify({ latitude, longitude }));
 
               try {
@@ -196,7 +191,6 @@ export default function NewInteraction() {
                   console.log("Novo endereço obtido:", address);
                   setLocation(address);
                   
-                  // Store the new address
                   await AsyncStorage.setItem("userLocationAddress", address);
                 }
               } catch (error) {
@@ -218,7 +212,6 @@ export default function NewInteraction() {
             }
           }
         } else if (isMounted.current) {
-          // Offline mode - still try to use cached location if available
           try {
             const cachedLocationJson = await AsyncStorage.getItem("userLocation");
             const cachedAddress = await AsyncStorage.getItem("userLocationAddress");
@@ -361,11 +354,13 @@ export default function NewInteraction() {
         } as any);
       }
 
+      // Log the form data being sent to the API
+      console.log("Sending post data to API:", JSON.stringify(postData, null, 2));
+      
       const response = await fetch(`${API_URL}/posts/create`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
         },
         body: formData,
       });

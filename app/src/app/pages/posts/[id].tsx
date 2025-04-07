@@ -63,11 +63,13 @@ export default function InteractionDetail() {
           throw new Error(data.message || 'Erro ao buscar post');
         }
 
-        if (data.post) {
-          setPost(data.post);
-        } else {
-          setPost(null);
-        }
+        // Debug log para verificar os campos retornados pela API
+        console.log('Post data from API:', JSON.stringify(data.post, null, 2));
+        console.log('Content field:', data.post?.content);
+        console.log('Description field:', data.post?.description);
+
+        setPost(data.post || null);
+
       } catch (error) {
         const offlinePostsStr = await AsyncStorage.getItem('offlinePosts');
         const cachedPostsStr = await AsyncStorage.getItem('cachedPosts');
@@ -156,7 +158,12 @@ export default function InteractionDetail() {
           Hora: {post.createdAt ? new Date(post.createdAt).toLocaleTimeString('pt-BR') : 'Hora indisponível'}
         </Text>
         <Text style={styles.detailText}>
-          Observações: {post.content || post.description || 'Sem descrição'}
+          Observações: {post.content || post.description || (post.notes ? String(post.notes) : 'Sem descrição')}
+        </Text>
+        {/* Debug info - remover após correção */}
+        <Text style={[styles.detailText, { fontSize: 12, color: '#999' }]}>
+          Debug - content: {post.content ? 'presente' : 'ausente'}, 
+          description: {post.description ? 'presente' : 'ausente'}
         </Text>
         <Text style={styles.detailText}>
           Autor: {post.author && post.author.name ? post.author.name : 'Não disponível'}
