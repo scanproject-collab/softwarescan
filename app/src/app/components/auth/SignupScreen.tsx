@@ -49,12 +49,12 @@ const RegisterScreen = () => {
     fetchInstitutions();
   }, []);
 
-  const showToast = (type: 'success' | 'error' | 'info', text1: string, text2: string) => {
+const showToast = (type: 'success' | 'error' | 'info', text1: string, text2: string) => {
     Toast.show({
       type,
       text1,
       text2,
-      position: 'bottom',
+      position: 'top', // Change position to top
       visibilityTime: 4000,
       autoHide: true,
       topOffset: 30,

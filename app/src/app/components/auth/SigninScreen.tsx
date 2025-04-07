@@ -15,7 +15,7 @@ const LoginScreen = () => {
       type,
       text1,
       text2,
-      position: 'bottom',
+      position: 'top', 
       visibilityTime: 4000,
       autoHide: true,
       topOffset: 30,
@@ -32,19 +32,17 @@ const LoginScreen = () => {
     setIsLoading(true);
     try {
       const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/auth/login`;
-      console.log('API URL being used:', apiUrl); // Log the API URL
-      console.log('Request payload:', { email, password }); // Log the request data
+      console.log('API URL being used:', apiUrl); 
+      console.log('Request payload:', { email, password }); 
   
       const response = await axios.post(apiUrl, { email, password }, {
         headers: { 'Content-Type': 'application/json' },
       });
   
-      console.log('Login response:', response.data); // Log the response
-  
       const { token } = response.data;
       try {
         await AsyncStorage.setItem('userToken', token);
-        console.log('Token saved to AsyncStorage:', token); // Log AsyncStorage success
+        console.log('Token saved to AsyncStorage:', token); 
       } catch (storageError) {
         console.error('Failed to save token to AsyncStorage:', storageError);
       }
@@ -52,9 +50,6 @@ const LoginScreen = () => {
       showToast('success', 'Login Bem-Sucedido', 'Bem-vindo de volta!');
       router.replace('/');
     } catch (error) {
-      console.error('Login error:', error); // Log the full error
-      console.log('Error response:', error?.response?.data); // Log the error response
-      console.log('Error status:', error?.response?.status); // Log the status code
       const errorMessage =
         error?.response?.data?.message === 'Account is pending approval'
           ? 'Sua conta ainda está aguardando aprovação do administrador.'
