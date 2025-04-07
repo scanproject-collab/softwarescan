@@ -39,9 +39,9 @@ const PolygonManagement: React.FC = () => {
     const [filterCoords, setFilterCoords] = useState<{ latitude: number; longitude: number } | null>(null);
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [filterDateStart, setFilterDateStart] = useState<string>('');
-    const [filterDateEnd, setFilterDateEnd] = useState<string>(''); // Novo estado para data de fim
-    const [filterTag, setFilterTag] = useState<string>(''); // Substitui filterWeight
-    const [tags, setTags] = useState<string[]>([]); // Substitui weights
+    const [filterDateEnd, setFilterDateEnd] = useState<string>('');
+    const [filterTag, setFilterTag] = useState<string>('');
+    const [tags, setTags] = useState<string[]>([]);
     const [loadingPosts, setLoadingPosts] = useState(true);
     const [loadingPolygons, setLoadingPolygons] = useState(true);
     const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>('');
@@ -49,7 +49,8 @@ const PolygonManagement: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState<string>('');
     const [postsInPolygons, setPostsInPolygons] = useState<Map<string, any[]>>(new Map());
-    const [selectedPolygon, setSelectedPolygon] = useState<any | null>(null); // Estado para o polígono selecionado
+    const [selectedPolygon, setSelectedPolygon] = useState<any | null>(null);
+    const [isMapLoaded, setIsMapLoaded] = useState(false); // Novo estado para verificar se o mapa foi carregado
     const mapRef = useRef<google.maps.Map | null>(null);
 
     const basePath = user?.role === "MANAGER" ? "/manager" : "/admin";
@@ -60,7 +61,7 @@ const PolygonManagement: React.FC = () => {
                 const response = await api.get('/google-maps-api-url');
                 const url = response.data.url;
                 const apiKey = new URLSearchParams(new URL(url).search).get('key') || '';
-                console.log('API Key do Google Maps:', apiKey);
+                // API key logging removed for security reasons
                 if (!url.includes('libraries=geometry')) {
                     console.error('A URL da API do Google Maps não inclui a biblioteca geometry:', url);
                     toast.error('Configuração da API do Google Maps inválida.');
@@ -84,8 +85,8 @@ const PolygonManagement: React.FC = () => {
                 });
                 setPosts(response.data.posts);
             } catch (error) {
-                console.error('Erro ao carregar posts:', error);
-                toast.error('Erro ao carregar posts.');
+                console.error('Erro ao carregar posts:', error.message);
+                toast.error('Erro ao carregar posts. Verifique o console para mais detalhes.');
             } finally {
                 setLoadingPosts(false);
             }
@@ -121,7 +122,7 @@ const PolygonManagement: React.FC = () => {
 
         fetchPosts();
         fetchPolygons();
-        fetchTags(); // Busca as tags
+        fetchTags();
     }, [token, user?.role]);
 
     const filteredPosts = useMemo(() => {
@@ -129,7 +130,7 @@ const PolygonManagement: React.FC = () => {
             const postDate = new Date(post.createdAt);
             const matchesDateStart = filterDateStart ? postDate >= new Date(filterDateStart) : true;
             const matchesDateEnd = filterDateEnd ? postDate <= new Date(filterDateEnd) : true;
-            const matchesTag = filterTag ? post.tags.some((tag: any) => tag.name === filterTag) : true; // Filtra por tags
+            const matchesTag = filterTag ? post.tags.some((tag: any) => tag.name === filterTag) : true;
             const matchesSelectedLocation = selectedLocation ? post.location === selectedLocation : true;
 
             let matchesLocation = true;
@@ -148,7 +149,17 @@ const PolygonManagement: React.FC = () => {
     }, [posts, filterDateStart, filterDateEnd, filterTag, selectedLocation, filterCoords]);
 
     useEffect(() => {
-        if (mapRef.current && googleMapsApiKey && window.google?.maps?.geometry) {
+        // Debug post data without exposing sensitive info
+        const postsWithLocation = filteredPosts.filter(post => 
+            post.latitude && post.longitude
+        ).length;
+        if (postsWithLocation === 0 && posts.length > 0) {
+            toast.error(`Não há posts com localização disponíveis para exibição no mapa`);
+        }
+    }, [filteredPosts, posts.length]);
+
+    useEffect(() => {
+        if (isMapLoaded && mapRef.current && window.google?.maps?.geometry) {
             const newPostsInPolygons = new Map<string, any[]>();
             polygons.forEach((polygon) => {
                 const postsInPolygon = filteredPosts.filter((post) => {
@@ -161,7 +172,7 @@ const PolygonManagement: React.FC = () => {
             });
             setPostsInPolygons(newPostsInPolygons);
         }
-    }, [polygons, filteredPosts, googleMapsApiKey]);
+    }, [polygons, filteredPosts, isMapLoaded]);
 
     const uniqueLocations = Array.from(new Set(posts.map(post => post.location).filter(Boolean))) as string[];
 
@@ -193,7 +204,6 @@ const PolygonManagement: React.FC = () => {
             const lng = event.latLng.lng();
             const newPoint = { lat, lng };
 
-            // Verifica se o clique está próximo do primeiro ponto para fechar o polígono
             if (currentPolygon.length > 2 && 
                 Math.abs(currentPolygon[0].lat - lat) < 0.001 && 
                 Math.abs(currentPolygon[0].lng - lng) < 0.001) {
@@ -348,11 +358,10 @@ const PolygonManagement: React.FC = () => {
 
     const onMapLoad = (map: google.maps.Map) => {
         mapRef.current = map;
-        console.log('Mapa carregado com sucesso');
+        // console logging removed
     };
 
     const getMarkerIcon = (tag: string) => {
-        // Return different icon URLs based on tag type
         switch(tag) {
             case 'Roubo':
                 return "https://maps.google.com/mapfiles/ms/icons/red-dot.png";
@@ -403,102 +412,107 @@ const PolygonManagement: React.FC = () => {
                             googleMapsApiKey={googleMapsApiKey}
                             libraries={['geometry']}
                             loadingElement={<MapLoader />}
-                            onLoad={() => console.log('Google Maps API carregada com sucesso')}
+                            onLoad={() => {
+                                setIsMapLoaded(true);
+                                // console logging removed
+                            }}
                             onError={(error) => {
                                 console.error('Erro ao carregar Google Maps API:', error);
                                 toast.error('Falha ao carregar o mapa.');
                             }}
                         >
-                            <GoogleMap
-                                mapContainerStyle={containerStyle}
-                                center={center}
-                                zoom={13}
-                                onClick={handleMapClick}
-                                onLoad={onMapLoad}
-                                mapTypeId="roadmap"
-                            >
-                                {filteredPosts.map(
-                                    (post) =>
-                                        post.latitude &&
-                                        post.longitude && (
-                                            <Marker
-                                                key={post.id}
-                                                position={{ lat: post.latitude, lng: post.longitude }}
-                                                onClick={() => navigate(`/user/${post.author.id}`)}
-                                                onMouseOver={() => setHoveredMarker(post.id)}
-                                                onMouseOut={() => setHoveredMarker(null)}
-                                                icon={{
-                                                    url: post.tags && post.tags.length > 0 
-                                                        ? getMarkerIcon(post.tags[0].name)
-                                                        : "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
-                                                    scaledSize: new window.google.maps.Size(30, 30),
+                            {isMapLoaded && (
+                                <GoogleMap
+                                    mapContainerStyle={containerStyle}
+                                    center={center}
+                                    zoom={13}
+                                    onClick={handleMapClick}
+                                    onLoad={onMapLoad}
+                                    mapTypeId="roadmap"
+                                >
+                                    {filteredPosts.map(
+                                        (post) =>
+                                            post.latitude &&
+                                            post.longitude && (
+                                                <Marker
+                                                    key={post.id}
+                                                    position={{ lat: post.latitude, lng: post.longitude }}
+                                                    onClick={() => navigate(`/user/${post.author.id}`)}
+                                                    onMouseOver={() => setHoveredMarker(post.id)}
+                                                    onMouseOut={() => setHoveredMarker(null)}
+                                                    icon={{
+                                                        url: post.tags && post.tags.length > 0 
+                                                            ? getMarkerIcon(typeof post.tags[0] === 'string' ? post.tags[0] : post.tags[0].name)
+                                                            : "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+                                                        scaledSize: new window.google.maps.Size(30, 30),
+                                                    }}
+                                                >
+                                                    {hoveredMarker === post.id && (
+                                                        <InfoWindow
+                                                            position={{ lat: post.latitude, lng: post.longitude }}
+                                                            onCloseClick={() => setHoveredMarker(null)}
+                                                        >
+                                                            <div>
+                                                                <h3 className="font-bold">{post.title}</h3>
+                                                                <p>{post.content || 'Sem descrição'}</p>
+                                                            </div>
+                                                        </InfoWindow>
+                                                    )}
+                                                </Marker>
+                                            )
+                                    )}
+                                    {polygons.map((polygon) => {
+                                        const postsInPolygon = postsInPolygons.get(polygon.id) || [];
+                                        const weightsInPolygon = postsInPolygon.map((post) => post.weight || 'Baixo');
+                                        let polygonWeight = 'Baixo';
+                                        if (weightsInPolygon.includes('Alto')) polygonWeight = 'Alto';
+                                        else if (weightsInPolygon.includes('Médio')) polygonWeight = 'Médio';
+                                        else if (weightsInPolygon.length > 0) polygonWeight = weightsInPolygon[0];
+
+                                        const { fillColor, strokeColor } = getPolygonColor(polygonWeight);
+
+                                        return (
+                                            <GooglePolygon
+                                                key={polygon.id}
+                                                paths={polygon.points}
+                                                options={{
+                                                    fillColor,
+                                                    fillOpacity: 0.5,
+                                                    strokeColor,
+                                                    strokeWeight: 2,
                                                 }}
-                                            >
-                                                {hoveredMarker === post.id && (
-                                                    <InfoWindow
-                                                        position={{ lat: post.latitude, lng: post.longitude }}
-                                                        onCloseClick={() => setHoveredMarker(null)}
-                                                    >
-                                                        <div>
-                                                            <h3 className="font-bold">{post.title}</h3>
-                                                            <p>{post.content || 'Sem descrição'}</p>
-                                                        </div>
-                                                    </InfoWindow>
-                                                )}
-                                            </Marker>
-                                        )
-                                )}
-                                {polygons.map((polygon) => {
-                                    const postsInPolygon = postsInPolygons.get(polygon.id) || [];
-                                    const weightsInPolygon = postsInPolygon.map((post) => post.weight || 'Baixo');
-                                    let polygonWeight = 'Baixo';
-                                    if (weightsInPolygon.includes('Alto')) polygonWeight = 'Alto';
-                                    else if (weightsInPolygon.includes('Médio')) polygonWeight = 'Médio';
-                                    else if (weightsInPolygon.length > 0) polygonWeight = weightsInPolygon[0];
-
-                                    const { fillColor, strokeColor } = getPolygonColor(polygonWeight);
-
-                                    return (
+                                                onClick={() => setSelectedPolygon(polygon)}
+                                            />
+                                        );
+                                    })}
+                                    {selectedPolygon && (
+                                        <InfoWindow
+                                            position={{
+                                                lat: selectedPolygon.points.reduce((sum: number, point: any) => sum + point.lat, 0) / selectedPolygon.points.length,
+                                                lng: selectedPolygon.points.reduce((sum: number, point: any) => sum + point.lng, 0) / selectedPolygon.points.length,
+                                            }}
+                                            onCloseClick={() => setSelectedPolygon(null)}
+                                        >
+                                            <div>
+                                                <h3 className="font-bold">{selectedPolygon.name}</h3>
+                                                <p>Nota: {postsInPolygons.get(selectedPolygon.id)?.[0]?.weight || 'N/A'}</p>
+                                                <p>Posição no Ranking: {postsInPolygons.get(selectedPolygon.id)?.length || 0}</p>
+                                            </div>
+                                        </InfoWindow>
+                                    )}
+                                    {drawing && currentPolygon.length > 0 && (
                                         <GooglePolygon
-                                            key={polygon.id}
-                                            paths={polygon.points}
+                                            paths={currentPolygon}
                                             options={{
-                                                fillColor,
+                                                fillColor: 'yellow',
                                                 fillOpacity: 0.5,
-                                                strokeColor,
+                                                strokeColor: 'red',
                                                 strokeWeight: 2,
                                             }}
-                                            onClick={() => setSelectedPolygon(polygon)} // Evento de clique para selecionar o polígono
                                         />
-                                    );
-                                })}
-                                {selectedPolygon && (
-                                    <InfoWindow
-                                        position={{
-                                            lat: selectedPolygon.points.reduce((sum: number, point: any) => sum + point.lat, 0) / selectedPolygon.points.length,
-                                            lng: selectedPolygon.points.reduce((sum: number, point: any) => sum + point.lng, 0) / selectedPolygon.points.length,
-                                        }}
-                                        onCloseClick={() => setSelectedPolygon(null)}
-                                    >
-                                        <div>
-                                            <h3 className="font-bold">{selectedPolygon.name}</h3>
-                                            <p>Nota: {postsInPolygons.get(selectedPolygon.id)?.[0]?.weight || 'N/A'}</p>
-                                            <p>Posição no Ranking: {postsInPolygons.get(selectedPolygon.id)?.length || 0}</p>
-                                        </div>
-                                    </InfoWindow>
-                                )}
-                                {drawing && currentPolygon.length > 0 && (
-                                    <GooglePolygon
-                                        paths={currentPolygon}
-                                        options={{
-                                            fillColor: 'yellow',
-                                            fillOpacity: 0.5,
-                                            strokeColor: 'red',
-                                            strokeWeight: 2,
-                                        }}
-                                    />
-                                )}
-                            </GoogleMap>
+                                    )}
+                                </GoogleMap>
+                            )}
                         </LoadScript>
                     )}
                 </div>
@@ -652,7 +666,8 @@ const PolygonManagement: React.FC = () => {
                             </button>
                             <button
                                 onClick={() => saveMap('pdf')}
-                                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-red-500 to-red-600 text-white py-3 px-4 rounded-lg shadow-md hover:from-red-600 hover:to-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+                                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-red-5
+00 to-red-600 text-white py-3 px-4 rounded-lg shadow-md hover:from-red-600 hover:to-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
                             >
                                 <Download className="w-5 h-5" />
                                 <span>PDF</span>
