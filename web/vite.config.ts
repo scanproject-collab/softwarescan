@@ -11,5 +11,9 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
+  resolve: {
+    // No aliases needed
+  },
+
   base: '/'
 })
