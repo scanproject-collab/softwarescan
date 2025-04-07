@@ -6,6 +6,7 @@ import axios from 'axios';
 import Spinner from 'react-native-loading-spinner-overlay';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import jwt_decode from 'jwt-decode';
+import { updateToken } from '@/src/app/utils/ValidateAuth';
 
 interface DecodedToken {
   id: string;
@@ -107,7 +108,10 @@ const EditProfileScreen = () => {
       if (response.status === 200) {
         // Update token with the new one
         if (response.data.token) {
-          await AsyncStorage.setItem('userToken', response.data.token);
+          const updated = await updateToken(response.data.token);
+          if (!updated) {
+            throw new Error('Falha ao atualizar o token');
+          }
         }
 
         showToast('success', 'Sucesso', 'Nome atualizado com sucesso!');
@@ -160,7 +164,10 @@ const EditProfileScreen = () => {
       if (response.status === 200) {
         // Update token with the new one
         if (response.data.token) {
-          await AsyncStorage.setItem('userToken', response.data.token);
+          const updated = await updateToken(response.data.token);
+          if (!updated) {
+            throw new Error('Falha ao atualizar o token');
+          }
         }
 
         showToast('success', 'Sucesso', 'E-mail atualizado com sucesso!');
@@ -221,11 +228,14 @@ const EditProfileScreen = () => {
               );
               
               if (response.status === 200) {
+                // For password changes, we still want to force a logout
+                await AsyncStorage.removeItem('userToken');
+                await AsyncStorage.removeItem('tokenLastUpdated');
+                
                 showToast('success', 'Sucesso', 'Senha atualizada com sucesso! Você será redirecionado para o login.');
                 
-                // Force logout after successful password change
-                setTimeout(async () => {
-                  await AsyncStorage.removeItem('userToken');
+                // Redirect to login after a brief delay
+                setTimeout(() => {
                   router.replace('/pages/auth');
                 }, 1500);
               }
@@ -300,10 +310,15 @@ const EditProfileScreen = () => {
       {showVerificationInput && (
         <TextInput
           style={styles.input}
-          placeholder="Código de Verificação"
+          placeholder="Código de Verificação (letras e números)"
           value={verificationCode}
-          onChangeText={setVerificationCode}
-          keyboardType="numeric"
+          onChangeText={(text) => {
+            // Allow only alphanumeric characters
+            const alphanumericText = text.replace(/[^a-zA-Z0-9]/g, '');
+            setVerificationCode(alphanumericText.toLowerCase());
+          }}
+          autoCapitalize="none"
+          maxLength={6}
         />
       )}
       
