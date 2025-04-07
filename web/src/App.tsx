@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
-import { CheckCircle, XCircle, Trash2, RefreshCw, Loader2, MapPin } from "lucide-react";
-import { Toaster } from "react-hot-toast";
+import { CheckCircle, XCircle, Trash2, RefreshCw, Loader2, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { Toaster, toast } from "react-hot-toast";
 import { useAuth } from "./hooks/useAuth";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import Modal from "react-modal";
@@ -17,7 +17,7 @@ import { ExportButton } from "./components/ExportDatasForExcel";
 
 Modal.setAppElement("#root");
 
-  const App: React.FC = () => {
+const App: React.FC = () => {
   const { token, user } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -94,9 +94,26 @@ Modal.setAppElement("#root");
     closeMapModal,
   } = useMapModal();
   
-  // Pagination state
+  // Pagination state and handlers
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+  const totalPages = Math.ceil(filteredInteractions.length / itemsPerPage);
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    } else {
+      toast.error("Você já está na primeira página");
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    } else {
+      toast.error("Não há mais páginas disponíveis");
+    }
+  };
   if (loading) {
     return (
       <div className="p-6 flex justify-center items-center min-h-screen">
@@ -250,12 +267,13 @@ Modal.setAppElement("#root");
                 </>
               )}
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredInteractions.length > 0 ? (
-                filteredInteractions
-                  .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                  .map((interaction: Interaction, index: number) => (
-                  <div key={index} className="rounded-lg bg-white p-4 shadow relative">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredInteractions.length > 0 ? (
+                  filteredInteractions
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((interaction: Interaction, index: number) => (
+                    <div key={index} className="rounded-lg bg-white p-4 shadow relative">
                     <div className="absolute top-2 left-2">
                       <span
                         className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getWeightBadgeColor(
@@ -322,10 +340,31 @@ Modal.setAppElement("#root");
                   </div>
                 ))
               ) : (
-                <p className="text-gray-600 text-center col-span-full">
-                  Nenhuma interação encontrada para os filtros selecionados.
-                </p>
-              )}
+                  <p className="text-gray-600 text-center col-span-full">
+                    Nenhuma interação encontrada para os filtros selecionados.
+                  </p>
+                )}
+              </div>
+              {/* Pagination Controls */}
+              <div className="flex justify-center items-center gap-4">
+                <button
+                  onClick={handlePreviousPage}
+                  className="p-2 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <span className="text-gray-700">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button
+                  onClick={handleNextPage}
+                  className="p-2 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -394,6 +433,6 @@ Modal.setAppElement("#root");
       </Modal>
     </div>
   );
-};
+}
 
 export default App;
