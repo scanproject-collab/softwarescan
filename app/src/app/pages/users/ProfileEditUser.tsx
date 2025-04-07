@@ -77,11 +77,14 @@ const EditProfileScreen = () => {
 
     setLoading(true);
     try {
-      await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/send-verification-code`, { email });
+      console.log(`Enviando solicitação de código para: ${email}`);
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/send-verification-code`, { email });
+      console.log('Resposta do envio de código:', response.data);
       setIsVerificationSent(true);
       setShowVerificationInput(true);
       showToast('info', 'Código Enviado', 'Um código de verificação foi enviado para o seu email.');
     } catch (error: any) {
+      console.error('Erro ao enviar código de verificação:', error?.response?.data || error.message);
       const errorMessage = error?.response?.data?.message || 'Erro ao enviar código de verificação.';
       showToast('error', 'Erro', errorMessage);
     } finally {
@@ -147,29 +150,42 @@ const EditProfileScreen = () => {
       showToast('error', 'Erro', 'Código de verificação é obrigatório');
       return;
     }
-
+    
     // Second step: verify code and update email
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
+      
+      // Log request details for debugging
+      console.log('Enviando verificação para atualização de email:');
+      console.log('- Email:', email);
+      console.log('- Código de verificação:', verificationCode);
+      
+      const updateData = { 
+        email: email.trim(),
+        verificationCode: verificationCode.trim()
+      };
+      
+      console.log('Dados da requisição:', updateData);
+      
       const response = await axios.put(
         `${process.env.EXPO_PUBLIC_API_URL}/operator/update`,
-        { 
-          email,
-          verificationCode
-        },
+        updateData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
+      console.log('Resposta da atualização de email:', response.data);
       
       if (response.status === 200) {
         // Update token with the new one
         if (response.data.token) {
+          console.log('Atualizando token com novo email');
           const updated = await updateToken(response.data.token);
           if (!updated) {
             throw new Error('Falha ao atualizar o token');
           }
         }
-
+        
         showToast('success', 'Sucesso', 'E-mail atualizado com sucesso!');
         setIsVerificationSent(false);
         setShowVerificationInput(false);
@@ -179,7 +195,10 @@ const EditProfileScreen = () => {
         router.push('/pages/users/ProfileUser');
       }
     } catch (error: any) {
-      showToast('error', 'Erro', error.response?.data?.message || 'Erro ao atualizar o e-mail');
+      console.error('Erro ao atualizar email:', error);
+      console.error('Detalhes da resposta:', error.response?.data);
+      const errorMessage = error.response?.data?.message || 'Erro ao atualizar o e-mail';
+      showToast('error', 'Erro', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -313,12 +332,13 @@ const EditProfileScreen = () => {
           placeholder="Código de Verificação (letras e números)"
           value={verificationCode}
           onChangeText={(text) => {
-            // Allow only alphanumeric characters
+            // Allow only alphanumeric characters but maintain original case
             const alphanumericText = text.replace(/[^a-zA-Z0-9]/g, '');
-            setVerificationCode(alphanumericText.toLowerCase());
+            setVerificationCode(alphanumericText);
           }}
           autoCapitalize="none"
           maxLength={6}
+          keyboardType="visible-password"
         />
       )}
       

@@ -127,8 +127,29 @@ export default function NewInteraction() {
           }
         }
 
+        // Handle location with cached data priority
         if (!isOffline && isMounted.current) {
           try {
+            console.log("Verificando dados de localização em cache...");
+            
+            // Try to get cached location data first
+            const cachedLocationJson = await AsyncStorage.getItem("userLocation");
+            const cachedAddress = await AsyncStorage.getItem("userLocationAddress");
+            
+            if (cachedLocationJson && cachedAddress && isMounted.current) {
+              // Use cached data if available
+              const cachedLocation = JSON.parse(cachedLocationJson);
+              console.log("Usando localização em cache:", cachedLocation);
+              
+              setCoords(cachedLocation);
+              setLocation(cachedAddress);
+              setIsLocationLoading(false);
+              return;
+            }
+            
+            console.log("Não há dados de localização em cache ou estão incompletos. Buscando novos...");
+            
+            // No cached data, request permissions and get location
             const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
             let finalStatus = existingStatus;
 
@@ -155,18 +176,28 @@ export default function NewInteraction() {
 
             if (locationData && locationData.coords) {
               const { latitude, longitude } = locationData.coords;
-              console.log("Coordenadas obtidas:", latitude, longitude);
+              console.log("Novas coordenadas obtidas:", latitude, longitude);
               setCoords({ latitude, longitude });
 
+              // Store the new coordinates
+              await AsyncStorage.setItem("userLocation", JSON.stringify({ latitude, longitude }));
+
               try {
+                console.log("Executando reverse geocoding para novas coordenadas...");
                 const address = await reverseGeocode(latitude, longitude);
-                if (isMounted.current) {
-                  if (address.includes("Erro")) {
-                    Alert.alert("Erro", address);
-                    setLocation("Endereço não encontrado");
-                  } else {
-                    setLocation(address);
-                  }
+                
+                if (!isMounted.current) return;
+                
+                if (address.includes("Erro")) {
+                  console.error("Erro no geocoding:", address);
+                  Alert.alert("Erro", address);
+                  setLocation("Endereço não encontrado");
+                } else {
+                  console.log("Novo endereço obtido:", address);
+                  setLocation(address);
+                  
+                  // Store the new address
+                  await AsyncStorage.setItem("userLocationAddress", address);
                 }
               } catch (error) {
                 console.error("Erro no reverse geocoding:", error);
@@ -185,6 +216,23 @@ export default function NewInteraction() {
             if (isMounted.current) {
               setIsLocationLoading(false);
             }
+          }
+        } else if (isMounted.current) {
+          // Offline mode - still try to use cached location if available
+          try {
+            const cachedLocationJson = await AsyncStorage.getItem("userLocation");
+            const cachedAddress = await AsyncStorage.getItem("userLocationAddress");
+            
+            if (cachedLocationJson && cachedAddress) {
+              const cachedLocation = JSON.parse(cachedLocationJson);
+              setCoords(cachedLocation);
+              setLocation(cachedAddress);
+              console.log("Usando dados de localização em cache no modo offline");
+            }
+          } catch (error) {
+            console.error("Erro ao recuperar localização em cache no modo offline:", error);
+          } finally {
+            setIsLocationLoading(false);
           }
         }
       } catch (error) {

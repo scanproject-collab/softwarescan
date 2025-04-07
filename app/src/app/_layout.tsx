@@ -6,6 +6,10 @@ import { validateToken } from '@/src/app/utils/ValidateAuth';
 import React from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
 import { ErrorBoundary } from 'react-error-boundary';
+import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { reverseGeocode } from '@/src/app/utils/GoogleMaps';
+import NetInfo from "@react-native-community/netinfo";
 
 function ErrorFallback({error, resetErrorBoundary}) {
   return (
@@ -23,13 +27,86 @@ export default function RootLayout() {
   const [initialCheckDone, setInitialCheckDone] = useState(false);
   const [shouldNavigate, setShouldNavigate] = useState<string | null>(null);
 
+  // Function to request location permissions and get current location
+  const initializeLocation = async () => {
+    try {
+      const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== "granted") {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== "granted") {
+        console.log("Permissão de localização não concedida pelo usuário");
+        return null;
+      }
+
+      const locationData = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      if (locationData && locationData.coords) {
+        const { latitude, longitude } = locationData.coords;
+        console.log("Coordenadas obtidas no _layout:", latitude, longitude);
+        
+        // Store coordinates in AsyncStorage for later use
+        await AsyncStorage.setItem('userLocation', JSON.stringify({ latitude, longitude }));
+        
+        return { latitude, longitude };
+      }
+    } catch (error) {
+      console.error("Erro ao inicializar localização:", error);
+    }
+    return null;
+  };
+
+  // Function to perform reverse geocoding and cache the result
+  const cacheLocationAddress = async (coords) => {
+    if (!coords) return;
+    
+    try {
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        console.log("Sem conexão para geocoding no inicializar");
+        return;
+      }
+
+      const { latitude, longitude } = coords;
+      const address = await reverseGeocode(latitude, longitude);
+      
+      if (address && !address.includes("Erro")) {
+        console.log("Endereço obtido e armazenado no _layout:", address);
+        await AsyncStorage.setItem('userLocationAddress', address);
+      }
+    } catch (error) {
+      console.error("Erro ao fazer geocoding no inicializar:", error);
+    }
+  };
+
   useEffect(() => {
     const initializeApp = async () => {
       if (initialCheckDone) return; 
 
       try {
-        await initializeOneSignalNotification();
-        const isValid = await validateToken();
+        // Start multiple initialization tasks in parallel
+        const notificationPromise = initializeOneSignalNotification();
+        const tokenPromise = validateToken();
+        
+        // Start location initialization in parallel, but don't wait for it
+        initializeLocation().then(coords => {
+          if (coords) {
+            cacheLocationAddress(coords);
+          }
+        });
+        
+        // Wait for critical tasks to complete
+        const [_, isValid] = await Promise.all([
+          notificationPromise,
+          tokenPromise
+        ]);
+        
         setIsCheckingToken(false);
         setInitialCheckDone(true);
 
