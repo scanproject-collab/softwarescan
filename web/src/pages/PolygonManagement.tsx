@@ -85,7 +85,9 @@ const PolygonManagement: React.FC = () => {
                 });
                 setPosts(response.data.posts);
             } catch (error) {
-                console.error('Erro ao carregar posts:', error.message);
+                // Properly type check the error before accessing message property
+                const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+                console.error('Erro ao carregar posts:', errorMessage);
                 toast.error('Erro ao carregar posts. Verifique o console para mais detalhes.');
             } finally {
                 setLoadingPosts(false);
@@ -100,7 +102,8 @@ const PolygonManagement: React.FC = () => {
                 });
                 setPolygons(response.data.polygons);
             } catch (error) {
-                console.error('Erro ao carregar polígonos:', error);
+                const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+                console.error('Erro ao carregar polígonos:', errorMessage);
                 toast.error('Erro ao carregar polígonos.');
             } finally {
                 setLoadingPolygons(false);
@@ -115,7 +118,8 @@ const PolygonManagement: React.FC = () => {
                 const tagList = response.data.tags.map((tag: any) => tag.name);
                 setTags(tagList);
             } catch (error) {
-                console.error('Erro ao carregar tags:', error);
+                const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+                console.error('Erro ao carregar tags:', errorMessage);
                 toast.error('Erro ao carregar tags.');
             }
         };
@@ -281,10 +285,11 @@ const PolygonManagement: React.FC = () => {
             });
             setPolygons(response.data.polygons);
             toast.success('Polígono(s) criado(s) a partir do shapefile!');
-        } catch (error) {
-            console.error('Erro ao criar polígono a partir do shapefile:', error);
-            toast.error('Erro ao criar polígono a partir do shapefile.');
-        }
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+                console.error('Erro ao criar polígono a partir do shapefile:', errorMessage);
+                toast.error('Erro ao criar polígono a partir do shapefile.');
+            }
     };
 
     const deletePolygonHandler = async (polygonId: string) => {
@@ -296,7 +301,8 @@ const PolygonManagement: React.FC = () => {
                 setPolygons(polygons.filter((p) => p.id !== polygonId));
                 toast.success('Polígono excluído com sucesso!');
             } catch (error) {
-                console.error('Erro ao excluir polígono:', error);
+                const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+                console.error('Erro ao excluir polígono:', errorMessage);
                 toast.error('Erro ao excluir polígono.');
             }
         }
