@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Button, Tooltip } from '@mui/material';
 import GetAppIcon from '@mui/icons-material/GetApp';
-import { Interaction } from '../../types/types';
-import { exportToExcel } from '../../utils/excelExport';
+import { Interaction } from '../../src/types/types';
+import { exportToExcel } from '../utils/excelExport';
 import toast from 'react-hot-toast';
 
 interface ExportButtonProps {
