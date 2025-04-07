@@ -96,7 +96,7 @@ Modal.setAppElement("#root");
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 6;
   if (loading) {
     return (
       <div className="p-6 flex justify-center items-center min-h-screen">
