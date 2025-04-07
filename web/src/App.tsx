@@ -13,6 +13,7 @@ import { useMapModal } from "./components/admin/useMapModal";
 import MapModal from "./components/MapModal";
 import { Interaction } from "./types/types"; 
 import TagFilterDropdown from "./components/admin/dropdownTagFilter";
+import { ExportButton } from "./components/admin/ExportButton";
 
 Modal.setAppElement("#root");
 
@@ -118,14 +119,18 @@ Modal.setAppElement("#root");
       <Toaster />
       <div className="p-6">
         <div className="mb-6 flex items-center gap-4">
-          <img src="/scan-removebg-preview.png" alt="PMAL Logo" className="h-16 w-16" />
-          <div>
-            <h1 className="text-2xl font-bold">Projeto Ações Solidárias - DINT PMAL</h1>
-            <p className="text-gray-600">Descrição do Ações Solidárias...</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="col-span-1 rounded-lg bg-white p-4 shadow">
+              <div className="flex gap-2 items-center">
+                <ExportButton
+                  interactions={filteredInteractions}
+                  disabled={loading}
+                />
+                <button
+                  onClick={handleRefresh}
+                  className="rounded bg-blue-600 p-2 text-white hover:bg-blue-700"
+                >
+                  <RefreshCw className="h-5 w-5" />
+                </button>
+              </div>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Vínculos</h2>
             </div>
