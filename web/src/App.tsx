@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import { CheckCircle, XCircle, Trash2, RefreshCw, Loader2, MapPin } from "lucide-react";
 import { Toaster } from "react-hot-toast";
@@ -13,7 +13,7 @@ import { useMapModal } from "./components/admin/useMapModal";
 import MapModal from "./components/MapModal";
 import { Interaction } from "./types/types"; 
 import TagFilterDropdown from "./components/admin/dropdownTagFilter";
-import { ExportButton } from "./components/admin/ExportButton";
+import { ExportButton } from "./components/ExportDatasForExcel";
 
 Modal.setAppElement("#root");
 
@@ -76,6 +76,10 @@ Modal.setAppElement("#root");
     uniqueInstitutions,
   } = useInteractionFilters(interactions);
 
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedTags, selectedInstitution, selectedRanking, searchTerm, selectedUser]);
   const {
     isModalOpen,
     openDeleteModal,
@@ -89,7 +93,10 @@ Modal.setAppElement("#root");
     openMapModal,
     closeMapModal,
   } = useMapModal();
-
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   if (loading) {
     return (
       <div className="p-6 flex justify-center items-center min-h-screen">
@@ -118,20 +125,17 @@ Modal.setAppElement("#root");
       <Navbar />
       <Toaster />
       <div className="p-6">
-        <div className="mb-6 flex items-center gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <div className="flex items-center gap-4 mb-4">
               <div className="flex gap-2 items-center">
                 <ExportButton
                   interactions={filteredInteractions}
                   disabled={loading}
                 />
-                <button
-                  onClick={handleRefresh}
-                  className="rounded bg-blue-600 p-2 text-white hover:bg-blue-700"
-                >
-                  <RefreshCw className="h-5 w-5" />
-                </button>
               </div>
-            <div className="mb-4 flex items-center justify-between">
+            </div>
+            <div className="mb-4">
               <h2 className="text-lg font-semibold">Vínculos</h2>
             </div>
             <div className="mb-4 flex items-center gap-2 rounded bg-blue-50 p-3">
@@ -177,7 +181,7 @@ Modal.setAppElement("#root");
               ))}
             </div>
           </div>
-          <div className="col-span-2">
+          <div className="lg:col-span-2">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Últimas interações</h2>
               <div className="flex gap-2">
@@ -248,7 +252,9 @@ Modal.setAppElement("#root");
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredInteractions.length > 0 ? (
-                filteredInteractions.map((interaction: Interaction, index: number) => (
+                filteredInteractions
+                  .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                  .map((interaction: Interaction, index: number) => (
                   <div key={index} className="rounded-lg bg-white p-4 shadow relative">
                     <div className="absolute top-2 left-2">
                       <span
@@ -325,6 +331,7 @@ Modal.setAppElement("#root");
         </div>
       </div>
 
+      {/* Delete Confirmation Modal */}
       <Modal
         isOpen={isModalOpen}
         onRequestClose={closeDeleteModal}
@@ -338,13 +345,18 @@ Modal.setAppElement("#root");
           </p>
           <div className="flex justify-end gap-3">
             <button
+              type="button"
               onClick={closeDeleteModal}
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition"
             >
               Cancelar
             </button>
             <button
-              onClick={handleDeleteInteraction}
+              type="button"
+              onClick={() => {
+                handleDeleteInteraction();
+                closeDeleteModal();
+              }}
               className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
             >
               Excluir
@@ -353,6 +365,7 @@ Modal.setAppElement("#root");
         </div>
       </Modal>
 
+      {/* Map Modal */}
       <Modal
         isOpen={isMapModalOpen}
         onRequestClose={closeMapModal}
@@ -370,6 +383,7 @@ Modal.setAppElement("#root");
           )}
           <div className="flex justify-end mt-4">
             <button
+              type="button"
               onClick={closeMapModal}
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition"
             >
