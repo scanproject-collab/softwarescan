@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { GoogleMap, LoadScript, InfoWindow, Polygon as GooglePolygon, Marker as AdvancedMarkerElement } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, InfoWindow, Polygon as GooglePolygon, Marker } from '@react-google-maps/api';
 import { geocodeAddress, getPlaceSuggestions } from '../utils/googleMaps.ts';
 import html2canvas from 'html2canvas-pro';
 import jsPDF from 'jspdf';
@@ -351,6 +351,22 @@ const PolygonManagement: React.FC = () => {
         console.log('Mapa carregado com sucesso');
     };
 
+    const getMarkerIcon = (tag: string) => {
+        // Return different icon URLs based on tag type
+        switch(tag) {
+            case 'Roubo':
+                return "https://maps.google.com/mapfiles/ms/icons/red-dot.png";
+            case 'Furto':
+                return "https://maps.google.com/mapfiles/ms/icons/orange-dot.png";
+            case 'Assalto':
+                return "https://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
+            case 'Homicídio':
+                return "https://maps.google.com/mapfiles/ms/icons/purple-dot.png";
+            default:
+                return "https://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+        }
+    };
+
     const getPolygonColor = (weight: string) => {
         switch (weight) {
             case 'Alto':
@@ -405,12 +421,18 @@ const PolygonManagement: React.FC = () => {
                                     (post) =>
                                         post.latitude &&
                                         post.longitude && (
-                                            <AdvancedMarkerElement
+                                            <Marker
                                                 key={post.id}
                                                 position={{ lat: post.latitude, lng: post.longitude }}
+                                                onClick={() => navigate(`/user/${post.author.id}`)}
                                                 onMouseOver={() => setHoveredMarker(post.id)}
                                                 onMouseOut={() => setHoveredMarker(null)}
-                                                onClick={() => navigate(`/user/${post.author.id}`)}
+                                                icon={{
+                                                    url: post.tags && post.tags.length > 0 
+                                                        ? getMarkerIcon(post.tags[0].name)
+                                                        : "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+                                                    scaledSize: new window.google.maps.Size(30, 30),
+                                                }}
                                             >
                                                 {hoveredMarker === post.id && (
                                                     <InfoWindow
@@ -423,7 +445,7 @@ const PolygonManagement: React.FC = () => {
                                                         </div>
                                                     </InfoWindow>
                                                 )}
-                                            </AdvancedMarkerElement>
+                                            </Marker>
                                         )
                                 )}
                                 {polygons.map((polygon) => {
