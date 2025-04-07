@@ -127,7 +127,7 @@ const RegisterScreen = () => {
         <Text style={styles.successMessage}>
           Sua conta foi enviada com sucesso e está aguardando aprovação do administrador. Você será notificado quando sua conta for liberada.
         </Text>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/')}>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/pages/auth')}>
           <Text style={styles.buttonText}>Voltar</Text>
         </TouchableOpacity>
       </View>
