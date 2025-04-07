@@ -43,19 +43,37 @@ export const usePendingOperators = () => {
 
     const handleRejectOperator = async (operatorId: string) => {
         if (!token) return;
-        console.log("User role:", user?.role);
-        console.log("Base path:", basePath);
-        console.log("Full URL:", `${basePath}/reject-operator/${operatorId}`);
+        // Remove debug logs
         try {
+            // Optimistically update UI first to prevent double requests
+            setPendingOperators(prevOperators => 
+                prevOperators.filter(op => op.id !== operatorId)
+            );
+            
+            // Show success message immediately for better UX
+            toast.success("Operador rejeitado com sucesso!");
+            
+            // Now make API call
             await api.delete(`${basePath}/reject-operator/${operatorId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            fetchPendingOperators();
-            toast.success("Operador rejeitado com sucesso!");
-        } catch (err) {
+            
+            // No need to call fetchPendingOperators here, we've already updated the UI
+        } catch (err: any) {
+            // If there's a 404 error but we already removed the operator from our list, 
+            // no need to show an error because the user was rejected successfully
+            if (err?.response?.status === 404) {
+                console.log("Operator already removed, continuing...");
+                return;
+            }
+            
+            // For other errors, show error and revert the UI update
             setError("Erro ao rejeitar operador.");
             toast.error("Erro ao rejeitar operador.");
             console.error(err);
+            
+            // Refetch to restore the correct state
+            fetchPendingOperators();
         }
     };
 
