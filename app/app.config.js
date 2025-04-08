@@ -5,7 +5,7 @@ export default {
   expo: {
     name: 'Softwarescan',
     slug: 'softwarescan',
-    version: '2.7.3',
+    version: '2.8.0',
     orientation: 'portrait',
     icon: './assets/images/scan-removebg-preview.png',
     scheme: 'softwarescan',
