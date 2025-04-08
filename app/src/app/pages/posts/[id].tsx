@@ -158,12 +158,7 @@ export default function InteractionDetail() {
           Hora: {post.createdAt ? new Date(post.createdAt).toLocaleTimeString('pt-BR') : 'Hora indisponível'}
         </Text>
         <Text style={styles.detailText}>
-          Observações: {post.content || post.description || (post.notes ? String(post.notes) : 'Sem descrição')}
-        </Text>
-        {/* Debug info - remover após correção */}
-        <Text style={[styles.detailText, { fontSize: 12, color: '#999' }]}>
-          Debug - content: {post.content ? 'presente' : 'ausente'}, 
-          description: {post.description ? 'presente' : 'ausente'}
+          Observações: {post.content || (post.notes ? String(post.notes) : 'Sem descrição')}
         </Text>
         <Text style={styles.detailText}>
           Autor: {post.author && post.author.name ? post.author.name : 'Não disponível'}
