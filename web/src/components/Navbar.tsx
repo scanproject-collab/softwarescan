@@ -69,6 +69,12 @@ const Navbar: React.FC = () => {
               >
                 Gerenciar Instituições
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate('/managers')}
+                className="cursor-pointer hover:bg-gray-100"
+              >
+                Gerenciar Gerentes
+              </DropdownMenuItem>
             </>
           )}
           <DropdownMenuItem

@@ -7,7 +7,8 @@ import Login from './pages/auth/LoginScreen';
 import UpdateAdmin from './pages/admin/UpdateAdmin';
 import ProfileAdmin from './pages/admin/ProfileAdmin';
 import TagManagement from "./pages/admin/TagManagement";
-import InstitutionManagement from "./pages/admin/InstitutionManagement"; // Importe o novo componente
+import InstitutionManagement from "./pages/admin/InstitutionManagement"; 
+import ManagerManagement from "./pages/admin/ManagerManagement"; // Import the new component
 import PasswordRecoveryRequestScreen from './pages/auth/PasswordRecoveryRequestScreen';
 import PasswordRecoverySuccessScreen from './pages/auth/passwordRecoverySuccessScreen';
 import PasswordResetCodeVerificationScreen from './pages/auth/passwordResetCodeVerificationScreen';
@@ -25,7 +26,8 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<App />} />
           <Route path="/tags" element={<TagManagement />} />
-          <Route path="/institutions" element={<InstitutionManagement />} /> {/* Nova rota */}
+          <Route path="/institutions" element={<InstitutionManagement />} /> 
+          <Route path="/managers" element={<ManagerManagement />} /> {/* New route for manager management */}
           <Route path="/admin/profile" element={<ProfileAdmin />} />
           <Route path="/manager/profile" element={<ProfileManager />} />
           <Route path="/admin/update" element={<UpdateAdmin />} />
