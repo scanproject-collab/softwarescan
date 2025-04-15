@@ -1,5 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
-import { listAllOperators, deleteOperatorByAdmin, listPendingOperators, approveOperator, rejectOperator, updateAdminAccount, listNotifications, deleteExpiredOperators } from '../controllers/adminController';
+import { listAllOperators, deleteOperatorByAdmin, listPendingOperators, approveOperator, rejectOperator, updateAdminAccount, listNotifications, deleteExpiredOperators, listAllManagers, createManager, updateManagerInstitution, deleteManager } from '../controllers/adminController';
 import { authMiddleware, roleMiddleware } from '../middlewares/authMiddleware';
 import { CustomRequest } from '../middlewares/authMiddleware';
 import { listAllPosts } from "../controllers/postController";
@@ -57,6 +57,43 @@ router.put(
     roleMiddleware(['ADMIN']),
     async (req: CustomRequest, res: Response) => {
         await updateAdminAccount(req, res);
+    }
+);
+
+// Manager Management Routes
+router.get(
+    '/managers',
+    authMiddleware,
+    roleMiddleware(['ADMIN']),
+    async (req: CustomRequest, res: Response) => {
+        await listAllManagers(req, res);
+    }
+);
+
+router.post(
+    '/managers',
+    authMiddleware,
+    roleMiddleware(['ADMIN']),
+    async (req: CustomRequest, res: Response) => {
+        await createManager(req, res);
+    }
+);
+
+router.put(
+    '/managers/:managerId/institution',
+    authMiddleware,
+    roleMiddleware(['ADMIN']),
+    async (req: CustomRequest, res: Response) => {
+        await updateManagerInstitution(req, res);
+    }
+);
+
+router.delete(
+    '/managers/:managerId',
+    authMiddleware,
+    roleMiddleware(['ADMIN']),
+    async (req: CustomRequest, res: Response) => {
+        await deleteManager(req, res);
     }
 );
 

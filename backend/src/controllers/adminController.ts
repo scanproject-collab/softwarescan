@@ -358,3 +358,170 @@ export const listNotifications = async (_req: Request, res: Response) => {
     res.status(400).json({ message: 'Error listing notifications: ' + (error as any).message });
   }
 };
+
+export const listAllManagers = async (_req: Request, res: Response) => {
+  try {
+    const managers = await prisma.user.findMany({
+      where: {
+        role: 'MANAGER',
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        institutionId: true,
+        createdAt: true,
+        updatedAt: true,
+        institution: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    const totalManagers = managers.length;
+
+    const response = {
+      message: 'Managers listed successfully',
+      summary: {
+        totalManagers,
+      },
+      managers: managers.map((manager) => ({
+        id: manager.id,
+        name: manager.name || 'Unnamed',
+        email: manager.email,
+        institution: manager.institution
+          ? { id: manager.institution.id, title: manager.institution.title }
+          : null,
+        createdAt: manager.createdAt?.toISOString() ?? new Date().toISOString(),
+        updatedAt: manager.updatedAt?.toISOString() ?? new Date().toISOString(),
+      })),
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(400).json({ message: 'Error listing managers: ' + (error as any).message });
+  }
+};
+
+export const createManager = async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, institutionId, verificationCode, role } = req.body;
+
+    if (role !== 'MANAGER') {
+      return res.status(400).json({ message: 'Invalid role. Must be MANAGER' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(400).json({ message: 'User not found. Verification code must be generated first.' });
+    }
+
+    if (user.verificationCode !== verificationCode) {
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const manager = await prisma.user.update({
+      where: { email },
+      data: {
+        name,
+        password: hashedPassword,
+        role: 'MANAGER',
+        isPending: false,
+        institutionId,
+        verificationCode: null,
+        verificationCodeExpiresAt: null,
+      },
+    });
+
+    await sendWelcomeEmail(email, name, 'MANAGER');
+
+    res.status(201).json({ 
+      message: 'Manager created successfully', 
+      manager: {
+        id: manager.id,
+        name: manager.name,
+        email: manager.email,
+        institutionId: manager.institutionId,
+        createdAt: manager.createdAt?.toISOString() ?? new Date().toISOString(),
+      } 
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Error creating manager: ' + (error as any).message });
+  }
+};
+
+export const updateManagerInstitution = async (req: Request, res: Response) => {
+  try {
+    const { managerId } = req.params;
+    const { institutionId } = req.body;
+
+    // Check if the institution exists if institutionId is provided
+    if (institutionId) {
+      const institution = await prisma.institution.findUnique({
+        where: { id: institutionId },
+      });
+      if (!institution) {
+        return res.status(400).json({ message: 'Institution not found' });
+      }
+    }
+
+    const manager = await prisma.user.update({
+      where: { 
+        id: managerId,
+        role: 'MANAGER'
+      },
+      data: { 
+        institutionId: institutionId || null 
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        institutionId: true,
+        institution: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({ 
+      message: 'Manager institution updated successfully', 
+      manager 
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Error updating manager institution: ' + (error as any).message });
+  }
+};
+
+export const deleteManager = async (req: Request, res: Response) => {
+  const { managerId } = req.params;
+
+  try {
+    const manager = await prisma.user.findUnique({
+      where: { 
+        id: managerId,
+        role: 'MANAGER'
+      },
+    });
+
+    if (!manager) {
+      return res.status(404).json({ message: 'Manager not found' });
+    }
+
+    await prisma.user.delete({
+      where: { id: managerId },
+    });
+
+    res.status(200).json({ message: 'Manager deleted successfully' });
+  } catch (error) {
+    res.status(400).json({ message: 'Error deleting manager: ' + (error as any).message });
+  }
+};
