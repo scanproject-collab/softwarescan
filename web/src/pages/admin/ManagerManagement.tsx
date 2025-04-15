@@ -22,7 +22,7 @@ interface Manager {
 }
 
 const ManagerManagement = () => {
-  const { user } = useAuth();
+  const {} = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
@@ -117,7 +117,7 @@ const ManagerManagement = () => {
   // Update manager's institution
   const handleUpdateInstitution = async (managerId: string, institutionId: string) => {
     try {
-      const response = await api.put(`/admin/managers/${managerId}/institution`, {
+      await api.put(`/admin/managers/${managerId}/institution`, {
         institutionId: institutionId || null
       });
       
