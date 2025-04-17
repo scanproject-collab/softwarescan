@@ -20,7 +20,7 @@ router.get("/weights", authMiddleware, async (req: CustomRequest, res: Response,
     }
 });
 
-router.post("/create", authMiddleware, roleMiddleware(["ADMIN"]), async (req: CustomRequest, res: Response, next: NextFunction) => {
+router.post("/create", authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async (req: CustomRequest, res: Response, next: NextFunction) => {
     try {
         await createTag(req, res);
     } catch (err) {
@@ -28,7 +28,7 @@ router.post("/create", authMiddleware, roleMiddleware(["ADMIN"]), async (req: Cu
     }
 });
 
-router.put("/:name", authMiddleware, roleMiddleware(["ADMIN"]), async (req: CustomRequest, res: Response, next: NextFunction) => {
+router.put("/:name", authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async (req: CustomRequest, res: Response, next: NextFunction) => {
     try {
         await updateTag(req, res);
     } catch (err) {
@@ -36,7 +36,7 @@ router.put("/:name", authMiddleware, roleMiddleware(["ADMIN"]), async (req: Cust
     }
 });
 
-router.delete("/:name", authMiddleware, roleMiddleware(["ADMIN"]), async (req: CustomRequest, res: Response, next: NextFunction) => {
+router.delete("/:id", authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async (req: CustomRequest, res: Response, next: NextFunction) => {
     try {
         await deleteTag(req, res);
     } catch (err) {

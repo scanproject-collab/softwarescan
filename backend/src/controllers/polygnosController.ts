@@ -1,4 +1,3 @@
-
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 
@@ -99,11 +98,45 @@ export const createPolygon = async (req: RequestWithUser, res: Response) => {
     }
 };
 
-export const listPolygons = async (_req: Request, res: Response) => {
+export const listPolygons = async (req: RequestWithUser, res: Response) => {
     try {
+        const { role, institutionId } = req.query;
+
+        let whereClause = {};
+
+        // Se for MANAGER, filtrar polígonos por instituição
+        if (role === 'MANAGER' && institutionId) {
+            whereClause = {
+                OR: [
+                    // Polígonos criados pelo próprio manager
+                    { authorId: req.user?.id },
+                    // Polígonos criados por usuários da mesma instituição
+                    {
+                        author: {
+                            institutionId: institutionId as string
+                        }
+                    }
+                ]
+            };
+        }
+
         const polygons = await prisma.polygon.findMany({
-            include: { author: { select: { name: true } } },
+            where: whereClause,
+            include: {
+                author: {
+                    select: {
+                        name: true,
+                        institutionId: true,
+                        institution: {
+                            select: {
+                                title: true
+                            }
+                        }
+                    }
+                }
+            },
         });
+
         res.status(200).json({ message: 'Polygons listed successfully', polygons });
     } catch (error) {
         res.status(400).json({ message: 'Error listing polygons: ' + (error as any).message });

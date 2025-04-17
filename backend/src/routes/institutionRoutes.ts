@@ -5,33 +5,33 @@ import { CustomRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-router.post('/', authMiddleware, roleMiddleware(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async (req: Request, res: Response, next: NextFunction) => {
   try {
-	await createInstitution(req as CustomRequest, res);
+    await createInstitution(req as CustomRequest, res);
   } catch (error) {
-	next(error);
+    next(error);
   }
 });
 
-router.put('/:institutionId', authMiddleware, roleMiddleware(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async (req: Request, res: Response, next: NextFunction) => {
   try {
-	await updateInstitution(req as CustomRequest, res);
+    await updateInstitution(req, res);
   } catch (error) {
-	next(error);
+    next(error);
   }
 });
 
-router.delete('/:institutionId', authMiddleware, roleMiddleware(['ADMIN']), async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async (req: Request, res: Response, next: NextFunction) => {
   try {
-	await deleteInstitution(req as CustomRequest, res);
+    await deleteInstitution(req, res);
   } catch (error) {
-	next(error);
+    next(error);
   }
 });
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await listInstitutions(req, res); 
+    await listInstitutions(req, res);
   } catch (error) {
     next(error);
   }
