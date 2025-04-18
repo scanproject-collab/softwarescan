@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { GoogleMap, LoadScript, InfoWindow, Polygon as GooglePolygon, Marker, Polyline } from '@react-google-maps/api';
-import { geocodeAddress, getPlaceSuggestions } from '../utils/googleMaps.ts';
 import html2canvas from 'html2canvas-pro';
 import jsPDF from 'jspdf';
 import api from '../services/api.ts';
@@ -35,9 +34,7 @@ const PolygonManagement: React.FC = () => {
     const [polygons, setPolygons] = useState<any[]>([]);
     const [drawing, setDrawing] = useState(false);
     const [currentPolygon, setCurrentPolygon] = useState<any[]>([]);
-    const [filterLocation, setFilterLocation] = useState<string>('');
     const [filterCoords, setFilterCoords] = useState<{ latitude: number; longitude: number } | null>(null);
-    const [suggestions, setSuggestions] = useState<string[]>([]);
     const [filterDateStart, setFilterDateStart] = useState<string>('');
     const [filterDateEnd, setFilterDateEnd] = useState<string>('');
     const [filterTag, setFilterTag] = useState<string>('');
@@ -240,30 +237,6 @@ const PolygonManagement: React.FC = () => {
             fetchTagWeights();
         }
     }, [polygons, filteredPosts, isMapLoaded, token]);
-
-    const uniqueLocations = Array.from(new Set(posts.map(post => post.location).filter(Boolean))) as string[];
-
-    const handleLocationChange = async (text: string) => {
-        setFilterLocation(text);
-        if (text.trim().length < 3) {
-            setSuggestions([]);
-            setFilterCoords(null);
-            return;
-        }
-        const suggestionsList = await getPlaceSuggestions(text);
-        setSuggestions(suggestionsList);
-    };
-
-    const handleSuggestionSelect = async (suggestion: string) => {
-        setFilterLocation(suggestion);
-        setSuggestions([]);
-        try {
-            const coords = await geocodeAddress(suggestion);
-            setFilterCoords(coords);
-        } catch (error) {
-            toast.error('Endereço não encontrado. Tente outro endereço.');
-        }
-    };
 
     const handleMapClick = (event: google.maps.MapMouseEvent) => {
         if (drawing && event.latLng) {
@@ -621,7 +594,7 @@ const PolygonManagement: React.FC = () => {
                                                     )
                                             )}
                                             {polygons.map((polygon) => {
-                                                const { totalWeight, ranking } = getPolygonRankingInfo(polygon.id);
+                                                const { ranking } = getPolygonRankingInfo(polygon.id);
                                                 const { fillColor, strokeColor } = getPolygonColor(ranking);
 
                                                 return (
@@ -790,7 +763,13 @@ const PolygonManagement: React.FC = () => {
                             className="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700"
                         >
                             <option value="">Todas as Localizações</option>
-                            {uniqueLocations.map((location) => (
+                            {Array.from(
+                                new Set(
+                                    posts
+                                        .map(post => post.location)
+                                        .filter(Boolean)
+                                )
+                            ).map((location) => (
                                 <option key={location} value={location}>
                                     {location}
                                 </option>
