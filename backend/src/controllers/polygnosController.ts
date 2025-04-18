@@ -1,82 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 
-import multer from 'multer';
-import shapefile from 'shapefile';
-
 const prisma = new PrismaClient();
-
-
-const upload = multer({
-    storage: multer.memoryStorage(),
-    fileFilter: (req, file, cb) => {
-        if (file.originalname.endsWith('.shp') || file.originalname.endsWith('.dbf')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Apenas arquivos .shp ou .dbf são permitidos'));
-        }
-    },
-});
 
 interface RequestWithUser extends Request {
     user?: { id: string; role: string; institutionId?: string };
 }
-
-export const uploadShapefile = upload.fields([
-    { name: 'shp', maxCount: 1 },
-    { name: 'dbf', maxCount: 1 },
-]);
-
-export const createPolygonFromShapefile = async (req: RequestWithUser, res: Response) => {
-    if (!req.user?.id || (req.user.role !== 'ADMIN' && req.user.role !== 'MANAGER')) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-    const { name, notes } = req.body;
-
-    if (!files?.shp || !files?.dbf) {
-        return res.status(400).json({ message: 'Both .shp and .dbf files are required' });
-    }
-    if (!name) {
-        return res.status(400).json({ message: 'Name is required' });
-    }
-
-    try {
-        const shpBuffer = files.shp[0].buffer;
-        const dbfBuffer = files.dbf[0].buffer;
-
-        const geojson = await shapefile.read(shpBuffer, dbfBuffer);
-        const polygons: any[] = [];
-
-        for (const feature of geojson.features) {
-            if (feature.geometry.type === 'Polygon') {
-                const coordinates = feature.geometry.coordinates[0].map((coord: [number, number]) => ({
-                    lat: coord[1],
-                    lng: coord[0],
-                }));
-                if (coordinates.length >= 3) {
-                    const polygon = await prisma.polygon.create({
-                        data: {
-                            name: `${name} (${polygons.length + 1})`,
-                            points: coordinates,
-                            notes,
-                            authorId: req.user.id,
-                        },
-                    });
-                    polygons.push(polygon);
-                }
-            }
-        }
-
-        if (polygons.length === 0) {
-            return res.status(400).json({ message: 'No valid polygons found in the shapefile' });
-        }
-
-        res.status(201).json({ message: 'Polygons created successfully from shapefile', polygons });
-    } catch (error) {
-        res.status(400).json({ message: 'Error processing shapefile: ' + (error as any).message });
-    }
-};
 
 export const createPolygon = async (req: RequestWithUser, res: Response) => {
     const { name, points, notes } = req.body;

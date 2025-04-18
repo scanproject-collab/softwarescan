@@ -299,14 +299,45 @@ export const listNotificationsForManager = async (req: RequestWithUser, res: Res
   }
 
   try {
+    // Buscar dados do usuário, incluindo sua data de criação
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { createdAt: true, institutionId: true }
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({ message: 'Usuário não encontrado' });
+    }
+
     const notifications = await prisma.notification.findMany({
       where: {
-        user: {
-          institutionId: req.user.institutionId,
-        },
+        createdAt: { gte: currentUser.createdAt }, // Apenas notificações após a criação do usuário
+        OR: [
+          // Notificações gerais do sistema
+          { userId: null },
+          // Notificações de usuários da mesma instituição
+          {
+            user: {
+              institutionId: currentUser.institutionId
+            }
+          }
+        ]
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
+      include: {
+        user: {
+          select: {
+            name: true,
+            institutionId: true,
+            institution: {
+              select: {
+                title: true
+              }
+            }
+          }
+        }
+      }
     });
 
     const formattedNotifications = notifications.map((notif) => ({
@@ -314,6 +345,10 @@ export const listNotificationsForManager = async (req: RequestWithUser, res: Res
       type: notif.type,
       message: notif.message,
       createdAt: notif.createdAt.toISOString(),
+      userInfo: notif.user ? {
+        name: notif.user.name,
+        institution: notif.user.institution?.title || 'Desconhecida'
+      } : null
     }));
 
     res.status(200).json({

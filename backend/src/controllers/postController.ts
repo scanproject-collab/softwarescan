@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client';
 import { PutObjectCommand, ObjectCannedACL, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import s3Client from '../services/storage/AWSs3';
 import multer from 'multer';
-import { sendOneSignalNotification } from '../services/oneSignalNotification';
 
 import dotenv from 'dotenv';
 dotenv.config();

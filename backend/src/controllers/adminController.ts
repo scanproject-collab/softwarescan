@@ -336,11 +336,58 @@ export const deleteOperatorByAdmin = async (req: Request, res: Response) => {
   }
 };
 
-export const listNotifications = async (_req: Request, res: Response) => {
+export const listNotifications = async (req: RequestWithUser, res: Response) => {
   try {
+    // Verificar se o usuário existe
+    if (!req.user?.id) {
+      return res.status(401).json({ message: 'Usuário não autenticado' });
+    }
+
+    // Buscar dados do usuário, incluindo sua data de criação
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { createdAt: true, role: true, institutionId: true }
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({ message: 'Usuário não encontrado' });
+    }
+
+    // Definir condições para a consulta de notificações
+    let whereCondition: any = {
+      createdAt: { gte: currentUser.createdAt } // Apenas notificações após a criação do usuário
+    };
+
+    // Se for MANAGER, filtrar notificações relacionadas à instituição do usuário
+    if (currentUser.role === 'MANAGER' && currentUser.institutionId) {
+      whereCondition = {
+        ...whereCondition,
+        OR: [
+          // Notificações gerais (não específicas de um usuário)
+          { userId: null },
+          // Notificações de usuários da mesma instituição
+          { user: { institutionId: currentUser.institutionId } }
+        ]
+      };
+    }
+
     const recordedNotifications = await prisma.notification.findMany({
+      where: whereCondition,
       orderBy: { createdAt: 'desc' },
       take: 50,
+      include: {
+        user: {
+          select: {
+            name: true,
+            institutionId: true,
+            institution: {
+              select: {
+                title: true
+              }
+            }
+          }
+        }
+      }
     });
 
     const allNotifications = recordedNotifications.map((notif) => ({
@@ -348,6 +395,10 @@ export const listNotifications = async (_req: Request, res: Response) => {
       type: notif.type,
       message: notif.message,
       createdAt: notif.createdAt.toISOString(),
+      userInfo: notif.user ? {
+        name: notif.user.name,
+        institution: notif.user.institution?.title || 'Desconhecida'
+      } : null
     }));
 
     res.status(200).json({
@@ -440,15 +491,15 @@ export const createManager = async (req: Request, res: Response) => {
 
     await sendWelcomeEmail(email, name, 'MANAGER');
 
-    res.status(201).json({ 
-      message: 'Manager created successfully', 
+    res.status(201).json({
+      message: 'Manager created successfully',
       manager: {
         id: manager.id,
         name: manager.name,
         email: manager.email,
         institutionId: manager.institutionId,
         createdAt: manager.createdAt?.toISOString() ?? new Date().toISOString(),
-      } 
+      }
     });
   } catch (error) {
     res.status(400).json({ message: 'Error creating manager: ' + (error as any).message });
@@ -471,12 +522,12 @@ export const updateManagerInstitution = async (req: Request, res: Response) => {
     }
 
     const manager = await prisma.user.update({
-      where: { 
+      where: {
         id: managerId,
         role: 'MANAGER'
       },
-      data: { 
-        institutionId: institutionId || null 
+      data: {
+        institutionId: institutionId || null
       },
       select: {
         id: true,
@@ -492,9 +543,9 @@ export const updateManagerInstitution = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json({ 
-      message: 'Manager institution updated successfully', 
-      manager 
+    res.status(200).json({
+      message: 'Manager institution updated successfully',
+      manager
     });
   } catch (error) {
     res.status(400).json({ message: 'Error updating manager institution: ' + (error as any).message });
@@ -506,7 +557,7 @@ export const deleteManager = async (req: Request, res: Response) => {
 
   try {
     const manager = await prisma.user.findUnique({
-      where: { 
+      where: {
         id: managerId,
         role: 'MANAGER'
       },
