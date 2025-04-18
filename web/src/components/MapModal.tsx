@@ -1,5 +1,6 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { LatLngExpression } from "leaflet";
+import React, { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 interface MapModalProps {
     latitude: number;
@@ -8,22 +9,40 @@ interface MapModalProps {
 }
 
 const MapModal: React.FC<MapModalProps> = ({ latitude, longitude, title }) => {
-    const position: LatLngExpression = [latitude, longitude];
+    const mapRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (mapRef.current) {
+            // Limpar o mapa se já existir
+            mapRef.current.innerHTML = "";
+
+            // Criar novo mapa
+            const map = L.map(mapRef.current).setView([latitude, longitude], 13);
+
+            // Adicionar camada do OpenStreetMap
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Adicionar marcador
+            L.marker([latitude, longitude])
+                .addTo(map)
+                .bindPopup(title)
+                .openPopup();
+
+            // Limpar o mapa quando componente for desmontado
+            return () => {
+                map.remove();
+            };
+        }
+    }, [latitude, longitude, title]);
 
     return (
-        <MapContainer
-            center={position}
-            zoom={13}
+        <div
+            ref={mapRef}
             style={{ height: "400px", width: "100%" }}
-        >
-            <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
-            <Marker position={position}>
-                <Popup>{title}</Popup>
-            </Marker>
-        </MapContainer>
+            className="rounded-md shadow-md"
+        />
     );
 };
 

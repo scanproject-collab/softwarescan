@@ -55,7 +55,7 @@ const Navbar: React.FC = () => {
           >
             Perfil
           </DropdownMenuItem>
-          {user?.role === "ADMIN" && (
+          {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
             <>
               <DropdownMenuItem
                 onClick={() => navigate('/tags')}
@@ -99,7 +99,7 @@ const Navbar: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-2">
-        <NotificationModal onOpen={() => {}} />
+        <NotificationModal onOpen={() => { }} />
       </div>
     </nav>
   );
