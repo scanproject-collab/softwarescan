@@ -30,9 +30,15 @@ export default function NewInteraction() {
   const [location, setLocation] = useState("");
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
-  const [selectedTime, setSelectedTime] = useState(
-    new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-  );
+
+  // Fix for potential undefined function error with toLocaleTimeString
+  const [selectedTime, setSelectedTime] = useState(() => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  });
+
   const [isManualLocation, setIsManualLocation] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -42,7 +48,7 @@ export default function NewInteraction() {
   const isMounted = useRef(true);
 
   const router = useRouter();
-  const API_URL = process.env.EXPO_PUBLIC_API_URL;
+  const API_URL = process.env.EXPO_PUBLIC_API_URL || "https://api.example.com";
 
 
   const resetForm = () => {
@@ -53,9 +59,13 @@ export default function NewInteraction() {
     setLocation("");
     setCoords(null);
     setSelectedDate(new Date().toISOString().split("T")[0]);
-    setSelectedTime(
-      new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-    );
+
+    // Fixed time reset
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    setSelectedTime(`${hours}:${minutes}`);
+
     setIsManualLocation(false);
     setStatus("idle");
   };
@@ -64,13 +74,22 @@ export default function NewInteraction() {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      const response = await fetch(`${API_URL}/ping`, {
-        method: "GET",
-        signal: controller.signal,
-      }).catch(() => null);
-      clearTimeout(timeoutId);
-      return response && response.ok;
-    } catch {
+
+      // Added try/catch and better error handling
+      try {
+        const response = await fetch(`${API_URL}/ping`, {
+          method: "GET",
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        return response && response.ok;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        console.log("Connectivity check error:", error);
+        return false;
+      }
+    } catch (error) {
+      console.log("Connectivity check outer error:", error);
       return false;
     }
   };
@@ -397,11 +416,13 @@ export default function NewInteraction() {
       });
 
       if (image) {
-        const fileName = image.split("/").pop();
+        const fileName = image.split("/").pop() || "image.jpg";
+        const fileType = fileName.endsWith('.png') ? 'image/png' : 'image/jpeg';
+
         formData.append("image", {
           uri: image,
-          type: "image/jpeg",
-          name: fileName || "image.jpg",
+          type: fileType,
+          name: fileName,
         } as any);
       }
 
@@ -473,9 +494,18 @@ export default function NewInteraction() {
       <ImagePickerComponent
         image={image}
         setImage={(uri) => {
-          setIsImageLoading(true);
-          setImage(uri);
-          setIsImageLoading(false);
+          try {
+            setIsImageLoading(true);
+            if (uri !== null && typeof uri === 'string') {
+              setImage(uri);
+            } else {
+              console.log("Invalid image URI received:", uri);
+            }
+          } catch (error) {
+            console.error("Error setting image:", error);
+          } finally {
+            setIsImageLoading(false);
+          }
         }}
       />
     );
