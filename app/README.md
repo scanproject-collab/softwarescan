@@ -1,200 +1,225 @@
+# Softwarescan
 
----
-
-# Documentação do Projeto - **Softwarescan**
+![Version](https://img.shields.io/badge/version-2.9.0-blue.svg)
+![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)
+![Node](https://img.shields.io/badge/node-18.x-green.svg)
+![React Native](https://img.shields.io/badge/React%20Native-expo-61DBFB.svg)
 
 ## Visão Geral
 
-O **Softwarescan** é um projeto que visa a criação de uma plataforma onde usuários podem registrar interações, visualizar posts e interagir com outros participantes. Ele é composto por um aplicativo móvel desenvolvido em **React Native** com **Expo** e uma API que gerencia a autenticação de usuários, o armazenamento de dados e o envio de notificações. A plataforma permite a recuperação de senhas, a definição de locais no mapa e a exibição de interações em forma de posts.
+O **Softwarescan** é uma plataforma móvel avançada que permite aos usuários registrar interações georreferenciadas, visualizar posts com informações detalhadas e interagir com outros participantes. Desenvolvido com React Native e Expo, oferece uma experiência fluida e otimizada para dispositivos iOS e Android.
 
----
+## ✨ Novidades na versão 2.9.0
 
-## Estrutura do Projeto
+### 🚀 Melhorias de Performance
 
-### Estrutura de Pastas
+A versão 2.9.0 apresenta significativas otimizações de performance:
 
-```plaintext
-├── app
-│   ├── assets/
-│   ├── (tabs)/
-│   ├── components/
-│   │   ├── auth/
-│   │   ├── home/
-│   │   ├── posts/
-│   ├── pages/
-│   ├── utils/
-├── .env
-├── .env.example
-├── app.json
-├── eas.json
-└── package.json
-```
+- **Sistema de Caching Avançado**
+  - Cache inteligente com timestamps para dados de localização
+  - Cache otimizado para API do Google Maps
+  - Expiração automática de dados obsoletos
 
-### Descrição das Pastas e Arquivos
+- **Otimização de Renderização**
+  - Componentes memoizados com React.memo()
+  - Redução de re-renders desnecessários
+  - useCallback e useMemo para manter referências estáveis
 
-- **app**: Contém a lógica principal do aplicativo, incluindo componentes reutilizáveis e telas.
-  - **components**: Componentes divididos em diferentes funcionalidades como `auth`, `home`, `posts`.
-  - **pages**: Contém as telas, incluindo telas de autenticação e de perfil.
-  - **utils**: Funções auxiliares como manipulação de autenticação e notificações.
+- **Melhorias de Imagem**
+  - Carregamento otimizado com estados de loading
+  - Compressão eficiente (60%) para redução de uso de dados
+  - Fallbacks para falhas de carregamento
 
-- **.env**: Contém as variáveis de ambiente do projeto, como URLs da API e chaves de API.
-- **app.json**: Arquivo de configuração do Expo que define as configurações da aplicação.
-- **eas.json**: Arquivo de configuração do EAS (Expo Application Services) para construir e submeter a aplicação.
-- **package.json**: Gerenciador de dependências do projeto.
+- **Performance de Lista**
+  - Virtualização e windowing para listas longas
+  - Batch rendering para melhor responsividade da UI
+  - Pull-to-refresh otimizado
 
----
+- **Operações de Mapa e Localização**
+  - Busca de localização em segundo plano
+  - Timeouts inteligentes para evitar bloqueios
+  - Arredondamento de coordenadas para eficiência de cache
 
-## Funcionalidades
+- **Otimização de Rede**
+  - Controle de requisições com AbortController
+  - Timeouts reduzidos para melhor experiência offline
+  - Sincronização em lotes para dados offline
 
-### 1. **Autenticação**
-   A autenticação no **Softwarescan** é feita através de **tokens JWT** que permitem o acesso à plataforma de forma segura. O fluxo de autenticação está dividido em:
+## 📱 Funcionalidades Principais
 
-   - **Registro de Usuário**: O usuário se registra fornecendo nome, e-mail e senha, com validação de código de verificação enviado por e-mail.
-   - **Login**: Realiza-se a verificação do e-mail e senha, retornando um token JWT.
-   - **Recuperação de Senha**: Envia-se um código de recuperação de senha para o e-mail, que o usuário usa para redefinir sua senha.
+### 1. Autenticação Segura
+- Registro com verificação de email por código
+- Login com token JWT persistente
+- Recuperação de senha por email
+- Fluxo otimizado para verificação sem redirecionamentos indesejados
 
-### 2. **Criação de Postagens**
-   Usuários podem criar interações (postagens) que incluem:
-   - Título, descrição, tags e localização.
-   - A localização pode ser automática (com o uso do GPS) ou manual.
-   - As imagens podem ser carregadas diretamente do dispositivo.
-   - As postagens também podem ser salvas localmente para envio posterior quando o dispositivo estiver online.
+### 2. Interações Geolocalizadas
+- Criação de posts com título, descrição e tags
+- Captura otimizada de localização atual ou seleção no mapa
+- Upload de imagens com compressão inteligente
+- Funcionamento offline com sincronização automática
 
-### 3. **Exibição de Posts e Mapa**
-   A plataforma permite a visualização de posts de outros usuários, com integração ao **Google Maps** para exibir a localização geográfica das interações registradas.
+### 3. Exploração de Conteúdo
+- Mapa interativo otimizado para performance
+- Lista de posts com virtualização e carregamento eficiente
+- Filtragem por tags com busca avançada
+- Indicadores de estado offline com fallbacks apropriados
 
----
-
-## Fluxo de Funcionalidades
-
-### Fluxo de Autenticação
-
-1. **Cadastro de Usuário**: Quando o usuário preenche o formulário de registro, um código de verificação é enviado para o e-mail. O usuário insere o código na plataforma, e, se validado, sua conta é criada.
-   
-2. **Login de Usuário**: Após o cadastro, o usuário realiza o login, e um **token JWT** é retornado. Este token é utilizado em todas as requisições subsequentes à API.
-
-3. **Recuperação de Senha**: O usuário solicita uma redefinição de senha, e um código é enviado para o e-mail. O usuário insere o código e redefine sua senha.
-
-### Fluxo de Postagem
-
-1. **Criação de Post**: O usuário preenche os campos de título, descrição, tags e localização (automática ou manual) para criar um post.
-   
-2. **Visualização de Post**: Ao visualizar os posts, o aplicativo exibe os detalhes da postagem, como título, descrição e localização no mapa. 
-
-3. **Exibição no Mapa**: Para interações com localização, o post é exibido no mapa com um marcador indicando a posição.
-
----
-
-## **Integrações de Serviços Externos**
-
-### 1. **Notificações via OneSignal e Expo**
-
-A plataforma utiliza uma combinação de **OneSignal** e **Expo Notifications** para enviar notificações push para os usuários. O sistema funciona da seguinte forma:
-
-- **OneSignal**: Serviço de notificações push cross-platform que permite o envio de notificações para dispositivos iOS e Android.
-  - Utiliza um **App ID** único para identificar a aplicação dentro do painel do OneSignal.
-  - Para dispositivos Android, requer o **Google Project Number** para comunicação com o Firebase Cloud Messaging (FCM).
-  
-- **Expo Notifications**: Integração nativa que facilita o registro do dispositivo para receber notificações.
-  - O sistema registra o **playerId** (também conhecido como token do dispositivo) do usuário.
-  - Este playerId é armazenado no servidor e utilizado para direcionar notificações para usuários específicos.
-
-### 2. **Google Maps API**
-
-A **API do Google Maps** é utilizada para geocodificar endereços e exibir a localização de posts no mapa. Os principais endpoints utilizados são:
-- **Geocodificação**: Para converter um endereço em coordenadas geográficas.
-- **Reverse Geocoding**: Para converter coordenadas em um endereço.
-
-### 3. **AWS S3 para Armazenamento de Imagens**
-
-Imagens de posts são armazenadas em um bucket do **AWS S3**, o que garante escalabilidade e alta disponibilidade para os arquivos.
-
----
-
-## Variáveis de Ambiente
-
-### `.env.example`
-
-Este arquivo contém exemplos de variáveis de ambiente necessárias para rodar o projeto. Ao rodar o projeto, você precisa preencher essas variáveis com os valores corretos.
+## 🏗️ Arquitetura do Projeto
 
 ```plaintext
-EXPO_PUBLIC_API_URL=http://localhost:3000
-EXPO_PUBLIC_API_URL_LOCAL=http://localhost:3000
-EXPO_PUBLIC_EAS_PROJECT_ID=your_eas_project_id_here
-EXPO_PUBLIC_GOOGLE_API_KEY=your_google_api_key_here
-EXPO_PUBLIC_ONESIGNAL_APP_ID=your_onesignal_app_id_here
-EXPO_ONESIGNAL_GOOGLE_PROJECT_NUMBER=your_google_project_number_here
+app/
+├── assets/                   # Recursos estáticos (imagens, fontes)
+├── src/                      # Código fonte principal
+│   ├── app/                  # Estrutura principal do aplicativo
+│   │   ├── (tabs)/           # Componentes de abas principais
+│   │   ├── components/       # Componentes reutilizáveis
+│   │   │   ├── auth/         # Componentes de autenticação
+│   │   │   ├── home/         # Componentes da tela inicial
+│   │   │   ├── posts/        # Componentes de postagens
+│   │   ├── pages/            # Páginas/rotas da aplicação
+│   │   ├── utils/            # Utilitários e funções auxiliares
+├── build.sh                  # Script de build automatizado
+├── eas.json                  # Configuração do EAS Build
+├── app.config.js             # Configuração do aplicativo
+├── CHANGELOG.md              # Registro de alterações
+└── BUILD-INSTRUCTIONS.md     # Instruções detalhadas de build
 ```
 
-Descrição das variáveis:
-- `EXPO_PUBLIC_API_URL`: URL da API em produção
-- `EXPO_PUBLIC_API_URL_LOCAL`: URL da API em ambiente local
-- `EXPO_PUBLIC_EAS_PROJECT_ID`: ID do projeto no Expo Application Services
-- `EXPO_PUBLIC_GOOGLE_API_KEY`: Chave da API do Google Maps para integração de mapas
-- `EXPO_PUBLIC_ONESIGNAL_APP_ID`: ID da aplicação no OneSignal para notificações push
-- `EXPO_ONESIGNAL_GOOGLE_PROJECT_NUMBER`: Número do projeto Google/Firebase para notificações no Android
+## 🔧 Tecnologias Utilizadas
 
----
+- **Frontend**:
+  - React Native com Expo
+  - Expo Router para navegação
+  - React Hooks otimizados (useCallback, useMemo)
+  - AsyncStorage para persistência local
 
-## Estrutura do Banco de Dados
+- **Mapa e Localização**:
+  - React Native Maps
+  - Google Maps API com caching
+  - Expo Location otimizado
 
-A estrutura do banco de dados é gerenciada pelo **Prisma**, que é uma ORM para Node.js. Abaixo estão as tabelas principais:
+- **Integração e Serviços**:
+  - OneSignal para notificações push
+  - Axios para requisições HTTP
+  - EAS Build para compilação e distribuição
 
-1. **Usuários** (`User`): Armazena as informações dos usuários, incluindo credenciais, status de aprovação e dados de login.
-2. **Notificações** (`Notification`): Armazena as notificações enviadas para os usuários.
-3. **Posts** (`Post`): Armazena os posts dos usuários, incluindo títulos, descrições, localização e tags.
-4. **Tags** (`Tag`): Armazena as tags associadas aos posts para facilitar a filtragem e pesquisa.
+- **Performance e Otimização**:
+  - Memoização de componentes
+  - Virtualização de lista
+  - Caching avançado
+  - Debounce para operações custosas
 
----
+## 🚀 Processo de Build e Distribuição
 
-## **Configuração de Desenvolvimento**
+### Pré-requisitos
 
-### Requisitos
+- Node.js 18.x
+- EAS CLI (`npm install -g eas-cli`)
+- Conta Expo
+- Variáveis de ambiente configuradas
 
-- **Node.js**: 18.x.x
-- **pnpm**: Gerenciador de pacotes preferido para este projeto
-- **Expo CLI**: `pnpm install -g expo-cli`
-- **Prisma**: `pnpm install @prisma/client`
-- **AWS CLI**: Para configuração do bucket S3
-- **Conta OneSignal**: Para configuração das notificações push
+### Utilizando o script build.sh
 
-### Passos para Rodar o Projeto
+O projeto inclui um script automatizado para facilitar o processo de build:
 
-1. **Instalar dependências**: Execute o comando abaixo para instalar as dependências do projeto.
+```bash
+# Na raiz do projeto
+cd app
+chmod +x build.sh  # Torna o script executável (apenas primeira vez)
+./build.sh
+```
+
+O script verifica automaticamente o ambiente e oferece as seguintes opções:
+
+1. **Build de Desenvolvimento**: Gera APK com cliente de desenvolvimento
+2. **Build de Preview**: Cria APK para testes internos
+3. **Build de Produção (AAB)**: Gera bundle para Google Play Store
+4. **Build de Produção (APK)**: Cria APK para distribuição direta
+5. **Atualização OTA**: Envia atualizações sem novo build
+6. **Verificar builds existentes**: Lista builds realizados
+
+### Configuração de Variáveis de Ambiente
+
+Para o build funcionar corretamente, é necessário configurar as seguintes variáveis:
+
+```bash
+export EXPO_PUBLIC_API_URL="https://api.seudominio.com"
+export EXPO_PUBLIC_GOOGLE_API_KEY="sua-chave-google-maps"
+export EXPO_PUBLIC_ONESIGNAL_APP_ID="seu-onesignal-app-id"
+export GOOGLE_SERVICES_JSON="seu-google-services-json-em-base64"
+```
+
+Alternativamente, crie um arquivo `.env` na pasta `app/` com estas variáveis.
+
+## 📋 Requisitos de Sistema
+
+### Para Desenvolvimento
+- **Node.js**: 18.x ou superior
+- **pnpm**: Gerenciador de pacotes recomendado
+- **Expo CLI**: Versão mais recente
+- **Android Studio**: Para emulador Android
+- **Xcode**: Para emulador iOS (apenas macOS)
+
+### Para Usuários Finais
+- **Android**: 8.0 ou superior
+- **iOS**: 13.0 ou superior
+- **Armazenamento**: 100MB mínimo
+- **Permissões**: Câmera, Localização, Armazenamento
+
+## 🔄 Sincronização Offline
+
+O Softwarescan implementa um sistema avançado de sincronização offline que:
+
+1. Salva posts localmente quando sem conexão
+2. Sincroniza automaticamente quando a conexão é restabelecida
+3. Processa em lotes para otimizar uso de bateria e rede
+4. Oferece indicadores visuais de status de sincronização
+
+## 📚 Documentação Adicional
+
+- **[CHANGELOG.md](CHANGELOG.md)**: Histórico completo de alterações
+- **[BUILD-INSTRUCTIONS.md](BUILD-INSTRUCTIONS.md)**: Instruções detalhadas para build
+- **[API-DOCS.md](API-DOCS.md)**: Documentação da API (se aplicável)
+
+## ⚙️ Instruções de Desenvolvimento
+
+1. Clone o repositório
+   ```bash
+   git clone https://github.com/scanproject-collab/softwarescan
+   cd softwarescan
+   ```
+
+2. Instale as dependências
    ```bash
    pnpm install
    ```
 
-2. **Configuração do `.env`**: Preencha as variáveis de ambiente no arquivo `.env` com as chaves apropriadas. Certifique-se de incluir as chaves do OneSignal para as notificações funcionarem corretamente.
-
-3. **Rodar o Backend**: Execute o backend utilizando o Prisma.
+3. Configure as variáveis de ambiente
    ```bash
-   pnpm run dev
+   cp app/.env.example app/.env
+   # Edite o arquivo .env com suas configurações
    ```
 
-4. **Rodar o Frontend**:
-   - Para rodar o aplicativo no Android:
-     ```bash
-     pnpm start
-     ```
+4. Inicie o ambiente de desenvolvimento
+   ```bash
+   cd app
+   pnpm start
+   ```
 
-   - Para rodar o aplicativo no iOS:
-     ```bash
-     pnpm run ios
-     ```
+## 📱 Instalação do Aplicativo
 
-5. **Construir para Produção**:
-   - Para gerar o build para produção, execute o comando:
-     ```bash
-     eas build --platform all
-     ```
+### Via Google Play Store
+(Em breve)
 
----
+### Via APK Direto
+1. Baixe o APK mais recente da [página de releases](https://github.com/scanproject-collab/softwarescan/releases)
+2. No dispositivo Android, habilite "Instalar de fontes desconhecidas"
+3. Abra o arquivo APK para instalar
 
-## **Considerações Finais**
+## 📄 Licença
 
-Essa documentação cobre o escopo geral do projeto **Softwarescan**, incluindo a estrutura do aplicativo e a API, funcionalidades implementadas, integração com serviços externos e como rodar o projeto em ambiente de desenvolvimento.
-
-Para qualquer dúvida adicional, entre em contato com a equipe de desenvolvimento.
+Este projeto está sob a licença [MIT](LICENSE).
 
 ---
+
