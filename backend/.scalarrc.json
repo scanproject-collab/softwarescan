@@ -1,0 +1,34 @@
+{
+  "name": "Plataforma Scan API",
+  "logo": {
+    "light": "./src/assets/logo.png",
+    "dark": "./src/assets/logo.png"
+  },
+  "metadata": {
+    "categories": [
+      "API Reference"
+    ],
+    "technologies": [
+      "Node.js",
+      "Express",
+      "TypeScript",
+      "MongoDB",
+      "Prisma",
+      "JWT"
+    ]
+  },
+  "source": "openapi",
+  "features": {
+    "authentication": {
+      "enabled": true,
+      "type": "bearer"
+    },
+    "playground": {
+      "enabled": true
+    }
+  },
+  "theme": {
+    "primaryColor": "#1E54B7",
+    "showSidebar": true
+  }
+}

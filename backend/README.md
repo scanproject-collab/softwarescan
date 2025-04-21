@@ -1,163 +1,218 @@
+# Plataforma Scan Backend
 
----
+![Version](https://img.shields.io/badge/version-3.5.0-blue)
+![Node](https://img.shields.io/badge/node-18.x-green)
+![TypeScript](https://img.shields.io/badge/typescript-5.x-blue)
+![Express](https://img.shields.io/badge/express-4.x-lightgrey)
+![Prisma](https://img.shields.io/badge/prisma-6.x-orange)
 
-# Documentação Backend - Plataforma Scan
+The Backend for the Plataforma Scan system - providing API services for both mobile and web applications.
 
-## Visão Geral
+## Overview
 
-O backend da Plataforma Scan é uma API RESTful construída com **Node.js**, **Express**, **TypeScript** e **Prisma ORM** para interagir com um banco de dados MongoDB. O sistema é responsável por gerenciar usuários (como operadores, gerentes e administradores), posts, notificações, integrações com serviços externos como o Google Maps e AWS S3, e autenticação/segurança.
+Plataforma Scan Backend is a RESTful API service built with Node.js, Express, TypeScript, and Prisma ORM. It provides a comprehensive set of endpoints for user management, authentication, content management, and integrations with external services like Google Maps, AWS S3, and notification services.
 
-## Estrutura de Pastas
+## Key Features
 
-A estrutura de pastas do projeto é organizada da seguinte maneira:
+- **Robust Authentication System**: JWT-based authentication with role-based access control
+- **User Management**: Support for different user roles (admin, manager, operator)
+- **Content Management**: Create, read, update, and delete functionality for posts and related data
+- **Geospatial Features**: Integration with Google Maps API for location-based services
+- **File Storage**: AWS S3 integration for storing and retrieving files
+- **Notifications**: Push notification service for real-time alerts
+- **Security**: Password encryption, token validation, and secure API endpoints
 
-```plaintext
+## API Documentation
+
+The API is thoroughly documented using OpenAPI 3.1 specifications, rendered with Redoc. This documentation provides a comprehensive overview of all available endpoints, request/response formats, and authentication requirements.
+
+### Accessing Documentation
+
+You can access the API documentation by following these steps:
+
+1. **Generate the documentation**:
+   ```bash
+   pnpm run docs
+   ```
+
+2. **Start the server**:
+   ```bash
+   pnpm run dev
+   ```
+
+3. **Access the docs**:
+   Open your browser and navigate to:
+   ```
+   http://localhost:3000/api-docs
+   ```
+
+The documentation is served as a static HTML page that provides an interactive API explorer powered by Redoc.
+
+### Documentation Features
+
+- Interactive API explorer with syntax highlighting
+- Request/response schema details
+- Authentication information
+- Detailed sample payloads
+- OpenAPI 3.1 standard compliant
+- Mobile-friendly responsive design
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18.x or higher
+- MongoDB (local or Atlas)
+- AWS Account (for S3 storage)
+- Google Maps API key
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+3. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+4. Set up the database:
+   ```bash
+   npx prisma generate
+   ```
+5. Start the development server:
+   ```bash
+   pnpm run dev
+   ```
+
+## Environment Configuration
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+# Database
+DATABASE_URL="mongodb+srv://<username>:<password>@<cluster-url>/<database>?retryWrites=true&w=majority"
+
+# Authentication
+SECRET_KEY_SESSION="your-secret-key-for-jwt"
+TOKEN_EXPIRATION="24h"
+
+# Email
+EMAIL_USER="your-email@example.com"
+EMAIL_PASS="your-email-password"
+EMAIL_SERVICE="gmail"
+
+# AWS S3
+AWS_REGION="us-east-1"
+AWS_ACCESS_KEY_ID="your-access-key-id"
+AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+AWS_S3_BUCKET_NAME="your-bucket-name"
+
+# Google Maps
+GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
+
+# OneSignal
+ONESIGNAL_APP_ID="your-onesignal-app-id"
+ONESIGNAL_REST_API_KEY="your-onesignal-api-key"
+```
+
+## Project Structure
+
+```
 backend/
 │
 ├── api/
-│   ├── app.ts               # Arquivo principal de configuração do servidor
-|
+│   └── app.ts            # Express application setup
 │
 ├── prisma/
-│   └── schema.prisma        # Arquivo de definição do banco de dados com Prisma
+│   └── schema.prisma     # Database schema definition
 │
 ├── src/
-│   ├── assets/              # Arquivos estáticos
-│   ├── controllers/         # Lógicas de controle para endpoints
-│   ├── middlewares/         # Middlewares de autenticação e autorização
-│   ├── routes/              # Arquivo de rotas da API
-│   ├── service/             # Serviços de manipulação de dados
-│   └── storage/             # Configurações do armazenamento (AWS S3)
+│   ├── controllers/      # Request handlers
+│   ├── middlewares/      # Express middlewares
+│   ├── routes/           # API routes definition
+│   ├── services/         # Business logic
+│   ├── utils/            # Utility functions
+│   └── docs/             # API documentation resources
 │
-├── .env                     # Variáveis de ambiente para configurações sensíveis
-├── package.json             # Dependências e scripts do projeto
-└── tsconfig.json            # Configuração do TypeScript
+├── api-docs/             # Generated API documentation
+├── .env                  # Environment variables
+├── package.json          # Dependencies and scripts
+└── tsconfig.json         # TypeScript configuration
 ```
 
-## Arquivos Importantes
+## Development
 
-### 1. **app.ts**
+### Available Scripts
 
-O arquivo principal do servidor que configura o **Express**, gerencia as rotas e implementa o tratamento de erros.
+- `pnpm run dev` - Start development server with hot-reload
+- `pnpm start` - Start production server
+- `pnpm run docs` - Generate API documentation
+- `pnpm run vercel-build` - Build for Vercel deployment
 
-- **Rotas**:
-  - `/auth`: Rota para autenticação de usuários (login e registro).
-  - `/operator`: Rotas para operadores, incluindo criação e gerenciamento de posts.
-  - `/admin`: Rota de administração, usada para aprovar, rejeitar e listar operadores.
-  - `/manager`: Rotas de gerenciamento para gerentes.
-  - `/posts`: Gerenciamento de posts.
-  - `/tags`: Gerenciamento de tags associadas aos posts.
-  - `/polygons`: Gerenciamento de polígonos associados aos posts.
-  - **Google Maps API**: Endpoint para gerar a URL da API do Google Maps com a chave de API configurada.
+### Documenting API Endpoints
 
-### 2. **.env**
+When adding new endpoints, document them by updating the OpenAPI definitions in `scalar.json`. For example:
 
-O arquivo `.env` é utilizado para armazenar configurações sensíveis, como credenciais de bancos de dados, chaves de API e configurações de e-mail.
-
-#### Exemplo de `.env`:
-
-```env
-# Banco de Dados MongoDB
-DATABASE_URL="mongodb+srv://<username>:<password>@<cluster-url>/<database>?retryWrites=true&w=majority"
-
-# Chave secreta para JWT
-SECRET_KEY_SESSION="replace_this_with_a_secure_random_string"
-
-# Configurações de E-mail
-EMAIL_USER="your-email@example.com"
-EMAIL_PASS="your-email-password"
-
-# AWS S3 Configurações
-AWS_REGION="us-east-1"
-AWS_ACCESS_KEY_ID="your-aws-access-key"
-AWS_SECRET_ACCESS_KEY="your-aws-secret-key"
-AWS_S3_BUCKET_NAME="your-s3-bucket-name"
-
-# Chave da API do Google Maps
-GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
+```json
+"/auth/login": {
+  "post": {
+    "summary": "Login to the system",
+    "description": "Authenticate a user and return a JWT token",
+    "tags": ["Authentication"],
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["email", "password"],
+            "properties": {
+              "email": {
+                "type": "string",
+                "format": "email"
+              },
+              "password": {
+                "type": "string",
+                "format": "password"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "200": {
+        "description": "Login successful"
+      },
+      "401": {
+        "description": "Invalid credentials"
+      }
+    }
+  }
+}
 ```
 
-#### Como Configurar as Variáveis:
+## Deployment
 
-- **DATABASE_URL**: Obtenha a URL de conexão do **MongoDB Atlas**. Acesse [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) e crie um cluster para obter a URL de conexão.
-- **SECRET_KEY_SESSION**: Gere uma chave segura utilizando ferramentas como [RandomKeygen](https://randomkeygen.com/).
-- **EMAIL_USER e EMAIL_PASS**: Use um e-mail de serviço como o **Gmail** e configure uma senha de aplicativo [Google Account - App Passwords](https://myaccount.google.com/apppasswords).
-- **AWS Configurações**: Obtenha as credenciais de acesso através do [AWS IAM](https://console.aws.amazon.com/iam/home) e crie um bucket no **AWS S3**.
-- **GOOGLE_MAPS_API_KEY**: Obtenha a chave de API do [Google Cloud Console](https://console.cloud.google.com/) para utilizar os serviços de Maps, Geocoding e Places.
+The API is configured for deployment on Vercel with the included `vercel.json` configuration file.
 
-### 3. **services/authService.ts**
+To deploy:
 
-Este serviço contém a lógica de autenticação e gestão de usuários, incluindo funções de login, registro e recuperação de senha.
+1. Connect your repository to Vercel
+2. Configure the environment variables in Vercel
+3. Deploy the project
 
-- **Funções**:
-  - **registerUser**: Registra um novo usuário, realizando validação de código de verificação e envio de e-mail de confirmação.
-  - **loginUser**: Realiza o login do usuário, validando as credenciais e gerando um **JWT** (JSON Web Token) para autenticação.
-  - **generateResetPasswordCode**: Gera um código de redefinição de senha e o envia para o e-mail do usuário.
-  - **resetPassword**: Permite redefinir a senha de um usuário, após validação do código de redefinição.
+## License
 
-### 4. **services/expoNotification.ts**
+This project is proprietary software. All rights reserved.
 
-Este serviço integra com a **Expo Push Notification** API para enviar notificações push para os dispositivos dos usuários.
+## Contact
 
-- **Função**:
-  - **sendExpoPushNotification**: Envia notificações push para dispositivos registrados via Expo, como notificações de aprovação, rejeição e atualização de status da conta.
+For support or inquiries, please contact:
 
-### 5. **services/mailer.ts**
-
-Este serviço é responsável pelo envio de e-mails para usuários utilizando **Nodemailer**.
-
-- **Funções**:
-  - **sendVerificationEmail**: Envia um e-mail com o código de verificação para o usuário.
-  - **sendWelcomeEmail**: Envia um e-mail de boas-vindas após o registro do usuário.
-  - **sendResetPasswordEmail**: Envia um e-mail com o código de redefinição de senha.
-  - **sendPendingApprovalEmail**: Notifica o usuário sobre o status pendente de aprovação.
-
-### 6. **middlewares/authMiddleware.ts**
-
-Middlewares para proteger as rotas de autenticação e autorização.
-
-- **Funções**:
-  - **authMiddleware**: Verifica se o usuário está autenticado, validando o token JWT enviado no cabeçalho da requisição.
-  - **roleMiddleware**: Verifica se o usuário tem a permissão necessária (com base na função do usuário) para acessar determinados recursos.
-
-### 7. **controllers/adminController.ts**
-
-Controlador que gerencia operações de administração, como aprovação, rejeição e listagem de operadores pendentes.
-
-- **Funções**:
-  - **listPendingOperators**: Lista todos os operadores pendentes de aprovação.
-  - **approveOperator**: Aprova um operador, envia um e-mail de boas-vindas e notificação push.
-  - **rejectOperator**: Rejeita um operador, exclui os posts e envia notificação de rejeição.
-  - **deleteExpiredOperators**: Deleta operadores cuja solicitação expirou.
-  - **listAllOperators**: Lista todos os operadores aprovados e ativos.
-
-### 8. **controllers/postController.ts**
-
-Controlador que gerencia posts de operadores.
-
-- **Funções**:
-  - **createPost**: Cria um novo post, validando o limite diário de imagens.
-  - **listUserPosts**: Lista todos os posts de um operador específico.
-  - **getPostById**: Recupera os dados de um post específico.
-  - **deletePost**: Deleta um post e a imagem associada no AWS S3.
-  - **listAllPosts**: Lista todos os posts criados na plataforma.
-
-## Serviços Externos
-
-### 1. **Google Maps API**
-- **Função**: Integrada para geolocalização e visualização de mapas.
-- **Configuração**: Acesse o [Google Cloud Console](https://console.cloud.google.com/) e obtenha uma chave de API.
-
-### 2. **AWS S3**
-- **Função**: Armazenamento de imagens e arquivos no serviço de nuvem da AWS.
-- **Configuração**: Acesse o [AWS Management Console](https://aws.amazon.com/), crie um bucket S3 e gere suas credenciais de acesso.
-
-## Observação
-
-Alguns **controllers** e **serviços** foram mencionados acima porque utilizam **serviços externos**, como o envio de notificações via **Expo Push** e o armazenamento de arquivos na **AWS S3**, bem como o uso da **Google Maps API** para funcionalidades de geolocalização e visualização de mapas. Essas integrações são essenciais para o funcionamento completo da plataforma, especialmente para notificações de status e gerenciamento de imagens e geolocalização.
-
-## Conclusão
-
-Este projeto backend gerencia todos os aspectos do sistema **Plataforma Scan**, incluindo a autenticação de usuários, manipulação de posts, integrações com serviços externos e notificações push. O sistema é flexível e permite que diferentes tipos de usuários (administradores, gerentes e operadores) interajam de maneira eficiente.
+- Email: support@plataformascan.com
 
 ---

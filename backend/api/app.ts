@@ -1,8 +1,10 @@
-import express, { Request, Response, NextFunction } from "express"; 
-import { authRoutes, operatorRoutes, postRoutes, tagRoutes, managerRoutes, institutionRoutes, adminRoutes, polygnosRoutes } from "../src/routes/index"; 
+import express, { Request, Response, NextFunction, Router } from "express";
+import { authRoutes, operatorRoutes, postRoutes, tagRoutes, managerRoutes, institutionRoutes, adminRoutes, polygnosRoutes } from "../src/routes/index";
 import { sendOneSignalNotification } from '../src/services/oneSignalNotification';
 import dotenv from "dotenv";
 import cors from "cors";
+import * as path from 'path';
+import * as fs from 'fs';
 
 dotenv.config();
 
@@ -12,6 +14,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Get the Scalar JSON spec
+const scalarJsonPath = path.join(__dirname, '../scalar.json');
+const scalarJson = JSON.parse(fs.readFileSync(scalarJsonPath, 'utf8'));
+
+// Serve static API docs if they exist
+const apiDocsPath = path.join(__dirname, '../api-docs');
+if (fs.existsSync(apiDocsPath)) {
+  app.use('/api-docs', express.static(apiDocsPath));
+  console.log('API documentation is available at /api-docs');
+}
+
+// Root Routes
 app.use("/auth", authRoutes);
 app.use("/operator", operatorRoutes);
 app.use("/admin", adminRoutes);
@@ -21,11 +35,23 @@ app.use("/posts", postRoutes);
 app.use("/tags", tagRoutes);
 app.use("/polygons", polygnosRoutes);
 
-app.get("/", (_req: Request, res: Response) => {
+// Create a router for the api routes
+const apiRouter = express.Router();
+
+// API routes
+apiRouter.get("/", (_req: Request, res: Response) => {
   res.send("API is working!");
 });
 
-app.get("/google-maps-api-url", (_req: Request, res: Response) => {
+apiRouter.get("/api-reference", (_req: Request, res: Response) => {
+  if (fs.existsSync(apiDocsPath)) {
+    res.redirect('/api-docs');
+  } else {
+    res.send('API documentation not generated yet. Run "pnpm run docs" to generate it.');
+  }
+});
+
+apiRouter.get("/google-maps-api-url", (_req: Request, res: Response) => {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ message: "Google Maps API key not configured" });
@@ -34,8 +60,7 @@ app.get("/google-maps-api-url", (_req: Request, res: Response) => {
   res.json({ url });
 });
 
-
-app.post("/send-notification", async (req: Request, res: Response) => {
+apiRouter.post("/send-notification", async (req: Request, res: Response) => {
   const { playerId, title, body, data } = req.body;
   if (!playerId || !title || !body) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -49,18 +74,27 @@ app.post("/send-notification", async (req: Request, res: Response) => {
   }
 });
 
-app.get("/ping", (_req: Request, res: Response) => {
+apiRouter.get("/ping", (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
+// Register all API routes
+app.use('/', apiRouter);
+
+// 404 handler - this must come after all defined routes
 app.use((_req: Request, res: Response) => {
-  res.status(500).send("Not found");
+  res.status(404).send("Not found");
 });
 
+// Error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Error occurred:", err);
   res.status(500).send("Internal Server Error");
 });
 
+// Start the server
+const server = app.listen(3000, () => {
+  console.log("Server is running on port 3000");
+});
 
 export default app;

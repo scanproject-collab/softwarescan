@@ -9,7 +9,83 @@ import { sendVerificationEmail } from '../services/mailer';
 const prisma = new PrismaClient();
 const router = Router();
 
+/**
+ * @openapi
+ * /auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     description: Register a new user with the system
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - name
+ *               - verificationCode
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 format: password
+ *               name:
+ *                 type: string
+ *               verificationCode:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User registered successfully
+ *       400:
+ *         description: Invalid input or verification code
+ */
 router.post('/register', registerController);
+
+/**
+ * @openapi
+ * /auth/login:
+ *   post:
+ *     summary: Login to the system
+ *     description: Authenticate user and generate JWT token
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 format: password
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *       401:
+ *         description: Invalid credentials
+ */
 router.post('/login', loginController);
 
 router.post('/send-verification-code', async (req: Request, res: Response) => {
@@ -79,7 +155,7 @@ router.post('/generate-verification-code', async (req: Request, res: Response) =
       },
     });
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'Código de verificação gerado com sucesso',
       verificationCode: verificationCode  // Return the code to the admin
     });
