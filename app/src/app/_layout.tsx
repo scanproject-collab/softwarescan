@@ -11,11 +11,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { reverseGeocode } from '@/src/app/utils/GoogleMaps';
 import NetInfo from "@react-native-community/netinfo";
 
-function ErrorFallback({error, resetErrorBoundary}) {
+function ErrorFallback({ error, resetErrorBoundary }) {
   return (
-    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20}}>
-      <Text style={{color: 'red', fontSize: 16, marginBottom: 10}}>Algo deu errado:</Text>
-      <Text style={{color: 'red', marginBottom: 20}}>{error.message}</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+      <Text style={{ color: 'red', fontSize: 16, marginBottom: 10 }}>Algo deu errado:</Text>
+      <Text style={{ color: 'red', marginBottom: 20 }}>{error.message}</Text>
       <Button onPress={resetErrorBoundary} title="Tentar novamente" />
     </View>
   );
@@ -50,10 +50,10 @@ export default function RootLayout() {
       if (locationData && locationData.coords) {
         const { latitude, longitude } = locationData.coords;
         console.log("Coordenadas obtidas no _layout:", latitude, longitude);
-        
+
         // Store coordinates in AsyncStorage for later use
         await AsyncStorage.setItem('userLocation', JSON.stringify({ latitude, longitude }));
-        
+
         return { latitude, longitude };
       }
     } catch (error) {
@@ -65,7 +65,7 @@ export default function RootLayout() {
   // Function to perform reverse geocoding and cache the result
   const cacheLocationAddress = async (coords) => {
     if (!coords) return;
-    
+
     try {
       const netInfo = await NetInfo.fetch();
       if (!netInfo.isConnected) {
@@ -75,7 +75,7 @@ export default function RootLayout() {
 
       const { latitude, longitude } = coords;
       const address = await reverseGeocode(latitude, longitude);
-      
+
       if (address && !address.includes("Erro")) {
         console.log("Endereço obtido e armazenado no _layout:", address);
         await AsyncStorage.setItem('userLocationAddress', address);
@@ -87,32 +87,45 @@ export default function RootLayout() {
 
   useEffect(() => {
     const initializeApp = async () => {
-      if (initialCheckDone) return; 
+      if (initialCheckDone) return;
 
       try {
         // Start multiple initialization tasks in parallel
         const notificationPromise = initializeOneSignalNotification();
         const tokenPromise = validateToken();
-        
+
         // Start location initialization in parallel, but don't wait for it
         initializeLocation().then(coords => {
           if (coords) {
             cacheLocationAddress(coords);
           }
         });
-        
+
         // Wait for critical tasks to complete
         const [_, isValid] = await Promise.all([
           notificationPromise,
           tokenPromise
         ]);
-        
+
         setIsCheckingToken(false);
         setInitialCheckDone(true);
 
-        if (!isValid) {
+        // Check if we're in the verification flow
+        const isInVerificationFlow =
+          segments.length > 1 &&
+          segments[0] === 'pages' &&
+          segments[1] === 'auth' &&
+          (segments.includes('SignUp') ||
+            segments.includes('PasswordResetCodeVerificationScreen') ||
+            segments.includes('PasswordRecoveryRequestScreen') ||
+            segments.includes('PasswordResetScreen') ||
+            segments.includes('Recovery'));
+
+        // Only redirect if not in verification flow
+        if (!isValid && !isInVerificationFlow) {
           setShouldNavigate('/pages/auth');
-        } else if (segments.length === 0 || (segments[0] === 'pages' && segments[1] === 'auth')) {
+        } else if (isValid && segments.length === 0) {
+          // Only redirect to home if at root and has valid token
           setShouldNavigate('/');
         }
       } catch (error) {
@@ -123,11 +136,11 @@ export default function RootLayout() {
     };
 
     initializeApp();
-  }, [initialCheckDone]); 
+  }, [initialCheckDone, segments]);
 
   useEffect(() => {
     if (shouldNavigate && !isCheckingToken) {
-      router.replace(shouldNavigate); 
+      router.replace(shouldNavigate);
     }
   }, [shouldNavigate, isCheckingToken]);
 
@@ -136,7 +149,7 @@ export default function RootLayout() {
   }
 
   return (
-    <ErrorBoundary 
+    <ErrorBoundary
       FallbackComponent={ErrorFallback}
       onReset={() => {
         // Ação de reset quando o usuário clicar em "Tentar novamente"

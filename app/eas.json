@@ -19,16 +19,51 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:clean :app:assembleRelease"
       },
-      "node": "18.18.2"
+      "node": "18.18.2",
+      "env": {
+        "GOOGLE_SERVICES_JSON": "@env:GOOGLE_SERVICES_JSON"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "node": "18.18.2"
+      "node": "18.18.2",
+      "android": {
+        "buildType": "app-bundle",
+        "image": "latest",
+        "gradleCommand": ":app:bundleRelease",
+        "env": {
+          "GOOGLE_SERVICES_JSON": "@env:GOOGLE_SERVICES_JSON"
+        }
+      },
+      "env": {
+        "GOOGLE_SERVICES_JSON": "@env:GOOGLE_SERVICES_JSON"
+      }
+    },
+    "productionApk": {
+      "autoIncrement": true,
+      "node": "18.18.2",
+      "android": {
+        "buildType": "apk",
+        "image": "latest",
+        "gradleCommand": ":app:clean :app:assembleRelease",
+        "env": {
+          "GOOGLE_SERVICES_JSON": "@env:GOOGLE_SERVICES_JSON"
+        }
+      },
+      "env": {
+        "GOOGLE_SERVICES_JSON": "@env:GOOGLE_SERVICES_JSON"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "google-service-account.json",
+        "track": "production"
+      }
+    }
   }
 }

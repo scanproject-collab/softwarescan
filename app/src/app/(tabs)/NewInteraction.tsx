@@ -44,7 +44,7 @@ export default function NewInteraction() {
   const router = useRouter();
   const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-  
+
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -127,105 +127,51 @@ export default function NewInteraction() {
           }
         }
 
-        if (!isOffline && isMounted.current) {
+        if (isMounted.current) {
           try {
             console.log("Verificando dados de localização em cache...");
-          
+
             const cachedLocationJson = await AsyncStorage.getItem("userLocation");
             const cachedAddress = await AsyncStorage.getItem("userLocationAddress");
-            
-            if (cachedLocationJson && cachedAddress && isMounted.current) {
+            const cachedTimestamp = await AsyncStorage.getItem("userLocationTimestamp");
+            const currentTime = Date.now();
+
+            const isRecentCache = cachedTimestamp &&
+              (currentTime - parseInt(cachedTimestamp)) < 5 * 60 * 1000;
+
+            if (cachedLocationJson && cachedAddress && isRecentCache && isMounted.current) {
               const cachedLocation = JSON.parse(cachedLocationJson);
-              console.log("Usando localização em cache:", cachedLocation);
-              
+              console.log("Usando localização em cache recente:", cachedLocation);
+
               setCoords(cachedLocation);
               setLocation(cachedAddress);
               setIsLocationLoading(false);
+
+              if (!isOffline) {
+                updateLocationInBackground();
+              }
               return;
             }
-            
-            console.log("Não há dados de localização em cache ou estão incompletos. Buscando novos...");
-            
-            const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
-            let finalStatus = existingStatus;
 
-            if (existingStatus !== "granted") {
-              const { status } = await Location.requestForegroundPermissionsAsync();
-              finalStatus = status;
-            }
+            console.log("Não há dados de localização em cache recentes. Buscando novos...");
 
-            if (finalStatus !== "granted") {
-              if (isMounted.current) {
-                setLocation("Permissão de localização não concedida");
+            if (isOffline) {
+              if (cachedLocationJson && cachedAddress) {
+                const cachedLocation = JSON.parse(cachedLocationJson);
+                setCoords(cachedLocation);
+                setLocation(cachedAddress);
+                console.log("Usando dados de localização em cache (possivelmente desatualizados) no modo offline");
                 setIsLocationLoading(false);
-              }
-              return;
-            }
-
-            const locationData = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Balanced,
-              timeInterval: 5000,
-              distanceInterval: 0,
-            });
-
-            if (!isMounted.current) return;
-
-            if (locationData && locationData.coords) {
-              const { latitude, longitude } = locationData.coords;
-              console.log("Novas coordenadas obtidas:", latitude, longitude);
-              setCoords({ latitude, longitude });
-
-              await AsyncStorage.setItem("userLocation", JSON.stringify({ latitude, longitude }));
-
-              try {
-                console.log("Executando reverse geocoding para novas coordenadas...");
-                const address = await reverseGeocode(latitude, longitude);
-                
-                if (!isMounted.current) return;
-                
-                if (address.includes("Erro")) {
-                  console.error("Erro no geocoding:", address);
-                  Alert.alert("Erro", address);
-                  setLocation("Endereço não encontrado");
-                } else {
-                  console.log("Novo endereço obtido:", address);
-                  setLocation(address);
-                  
-                  await AsyncStorage.setItem("userLocationAddress", address);
-                }
-              } catch (error) {
-                console.error("Erro no reverse geocoding:", error);
-                if (isMounted.current) {
-                  setLocation("Erro ao obter endereço");
-                  Alert.alert("Erro", "Não foi possível obter o endereço. Verifique sua conexão de internet.");
-                }
+                return;
               }
             }
+
+            await getNewLocation();
           } catch (error) {
-            console.error("Erro ao obter localização:", error);
-            if (isMounted.current) {
-              setLocation("Erro ao obter localização");
-            }
-          } finally {
+            console.error("Erro na inicialização da localização:", error);
             if (isMounted.current) {
               setIsLocationLoading(false);
             }
-          }
-        } else if (isMounted.current) {
-          try {
-            const cachedLocationJson = await AsyncStorage.getItem("userLocation");
-            const cachedAddress = await AsyncStorage.getItem("userLocationAddress");
-            
-            if (cachedLocationJson && cachedAddress) {
-              const cachedLocation = JSON.parse(cachedLocationJson);
-              setCoords(cachedLocation);
-              setLocation(cachedAddress);
-              console.log("Usando dados de localização em cache no modo offline");
-            }
-          } catch (error) {
-            console.error("Erro ao recuperar localização em cache no modo offline:", error);
-          } finally {
-            setIsLocationLoading(false);
           }
         }
       } catch (error) {
@@ -252,7 +198,112 @@ export default function NewInteraction() {
       isMounted.current = false;
       unsubscribe();
     };
-  }, []);
+  }, [isOffline]);
+
+  const getNewLocation = async () => {
+    try {
+      const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== "granted") {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== "granted") {
+        if (isMounted.current) {
+          setLocation("Permissão de localização não concedida");
+          setIsLocationLoading(false);
+        }
+        return;
+      }
+
+      const locationPromise = Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout getting location")), 5000)
+      );
+
+      const locationData = await Promise.race([locationPromise, timeoutPromise])
+        .catch(async (error) => {
+          console.log("Timeout or error getting precise location, falling back to last known:", error);
+          return await Location.getLastKnownPositionAsync();
+        });
+
+      if (!isMounted.current) return;
+
+      if (locationData && locationData.coords) {
+        const { latitude, longitude } = locationData.coords;
+        console.log("Novas coordenadas obtidas:", latitude, longitude);
+        setCoords({ latitude, longitude });
+
+        await AsyncStorage.setItem("userLocation", JSON.stringify({ latitude, longitude }));
+        await AsyncStorage.setItem("userLocationTimestamp", Date.now().toString());
+
+        try {
+          console.log("Executando reverse geocoding para novas coordenadas...");
+          const address = await reverseGeocode(latitude, longitude);
+
+          if (!isMounted.current) return;
+
+          if (address.includes("Erro")) {
+            console.error("Erro no geocoding:", address);
+            setLocation("Endereço não encontrado");
+          } else {
+            console.log("Novo endereço obtido:", address);
+            setLocation(address);
+
+            await AsyncStorage.setItem("userLocationAddress", address);
+          }
+        } catch (error) {
+          console.error("Erro no reverse geocoding:", error);
+          if (isMounted.current) {
+            setLocation("Erro ao obter endereço");
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao obter localização:", error);
+      if (isMounted.current) {
+        setLocation("Erro ao obter localização");
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsLocationLoading(false);
+      }
+    }
+  };
+
+  const updateLocationInBackground = async () => {
+    try {
+      const locationData = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      if (!isMounted.current) return;
+
+      if (locationData && locationData.coords) {
+        const { latitude, longitude } = locationData.coords;
+
+        await AsyncStorage.setItem("userLocation", JSON.stringify({ latitude, longitude }));
+        await AsyncStorage.setItem("userLocationTimestamp", Date.now().toString());
+
+        if (isMounted.current) {
+          setCoords({ latitude, longitude });
+        }
+
+        const address = await reverseGeocode(latitude, longitude);
+        if (address && !address.includes("Erro") && isMounted.current) {
+          await AsyncStorage.setItem("userLocationAddress", address);
+          setLocation(address);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar localização em segundo plano:", error);
+    }
+  };
 
   const handleSubmit = async () => {
     if (loading || !isMounted.current || isImageLoading) return;
@@ -354,9 +405,8 @@ export default function NewInteraction() {
         } as any);
       }
 
-      // Log the form data being sent to the API
       console.log("Sending post data to API:", JSON.stringify(postData, null, 2));
-      
+
       const response = await fetch(`${API_URL}/posts/create`, {
         method: "POST",
         headers: {

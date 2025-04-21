@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
-import React from "react";
-import { View, TouchableOpacity, Image, StyleSheet, Text, Alert } from "react-native";
+import React, { memo, useCallback, useState } from "react";
+import { View, TouchableOpacity, Image, StyleSheet, Text, Alert, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 interface ImagePickerProps {
@@ -10,62 +10,91 @@ interface ImagePickerProps {
 }
 
 const ImagePickerComponent = ({ image, setImage }: ImagePickerProps) => {
-  const pickImage = async () => {
-    if (image) return;
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const pickImage = useCallback(async () => {
+    if (image || isProcessing) return;
 
     try {
+      setIsProcessing(true);
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log("Status da permissão:", status);
+
       if (status !== "granted") {
         Alert.alert("Permissão negada", "Precisamos de permissão para acessar a galeria.");
+        setIsProcessing(false);
         return;
       }
 
-      console.log("Opening gallery for image selection...");
-
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
         quality: 0.7,
+        // Only allow JPG and PNG to save on processing
+        allowsMultipleSelection: false,
       });
-      
-      if (!result.canceled) {
-        console.log("Image selected:", result.assets[0].uri);
 
-        const compressedImage = await ImageManipulator.manipulateAsync(
-          result.assets[0].uri,
-          [{ resize: { width: 800 } }],
-          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-        );
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        try {
+          // More aggressive compression for better performance
+          const compressedImage = await ImageManipulator.manipulateAsync(
+            result.assets[0].uri,
+            [{ resize: { width: 800 } }],
+            {
+              compress: 0.6, // More compression
+              format: ImageManipulator.SaveFormat.JPEG
+            }
+          );
 
-        console.log("Image compressed:", compressedImage.uri);
-        setImage(compressedImage.uri);
-      } else {
-        console.log("Image selection cancelled.");
+          setImage(compressedImage.uri);
+        } catch (manipulationError) {
+          console.error("Error manipulating image:", manipulationError);
+          // Fallback to original image if manipulation fails
+          setImage(result.assets[0].uri);
+        }
       }
     } catch (error) {
-      console.error("Error selecting or manipulating image:", error);
-      Alert.alert("Error", "There was a problem selecting or cropping the image. Please try again.");
+      console.error("Error selecting image:", error);
+      Alert.alert("Erro", "Houve um problema ao selecionar a imagem. Tente novamente.");
+    } finally {
+      setIsProcessing(false);
     }
-  };
+  }, [image, setImage, isProcessing]);
 
-  const removeImage = () => {
+  const removeImage = useCallback(() => {
     setImage(null);
-  };
+  }, [setImage]);
 
   return (
-    <View>
+    <View style={styles.container}>
       <TouchableOpacity
         onPress={pickImage}
-        style={[styles.imagePicker, image && styles.imagePickerDisabled]}
-        disabled={!!image}
+        style={[
+          styles.imagePicker,
+          image && styles.imagePickerDisabled,
+          isProcessing && styles.imagePickerProcessing
+        ]}
+        disabled={!!image || isProcessing}
       >
-        <Ionicons name="camera-outline" size={24} color="#fff" />
+        {isProcessing ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Ionicons name="camera-outline" size={24} color="#fff" />
+        )}
       </TouchableOpacity>
+
       {image && (
         <View style={styles.imageContainer}>
-          <Image source={{ uri: image }} style={styles.imagePreview} />
-          <TouchableOpacity onPress={removeImage} style={styles.removeImageButton}>
+          <Image
+            source={{ uri: image }}
+            style={styles.imagePreview}
+            // Add cache control 
+            fadeDuration={300}
+          />
+          <TouchableOpacity
+            onPress={removeImage}
+            style={styles.removeImageButton}
+            activeOpacity={0.7}
+          >
             <Text style={styles.removeImageText}>x</Text>
           </TouchableOpacity>
         </View>
@@ -75,6 +104,10 @@ const ImagePickerComponent = ({ image, setImage }: ImagePickerProps) => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    marginVertical: 10,
+  },
   imagePicker: {
     backgroundColor: "#FF6633",
     padding: 12,
@@ -91,9 +124,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
   },
-  imagePickerDisabled: { backgroundColor: "#99ccff", opacity: 0.6 },
-  imageContainer: { position: "relative", marginBottom: 16, alignSelf: "center" },
-  imagePreview: { width: 200, height: 200, borderRadius: 12, marginBottom: 16, alignSelf: "center" },
+  imagePickerDisabled: {
+    backgroundColor: "#99ccff",
+    opacity: 0.6
+  },
+  imagePickerProcessing: {
+    backgroundColor: "#FF6633",
+    opacity: 0.8,
+  },
+  imageContainer: {
+    position: "relative",
+    marginBottom: 16,
+    alignSelf: "center",
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  imagePreview: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 0,
+    alignSelf: "center"
+  },
   removeImageButton: {
     position: "absolute",
     top: 5,
@@ -105,7 +162,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  removeImageText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
+  removeImageText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold"
+  },
 });
 
-export default ImagePickerComponent;
+export default memo(ImagePickerComponent);

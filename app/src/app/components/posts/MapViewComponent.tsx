@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import MapView, { Marker } from "react-native-maps";
+import React, { useEffect, useState, memo, useRef } from "react";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Text, StyleSheet, View, Platform } from "react-native";
 import * as Location from "expo-location";
 
@@ -13,10 +13,25 @@ interface MapViewComponentProps {
 const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline }: MapViewComponentProps) => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const mapRef = useRef<MapView>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
     checkLocationPermission();
   }, []);
+
+  // Use a memoized region calculation to prevent unnecessary re-renders
+  const region = React.useMemo(() => {
+    if (areCoordsValid(coords)) {
+      return {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        latitudeDelta: 0.0122, // Smaller delta for better performance
+        longitudeDelta: 0.0061,
+      };
+    }
+    return defaultRegion;
+  }, [coords?.latitude, coords?.longitude]);
 
   const checkLocationPermission = async () => {
     try {
@@ -34,14 +49,14 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
     }
   };
 
-  const areCoordsValid =
-    coords &&
-    coords.latitude !== 0 &&
-    coords.longitude !== 0 &&
-    !isNaN(coords.latitude) &&
-    !isNaN(coords.longitude) &&
-    Math.abs(coords.latitude) <= 90 &&
-    Math.abs(coords.longitude) <= 180;
+  const areCoordsValid = (coordsToCheck: { latitude: number; longitude: number } | null) =>
+    coordsToCheck &&
+    coordsToCheck.latitude !== 0 &&
+    coordsToCheck.longitude !== 0 &&
+    !isNaN(coordsToCheck.latitude) &&
+    !isNaN(coordsToCheck.longitude) &&
+    Math.abs(coordsToCheck.latitude) <= 90 &&
+    Math.abs(coordsToCheck.longitude) <= 180;
 
   if (error) {
     return <Text style={styles.errorText}>{error}</Text>;
@@ -55,7 +70,7 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
     return <Text style={styles.errorText}>Permissão de localização não concedida</Text>;
   }
 
-  if (!areCoordsValid) {
+  if (!areCoordsValid(coords)) {
     return <Text style={styles.mapLoading}>Aguardando coordenadas válidas...</Text>;
   }
 
@@ -66,26 +81,41 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
     longitudeDelta: 0.0421,
   };
 
+  // Calculate map options based on current state
+  const mapOptions = {
+    // Use Google Maps provider on iOS for better performance
+    provider: Platform.OS === 'ios' ? PROVIDER_GOOGLE : undefined,
+    // Use lite mode on Android when offline or on slower devices
+    liteMode: Platform.OS === "android" && (isOffline || !mapLoaded),
+    // Disable features that aren't necessary for this use case to improve performance
+    zoomEnabled: true,
+    scrollEnabled: true,
+    rotateEnabled: false,
+    pitchEnabled: false,
+    toolbarEnabled: false,
+    showsScale: false,
+    showsBuildings: false,
+    showsTraffic: false,
+    showsIndoors: false,
+    showsCompass: false,
+    showsUserLocation: hasPermission === true,
+    showsMyLocationButton: hasPermission === true,
+    // Set minimal UI elements
+    mapPadding: { top: 0, right: 0, bottom: 0, left: 0 },
+  };
+
   return (
     <View style={styles.mapContainer}>
       <MapView
+        ref={mapRef}
         style={styles.map}
-        region={
-          areCoordsValid
-            ? {
-                latitude: coords.latitude,
-                longitude: coords.longitude,
-                latitudeDelta: 0.0922,
-                longitudeDelta: 0.0421,
-              }
-            : defaultRegion
-        }
+        initialRegion={region}
+        region={region}
         onPress={handleMapPress}
-        liteMode={Platform.OS === "android" && isOffline}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
+        onMapReady={() => setMapLoaded(true)}
+        {...mapOptions}
       >
-        {areCoordsValid && (
+        {areCoordsValid(coords) && (
           <Marker
             coordinate={{
               latitude: coords.latitude,
@@ -123,4 +153,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MapViewComponent;
+// Memoize the component to prevent unnecessary re-renders
+export default memo(MapViewComponent);

@@ -5,7 +5,7 @@ export default {
   expo: {
     name: 'Softwarescan',
     slug: 'softwarescan',
-    version: '2.8.0',
+    version: '2.9.0',
     orientation: 'portrait',
     icon: './assets/images/scan-removebg-preview.png',
     scheme: 'softwarescan',
@@ -21,6 +21,7 @@ export default {
     },
     android: {
       package: 'com.anonymous.softwarescan',
+      versionCode: 15,
       permissions: [
         "NOTIFICATIONS",
         "READ_EXTERNAL_STORAGE",
@@ -36,6 +37,10 @@ export default {
         googleMaps: {
           apiKey: process.env.EXPO_PUBLIC_GOOGLE_API_KEY
         }
+      },
+      adaptiveIcon: {
+        foregroundImage: "./assets/images/scan-removebg-preview.png",
+        backgroundColor: "#ffffff"
       }
     },
     web: {
@@ -80,6 +85,12 @@ export default {
       googleApiKey: process.env.EXPO_PUBLIC_GOOGLE_API_KEY,
       oneSignalAppId: process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID,
     },
+    updates: {
+      url: "https://u.expo.dev/12e5445b-4dda-4718-9e78-5834fb41db9f"
+    },
+    runtimeVersion: {
+      policy: "sdkVersion"
+    },
     experiments: {
       typedRoutes: true,
     },
@@ -87,7 +98,7 @@ export default {
   },
 };
 
-if (process.env.GOOGLE_SERVICES_JSON) {  
+if (process.env.GOOGLE_SERVICES_JSON) {
   try {
     const jsonString = Buffer.from(process.env.GOOGLE_SERVICES_JSON, 'base64').toString('utf8');
     JSON.parse(jsonString); // Verifica se é um JSON válido

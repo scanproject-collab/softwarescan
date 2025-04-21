@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet, Image, PressableProps } from 'react-native';
+import React, { memo, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Image, PressableProps, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface InteractionCardProps {
@@ -14,6 +14,48 @@ interface InteractionCardProps {
   isRecent?: boolean;
 }
 
+// Custom image component with loading state
+const OptimizedImage = memo(({ uri, style }: { uri: string, style: any }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <View style={[style, { position: 'relative' }]}>
+      {isLoading && (
+        <View style={[style, styles.imageLoadingContainer]}>
+          <ActivityIndicator size="small" color="#007AFF" />
+        </View>
+      )}
+
+      {hasError ? (
+        <View style={[style, styles.placeholderImage]}>
+          <Text style={styles.placeholderText}>Falha ao carregar</Text>
+        </View>
+      ) : (
+        <Image
+          source={{ uri }}
+          style={style}
+          onLoadStart={() => setIsLoading(true)}
+          onLoadEnd={() => setIsLoading(false)}
+          onError={() => {
+            setIsLoading(false);
+            setHasError(true);
+          }}
+        />
+      )}
+    </View>
+  );
+});
+
+// Memoized tags component to prevent rerendering
+const TagsList = memo(({ tags }: { tags: string[] }) => (
+  <View style={styles.tagsContainer}>
+    {tags?.map((tag: string, index: number) => (
+      <Text key={index} style={styles.tagText} numberOfLines={1}>{tag}</Text>
+    ))}
+  </View>
+));
+
 const InteractionCard: React.FC<InteractionCardProps> = ({
   imageUrl,
   hasImage,
@@ -25,10 +67,16 @@ const InteractionCard: React.FC<InteractionCardProps> = ({
   isOffline = false,
   isRecent = false,
 }) => (
-  <Pressable onPress={onPress}>
-    <View style={styles.card}>
+  <Pressable
+    onPress={onPress}
+    style={({ pressed }) => [
+      styles.card,
+      pressed && styles.cardPressed
+    ]}
+  >
+    <View>
       <View style={styles.header}>
-        <Text style={styles.locationText}>Título: {title}</Text>
+        <Text style={styles.locationText} numberOfLines={2}>{title}</Text>
         {isOffline && (
           <View style={styles.offlineBadge}>
             <Text style={styles.offlineBadgeText}>Pendente</Text>
@@ -42,7 +90,7 @@ const InteractionCard: React.FC<InteractionCardProps> = ({
         {onDelete && (
           <Pressable
             onPress={(e) => {
-              e.stopPropagation(); 
+              e.stopPropagation();
               onDelete();
             }}
             style={styles.deleteButton}
@@ -52,22 +100,18 @@ const InteractionCard: React.FC<InteractionCardProps> = ({
         )}
       </View>
       {hasImage && imageUrl ? (
-        <Image source={{ uri: imageUrl }} style={styles.interactionImage} key={imageUrl} />
+        <OptimizedImage uri={imageUrl} style={styles.interactionImage} />
       ) : (
         <View style={styles.placeholderImage}>
           <Text style={styles.placeholderText}>Sem Imagem</Text>
         </View>
       )}
-      <View style={styles.tagsContainer}>
-        {tags?.map((tag: string, index: number) => (
-          <Text key={index} style={styles.tagText}>{tag}</Text>
-        ))}
-      </View>
+      <TagsList tags={tags} />
       <View style={styles.locationContainer}>
-        <Text style={styles.locationValue}>{location}</Text>
+        <Text style={styles.locationValue} numberOfLines={2}>{location}</Text>
       </View>
       <View style={styles.detailsButtonContainer}>
-        <Pressable 
+        <Pressable
           style={styles.detailsButton}
           onPress={onPress}
           accessibilityRole="button"
@@ -94,6 +138,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  cardPressed: {
+    backgroundColor: '#EBEBEB',
+    opacity: 0.9,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -115,6 +163,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginRight: 8,
     marginBottom: 8,
+    maxWidth: 150,
   },
   locationText: {
     fontSize: 16,
@@ -137,6 +186,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#ddd',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  imageLoadingContainer: {
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   placeholderText: {
     color: '#666',
@@ -201,4 +260,6 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
 });
-export default InteractionCard;
+
+// Memoize the component to prevent unnecessary re-renders
+export default memo(InteractionCard);
