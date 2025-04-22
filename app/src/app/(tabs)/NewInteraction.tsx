@@ -493,7 +493,7 @@ export default function NewInteraction() {
             weight: totalWeight.toString(),
             ranking,
             createdAt: new Date().toISOString(),
-            offlineId: Date.now().toString(),
+            offlineId: `${Date.now().toString()}_${Math.random().toString(36).substring(2, 15)}`,
           };
 
           const offlinePostsJson = await AsyncStorage.getItem("offlinePosts");

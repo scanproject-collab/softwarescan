@@ -232,7 +232,7 @@ export default function Home() {
             longitude: post.longitude?.toString() || '',
             weight: post.weight || '0',
             ranking: post.ranking || 'Baixo',
-            offlineId: post.offlineId || post.id || '',
+            offlineId: post.offlineId || `${post.id || Date.now().toString()}_${Math.random().toString(36).substring(2, 10)}`,
           }).forEach(([key, value]) => {
             formData.append(key, value as string);
           });
