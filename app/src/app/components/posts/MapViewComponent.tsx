@@ -1,4 +1,4 @@
-import React, { useEffect, useState, memo, useRef } from "react";
+import React, { useEffect, useState, memo, useRef, useCallback } from "react";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Text, StyleSheet, View, Platform } from "react-native";
 import * as Location from "expo-location";
@@ -15,20 +15,39 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    checkLocationPermission();
+    let isMounted = true;
+    checkLocationPermission().then(() => {
+      // Nada a fazer aqui, o estado já é atualizado dentro da função
+    }).catch(err => {
+      console.error("Erro ao verificar permissões:", err);
+      if (isMounted) {
+        setError("Erro ao verificar permissões de localização");
+        setHasPermission(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Use a memoized region calculation to prevent unnecessary re-renders
   const region = React.useMemo(() => {
-    if (areCoordsValid(coords)) {
-      return {
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        latitudeDelta: 0.0122, // Smaller delta for better performance
-        longitudeDelta: 0.0061,
-      };
+    try {
+      if (areCoordsValid(coords)) {
+        return {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          latitudeDelta: 0.0122, // Smaller delta for better performance
+          longitudeDelta: 0.0061,
+        };
+      }
+    } catch (error) {
+      console.error("Erro ao calcular região do mapa:", error);
+      setHasError(true);
     }
     return defaultRegion;
   }, [coords?.latitude, coords?.longitude]);
@@ -46,17 +65,51 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
       console.error("Erro ao verificar permissões:", err);
       setError("Erro ao verificar permissões de localização");
       setHasPermission(false);
+      throw err;
     }
   };
 
-  const areCoordsValid = (coordsToCheck: { latitude: number; longitude: number } | null) =>
-    coordsToCheck &&
-    coordsToCheck.latitude !== 0 &&
-    coordsToCheck.longitude !== 0 &&
-    !isNaN(coordsToCheck.latitude) &&
-    !isNaN(coordsToCheck.longitude) &&
-    Math.abs(coordsToCheck.latitude) <= 90 &&
-    Math.abs(coordsToCheck.longitude) <= 180;
+  const areCoordsValid = useCallback((coordsToCheck: { latitude: number; longitude: number } | null): boolean => {
+    if (!coordsToCheck) return false;
+
+    try {
+      const { latitude, longitude } = coordsToCheck;
+
+      // Verificar se latitude e longitude são números válidos
+      if (latitude === undefined || longitude === undefined) return false;
+      if (typeof latitude !== 'number' || typeof longitude !== 'number') return false;
+      if (isNaN(latitude) || isNaN(longitude)) return false;
+
+      // Verificar se estão dentro dos limites globais
+      if (Math.abs(latitude) > 90) return false;
+      if (Math.abs(longitude) > 180) return false;
+
+      // Verificar se não são coordenadas zeradas (provavelmente um erro)
+      if (latitude === 0 && longitude === 0) return false;
+
+      return true;
+    } catch (error) {
+      console.error("Erro ao validar coordenadas:", error);
+      return false;
+    }
+  }, []);
+
+  const defaultRegion = {
+    latitude: -23.5505,
+    longitude: -46.6333,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  };
+
+  const handleMapPressWithErrorHandling = useCallback((event: any) => {
+    try {
+      if (event && event.nativeEvent && event.nativeEvent.coordinate) {
+        handleMapPress(event);
+      }
+    } catch (error) {
+      console.error("Erro ao processar clique no mapa:", error);
+    }
+  }, [handleMapPress]);
 
   if (error) {
     return <Text style={styles.errorText}>{error}</Text>;
@@ -70,16 +123,9 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
     return <Text style={styles.errorText}>Permissão de localização não concedida</Text>;
   }
 
-  if (!areCoordsValid(coords)) {
+  if (!areCoordsValid(coords) || hasError) {
     return <Text style={styles.mapLoading}>Aguardando coordenadas válidas...</Text>;
   }
-
-  const defaultRegion = {
-    latitude: -23.5505,
-    longitude: -46.6333,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  };
 
   // Calculate map options based on current state
   const mapOptions = {
@@ -111,8 +157,12 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
         style={styles.map}
         initialRegion={region}
         region={region}
-        onPress={handleMapPress}
+        onPress={handleMapPressWithErrorHandling}
         onMapReady={() => setMapLoaded(true)}
+        onError={(error) => {
+          console.error("Erro ao carregar o mapa:", error);
+          setHasError(true);
+        }}
         {...mapOptions}
       >
         {areCoordsValid(coords) && (
