@@ -267,6 +267,14 @@ export default function NewInteraction() {
     };
   }, [isOffline, checkConnection, checkActualConnectivity, API_URL]);
 
+  // Adicionar este useEffect após useEffect principal para monitorar mudanças nas coordenadas
+  useEffect(() => {
+    if (coords) {
+      console.log("Coordenadas atualizadas em NewInteraction:", coords);
+      setIsLocationLoading(false);
+    }
+  }, [coords]);
+
   // Obtenção de nova localização com tratamento de erros aprimorado
   const getNewLocation = useCallback(async () => {
     if (!isMounted.current) return;
@@ -315,45 +323,50 @@ export default function NewInteraction() {
         const { latitude, longitude } = locationData.coords;
         console.log("Novas coordenadas obtidas:", latitude, longitude);
 
-        if (isMounted.current) {
-          setCoords({ latitude, longitude });
-        }
-
-        try {
-          await AsyncStorage.setItem("userLocation", JSON.stringify({ latitude, longitude }));
-          await AsyncStorage.setItem("userLocationTimestamp", Date.now().toString());
-        } catch (storageError) {
-          console.error("Erro ao salvar localização no storage:", storageError);
-        }
-
-        try {
-          console.log("Executando reverse geocoding para novas coordenadas...");
-          const address = await reverseGeocode(latitude, longitude);
-
-          if (!isMounted.current) return;
-
-          if (address && typeof address === 'string') {
-            if (address.includes("Erro")) {
-              console.error("Erro no geocoding:", address);
-              setLocation("Endereço não encontrado");
-            } else {
-              console.log("Novo endereço obtido:", address);
-              setLocation(address);
-
-              try {
-                await AsyncStorage.setItem("userLocationAddress", address);
-              } catch (storageError) {
-                console.error("Erro ao salvar endereço no storage:", storageError);
-              }
-            }
-          } else {
-            console.error("Resposta inválida do geocoding");
-            setLocation("Erro ao obter endereço");
-          }
-        } catch (error) {
-          console.error("Erro no reverse geocoding:", error);
+        // Garantir que são valores numéricos válidos
+        if (typeof latitude === 'number' && !isNaN(latitude) &&
+          typeof longitude === 'number' && !isNaN(longitude)) {
           if (isMounted.current) {
-            setLocation("Erro ao obter endereço");
+            console.log("Atualizando estado de coordenadas com:", { latitude, longitude });
+            setCoords({ latitude, longitude });
+          }
+
+          try {
+            await AsyncStorage.setItem("userLocation", JSON.stringify({ latitude, longitude }));
+            await AsyncStorage.setItem("userLocationTimestamp", Date.now().toString());
+          } catch (storageError) {
+            console.error("Erro ao salvar localização no storage:", storageError);
+          }
+
+          try {
+            console.log("Executando reverse geocoding para novas coordenadas...");
+            const address = await reverseGeocode(latitude, longitude);
+
+            if (!isMounted.current) return;
+
+            if (address && typeof address === 'string') {
+              if (address.includes("Erro")) {
+                console.error("Erro no geocoding:", address);
+                setLocation("Endereço não encontrado");
+              } else {
+                console.log("Novo endereço obtido:", address);
+                setLocation(address);
+
+                try {
+                  await AsyncStorage.setItem("userLocationAddress", address);
+                } catch (storageError) {
+                  console.error("Erro ao salvar endereço no storage:", storageError);
+                }
+              }
+            } else {
+              console.error("Resposta inválida do geocoding");
+              setLocation("Erro ao obter endereço");
+            }
+          } catch (error) {
+            console.error("Erro no reverse geocoding:", error);
+            if (isMounted.current) {
+              setLocation("Erro ao obter endereço");
+            }
           }
         }
       } else {
@@ -520,7 +533,7 @@ export default function NewInteraction() {
         // Adicionando dados ao FormData com validação
         Object.entries(postData).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
-            formData.append(key, value);
+            formData.append(key, String(value));
           }
         });
 
@@ -599,30 +612,25 @@ export default function NewInteraction() {
           setCoords={setCoords}
         />
       );
-      if (item === "map" && !isLocationLoading && coords) {
-        try {
-          return (
-            <MapViewComponent
-              coords={coords}
-              handleMapPress={(event) => {
-                try {
-                  if (event && event.nativeEvent && event.nativeEvent.coordinate) {
-                    const { latitude, longitude } = event.nativeEvent.coordinate;
-                    setCoords({ latitude, longitude });
-                  }
-                } catch (error) {
-                  console.error("Erro ao processar clique no mapa:", error);
-                }
-              }}
-              isManualLocation={isManualLocation}
-              isOffline={isOffline}
-            />
-          );
-        } catch (error) {
-          console.error("Erro ao renderizar mapa:", error);
-          return <Text style={styles.errorText}>Erro ao carregar mapa</Text>;
-        }
+
+      // Renderizar o mapa mesmo durante o carregamento, apenas verificando se coords existe
+      if (item === "map") {
+        console.log("Tentando renderizar mapa com coordenadas:", coords);
+        return (
+          <MapViewComponent
+            coords={coords}
+            handleMapPress={(event) => {
+              if (event?.nativeEvent?.coordinate) {
+                const { latitude, longitude } = event.nativeEvent.coordinate;
+                setCoords({ latitude, longitude });
+              }
+            }}
+            isManualLocation={isManualLocation}
+            isOffline={isOffline}
+          />
+        );
       }
+
       if (item === "image") {
         return (
           <ImagePickerComponent
@@ -666,7 +674,10 @@ export default function NewInteraction() {
 
   return (
     <FlatList
-      data={["title", "date", "time", "description", "tags", "location", "map", "image", "buttons"]}
+      data={["title", "date", "time", "description", "tags", "location",
+        // Passar o item "map" apenas se tivermos coordenadas válidas ou estivermos carregando
+        ...(coords || isLocationLoading ? ["map"] : []),
+        "image", "buttons"]}
       renderItem={renderItem}
       keyExtractor={(item) => item}
       contentContainerStyle={styles.container}

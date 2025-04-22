@@ -1,6 +1,6 @@
 import React, { useEffect, useState, memo, useRef, useCallback } from "react";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { Text, StyleSheet, View, Platform } from "react-native";
+import MapView, { Marker, MapViewProps, PROVIDER_GOOGLE } from "react-native-maps";
+import { Text, StyleSheet, View, Platform, TouchableOpacity } from "react-native";
 import * as Location from "expo-location";
 
 interface MapViewComponentProps {
@@ -11,99 +11,76 @@ interface MapViewComponentProps {
 }
 
 const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline }: MapViewComponentProps) => {
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean>(false);
+  const [permissionChecked, setPermissionChecked] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const mapRef = useRef<MapView>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState<boolean>(false);
+  const mapRef = useRef<MapView | null>(null);
 
+  // Verificar permissões no carregamento
   useEffect(() => {
-    let isMounted = true;
-    checkLocationPermission().then(() => {
-      // Nada a fazer aqui, o estado já é atualizado dentro da função
-    }).catch(err => {
-      console.error("Erro ao verificar permissões:", err);
-      if (isMounted) {
-        setError("Erro ao verificar permissões de localização");
-        setHasPermission(false);
+    let mounted = true;
+
+    const checkPermission = async () => {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (mounted) {
+          setHasPermission(status === "granted");
+          setPermissionChecked(true);
+
+          // Se não tiver permissão, pedir ao usuário
+          if (status !== "granted") {
+            const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
+            if (mounted) {
+              setHasPermission(newStatus === "granted");
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao verificar permissões:", err);
+        if (mounted) {
+          setError("Erro ao verificar permissões de localização");
+          setPermissionChecked(true);
+        }
       }
-    });
+    };
+
+    checkPermission();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
   }, []);
 
-  // Use a memoized region calculation to prevent unnecessary re-renders
-  const region = React.useMemo(() => {
-    try {
-      if (areCoordsValid(coords)) {
-        return {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          latitudeDelta: 0.0122, // Smaller delta for better performance
-          longitudeDelta: 0.0061,
-        };
-      }
-    } catch (error) {
-      console.error("Erro ao calcular região do mapa:", error);
-      setHasError(true);
-    }
-    return defaultRegion;
-  }, [coords?.latitude, coords?.longitude]);
-
-  const checkLocationPermission = async () => {
-    try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      setHasPermission(status === "granted");
-
-      if (status !== "granted") {
-        const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
-        setHasPermission(newStatus === "granted");
-      }
-    } catch (err) {
-      console.error("Erro ao verificar permissões:", err);
-      setError("Erro ao verificar permissões de localização");
-      setHasPermission(false);
-      throw err;
-    }
-  };
-
-  const areCoordsValid = useCallback((coordsToCheck: { latitude: number; longitude: number } | null): boolean => {
-    if (!coordsToCheck) return false;
+  // Validar as coordenadas
+  const coordsAreValid = useCallback((c: any): boolean => {
+    if (!c) return false;
 
     try {
-      const { latitude, longitude } = coordsToCheck;
-
-      // Verificar se latitude e longitude são números válidos
-      if (latitude === undefined || longitude === undefined) return false;
-      if (typeof latitude !== 'number' || typeof longitude !== 'number') return false;
-      if (isNaN(latitude) || isNaN(longitude)) return false;
-
-      // Verificar se estão dentro dos limites globais
-      if (Math.abs(latitude) > 90) return false;
-      if (Math.abs(longitude) > 180) return false;
-
-      // Verificar se não são coordenadas zeradas (provavelmente um erro)
-      if (latitude === 0 && longitude === 0) return false;
-
-      return true;
+      return (
+        typeof c === 'object' &&
+        'latitude' in c &&
+        'longitude' in c &&
+        typeof c.latitude === 'number' &&
+        typeof c.longitude === 'number' &&
+        !isNaN(c.latitude) &&
+        !isNaN(c.longitude) &&
+        Math.abs(c.latitude) <= 90 &&
+        Math.abs(c.longitude) <= 180
+      );
     } catch (error) {
       console.error("Erro ao validar coordenadas:", error);
       return false;
     }
   }, []);
 
-  const defaultRegion = {
-    latitude: -23.5505,
-    longitude: -46.6333,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  };
+  const handleMapError = useCallback(() => {
+    setError("Erro ao carregar o mapa");
+  }, []);
 
-  const handleMapPressWithErrorHandling = useCallback((event: any) => {
+  const handleMapPressWrapper = useCallback((event: any) => {
     try {
-      if (event && event.nativeEvent && event.nativeEvent.coordinate) {
+      if (event?.nativeEvent?.coordinate) {
         handleMapPress(event);
       }
     } catch (error) {
@@ -111,97 +88,147 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
     }
   }, [handleMapPress]);
 
+  const resetError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  // Componente de erro
   if (error) {
-    return <Text style={styles.errorText}>{error}</Text>;
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity onPress={resetError} style={styles.retryButton}>
+          <Text style={styles.retryText}>Tentar novamente</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
-  if (hasPermission === null) {
-    return <Text style={styles.mapLoading}>Verificando permissões...</Text>;
+  // Aguardando verificação de permissão
+  if (!permissionChecked) {
+    return <Text style={styles.loadingText}>Verificando permissões...</Text>;
   }
 
-  if (hasPermission === false) {
+  // Sem permissão de localização
+  if (!hasPermission) {
     return <Text style={styles.errorText}>Permissão de localização não concedida</Text>;
   }
 
-  if (!areCoordsValid(coords) || hasError) {
-    return <Text style={styles.mapLoading}>Aguardando coordenadas válidas...</Text>;
+  // Aguardando coordenadas
+  if (!coordsAreValid(coords)) {
+    return <Text style={styles.loadingText}>Aguardando coordenadas válidas...</Text>;
   }
 
-  // Calculate map options based on current state
-  const mapOptions = {
-    // Use Google Maps provider on iOS for better performance
-    provider: Platform.OS === 'ios' ? PROVIDER_GOOGLE : undefined,
-    // Use lite mode on Android when offline or on slower devices
-    liteMode: Platform.OS === "android" && (isOffline || !mapLoaded),
-    // Disable features that aren't necessary for this use case to improve performance
+  // Se chegamos aqui, temos coordenadas válidas
+  const validCoords = coords as { latitude: number; longitude: number };
+
+  // Configurar a região do mapa
+  const region = {
+    latitude: validCoords.latitude,
+    longitude: validCoords.longitude,
+    latitudeDelta: 0.005,
+    longitudeDelta: 0.005,
+  };
+
+  // Propriedades do mapa com tipagem correta
+  const mapProps: MapViewProps = {
+    initialRegion: region,
+    region: region,
+    onPress: handleMapPressWrapper,
+    onMapReady: () => setMapLoaded(true),
     zoomEnabled: true,
     scrollEnabled: true,
     rotateEnabled: false,
     pitchEnabled: false,
     toolbarEnabled: false,
-    showsScale: false,
-    showsBuildings: false,
-    showsTraffic: false,
-    showsIndoors: false,
     showsCompass: false,
-    showsUserLocation: hasPermission === true,
-    showsMyLocationButton: hasPermission === true,
-    // Set minimal UI elements
-    mapPadding: { top: 0, right: 0, bottom: 0, left: 0 },
+    showsScale: false,
+    showsUserLocation: true,
+    showsMyLocationButton: true,
   };
 
+  // Adicionar o provider apenas para iOS para evitar erros de tipagem
+  if (Platform.OS === 'ios') {
+    (mapProps as any).provider = PROVIDER_GOOGLE;
+  }
+
+  // Usar modo lite em Android quando offline ou mapa não carregado
+  if (Platform.OS === 'android' && (isOffline || !mapLoaded)) {
+    (mapProps as any).liteMode = true;
+  }
+
   return (
-    <View style={styles.mapContainer}>
+    <View style={styles.container}>
       <MapView
         ref={mapRef}
         style={styles.map}
-        initialRegion={region}
-        region={region}
-        onPress={handleMapPressWithErrorHandling}
-        onMapReady={() => setMapLoaded(true)}
-        onError={(error) => {
-          console.error("Erro ao carregar o mapa:", error);
-          setHasError(true);
-        }}
-        {...mapOptions}
+        {...mapProps}
       >
-        {areCoordsValid(coords) && (
-          <Marker
-            coordinate={{
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-            }}
-          />
-        )}
+        <Marker coordinate={validCoords} />
       </MapView>
+
+      {!mapLoaded && (
+        <View style={styles.loadingOverlay}>
+          <Text style={styles.loadingOverlayText}>Carregando mapa...</Text>
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  mapContainer: {
+  container: {
     height: 300,
     width: "100%",
     borderRadius: 8,
     overflow: "hidden",
     marginBottom: 16,
+    position: 'relative',
   },
   map: {
     flex: 1,
   },
-  mapLoading: {
+  loadingText: {
     textAlign: "center",
     color: "#666",
-    marginBottom: 16,
-    padding: 10,
+    marginVertical: 16,
+    height: 300,
+    textAlignVertical: 'center',
+    justifyContent: 'center',
+  },
+  errorContainer: {
+    height: 300,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   errorText: {
     textAlign: "center",
     color: "red",
-    marginBottom: 16,
-    padding: 10,
+    marginBottom: 8,
   },
+  retryButton: {
+    padding: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 4,
+  },
+  retryText: {
+    color: "#0066cc",
+    textAlign: 'center',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingOverlayText: {
+    fontSize: 16,
+    color: '#333',
+  }
 });
 
-// Memoize the component to prevent unnecessary re-renders
 export default memo(MapViewComponent);
