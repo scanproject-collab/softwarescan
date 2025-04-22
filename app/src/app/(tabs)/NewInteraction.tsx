@@ -13,7 +13,7 @@ import { reverseGeocode } from "@/src/app/utils/GoogleMaps";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { validateToken } from "@/src/app/utils/ValidateAuth";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
 import Toast from "react-native-toast-message";
 
@@ -286,6 +286,25 @@ export default function NewInteraction() {
     }
   }, [coords]);
 
+  // Atualizar o endereço quando as coordenadas mudam (clique no mapa)
+  useEffect(() => {
+    if (coords && isManualLocation === false && !isOffline) {
+      const updateAddressFromCoords = async () => {
+        try {
+          console.log("Atualizando endereço a partir das coordenadas:", coords);
+          const address = await reverseGeocode(coords.latitude, coords.longitude);
+          if (address && typeof address === 'string' && !address.includes("Erro")) {
+            setLocation(address);
+            console.log("Novo endereço atualizado a partir das coordenadas:", address);
+          }
+        } catch (error) {
+          console.error("Erro ao atualizar endereço a partir das coordenadas:", error);
+        }
+      };
+      updateAddressFromCoords();
+    }
+  }, [coords, isManualLocation, isOffline]);
+
   // Obtenção de nova localização com tratamento de erros aprimorado
   const getNewLocation = useCallback(async () => {
     if (!isMounted.current) return;
@@ -537,6 +556,7 @@ export default function NewInteraction() {
           weight: totalWeight.toString(),
           ranking,
           createdAt: new Date().toISOString(),
+          offlineId: `online_${Date.now().toString()}_${Math.random().toString(36).substring(2, 15)}`,
         };
 
         const formData = new FormData();
@@ -682,6 +702,39 @@ export default function NewInteraction() {
   }, [title, selectedDate, selectedTime, description, selectedTags, location,
     coords, image, loading, isImageLoading, isOffline, isManualLocation,
     isLocationLoading, availableTags, router, status, handleSubmit]);
+
+  // Limpar formulário quando a tela recebe foco
+  useFocusEffect(
+    useCallback(() => {
+      console.log("NewInteraction recebeu foco, resetando formulário...");
+      // Atrasar o resetForm para permitir que a localização seja carregada primeiro
+      const loadLocationOnly = async () => {
+        setTitle("");
+        setDescription("");
+        setSelectedTags([]);
+        setImage(null);
+        setStatus("idle");
+        
+        // Não resetar a localização, apenas obter a localização atual
+        try {
+          const isValid = await validateToken();
+          if (isValid) {
+            await checkConnection();
+            await getNewLocation();
+          }
+        } catch (error) {
+          console.error("Erro ao recarregar localização:", error);
+        }
+      };
+      
+      loadLocationOnly();
+      
+      return () => {
+        // Código executado quando a tela perde o foco
+        console.log("NewInteraction perdeu foco");
+      };
+    }, [])
+  );
 
   return (
     <>
