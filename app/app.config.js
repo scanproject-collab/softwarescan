@@ -5,7 +5,7 @@ export default {
   expo: {
     name: 'Softwarescan',
     slug: 'softwarescan',
-    version: '2.9.0',
+    version: '2.9.5',
     orientation: 'portrait',
     icon: './assets/images/scan-removebg-preview.png',
     scheme: 'softwarescan',
@@ -21,7 +21,7 @@ export default {
     },
     android: {
       package: 'com.anonymous.softwarescan',
-      versionCode: 15,
+      versionCode: 16,
       permissions: [
         "NOTIFICATIONS",
         "READ_EXTERNAL_STORAGE",
@@ -40,6 +40,7 @@ export default {
       },
       adaptiveIcon: {
         foregroundImage: "./assets/images/scan-removebg-preview.png",
+        foregroundImageScale: 0.75,
         backgroundColor: "#ffffff"
       }
     },
@@ -60,7 +61,7 @@ export default {
         'expo-splash-screen',
         {
           image: './assets/images/scan-removebg-preview.png',
-          imageWidth: 200,
+          imageWidth: 150,
           resizeMode: 'contain',
           backgroundColor: '#ffffff',
         },

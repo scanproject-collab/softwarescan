@@ -105,8 +105,11 @@ const PostList = ({ filteredPosts, handleDeletePost, refreshing = false, onRefre
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          colors={['#0000ff']}
-          tintColor={'#0000ff'}
+          colors={['#FF6633']}
+          tintColor={'#FF6633'}
+          progressBackgroundColor={'#FFFFFF'}
+          progressViewOffset={10}
+          size={RefreshControl.SIZE.LARGE}
         />
       }
     />

@@ -40,7 +40,8 @@
       },
       "env": {
         "GOOGLE_SERVICES_JSON": "@env:GOOGLE_SERVICES_JSON"
-      }
+      },
+      "channel": "production-v2.9.5"
     },
     "productionApk": {
       "autoIncrement": true,
@@ -55,7 +56,8 @@
       },
       "env": {
         "GOOGLE_SERVICES_JSON": "@env:GOOGLE_SERVICES_JSON"
-      }
+      },
+      "channel": "production-apk-v2.9.5"
     }
   },
   "submit": {

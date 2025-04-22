@@ -2,7 +2,16 @@
 
 Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
-## [2.9.0] - 2023-08-11
+## [2.9.0] - 2024-10-10
+
+### Melhorias
+
+- Adicionado toast de notificação durante o carregamento da localização
+- Corrigido botão de refresh na página inicial
+- Ajustado o tamanho do ícone do app para melhor visualização
+- Melhorada a interface de carregamento do mapa
+- Otimizada a exibição de localização na tela de nova interação
+- Adicionado tratamento de erros robusto na captura de localização
 
 ### Melhorias de Performance
 
@@ -61,7 +70,7 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 - Indicadores visuais aprimorados para status offline
 - Melhor tratamento de erros com fallbacks apropriados
 
-## [2.8.0] - 2023-07-15
+## [2.8.0] - 2024-09-28
 
 ### Adicionado
 

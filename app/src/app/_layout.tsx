@@ -10,6 +10,26 @@ import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { reverseGeocode } from '@/src/app/utils/GoogleMaps';
 import NetInfo from "@react-native-community/netinfo";
+import Toast from 'react-native-toast-message';
+
+// Configuração personalizada para o Toast
+const toastConfig = {
+  info: ({ text1, text2, ...rest }) => (
+    <View
+      style={{
+        height: 60,
+        width: '90%',
+        backgroundColor: '#FF6633',
+        borderRadius: 10,
+        padding: 10,
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>{text1}</Text>
+      {text2 && <Text style={{ color: 'white', fontSize: 12 }}>{text2}</Text>}
+    </View>
+  ),
+};
 
 function ErrorFallback({ error, resetErrorBoundary }) {
   return (
@@ -53,6 +73,7 @@ export default function RootLayout() {
 
         // Store coordinates in AsyncStorage for later use
         await AsyncStorage.setItem('userLocation', JSON.stringify({ latitude, longitude }));
+        await AsyncStorage.setItem('userLocationTimestamp', Date.now().toString());
 
         return { latitude, longitude };
       }
@@ -169,6 +190,7 @@ export default function RootLayout() {
         <Stack.Screen name="pages/users/ProfileUser" options={{ title: 'Perfil' }} />
         <Stack.Screen name="pages/users/ProfileEditUser" options={{ title: 'Editar Perfil' }} />
       </Stack>
+      <Toast config={toastConfig} />
     </ErrorBoundary>
   );
 }

@@ -1,7 +1,8 @@
 import React, { useEffect, useState, memo, useRef, useCallback } from "react";
 import MapView, { Marker, MapViewProps, PROVIDER_GOOGLE } from "react-native-maps";
-import { Text, StyleSheet, View, Platform, TouchableOpacity } from "react-native";
+import { Text, StyleSheet, View, Platform, TouchableOpacity, ActivityIndicator } from "react-native";
 import * as Location from "expo-location";
+import Toast from 'react-native-toast-message';
 
 interface MapViewComponentProps {
   coords: { latitude: number; longitude: number } | null;
@@ -16,6 +17,7 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
   const [error, setError] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState<boolean>(false);
   const mapRef = useRef<MapView | null>(null);
+  const toastShown = useRef<boolean>(false);
 
   // Verificar permissões no carregamento
   useEffect(() => {
@@ -51,6 +53,24 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
       mounted = false;
     };
   }, []);
+
+  // Mostrar toast quando coordenadas estiverem carregando
+  useEffect(() => {
+    if (!coordsAreValid(coords) && !toastShown.current && permissionChecked) {
+      Toast.show({
+        type: 'info',
+        text1: 'Carregando localização',
+        text2: 'Aguarde enquanto obtemos sua localização atual...',
+        position: 'bottom',
+        visibilityTime: 4000,
+        autoHide: true,
+      });
+      toastShown.current = true;
+    } else if (coordsAreValid(coords) && toastShown.current) {
+      Toast.hide();
+      toastShown.current = false;
+    }
+  }, [coords, permissionChecked]);
 
   // Validar as coordenadas
   const coordsAreValid = useCallback((c: any): boolean => {
@@ -106,7 +126,12 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
 
   // Aguardando verificação de permissão
   if (!permissionChecked) {
-    return <Text style={styles.loadingText}>Verificando permissões...</Text>;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6633" />
+        <Text style={styles.loadingText}>Verificando permissões...</Text>
+      </View>
+    );
   }
 
   // Sem permissão de localização
@@ -116,7 +141,12 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
 
   // Aguardando coordenadas
   if (!coordsAreValid(coords)) {
-    return <Text style={styles.loadingText}>Aguardando coordenadas válidas...</Text>;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6633" />
+        <Text style={styles.loadingText}>Obtendo sua localização...</Text>
+      </View>
+    );
   }
 
   // Se chegamos aqui, temos coordenadas válidas
@@ -169,6 +199,7 @@ const MapViewComponent = ({ coords, handleMapPress, isManualLocation, isOffline 
 
       {!mapLoaded && (
         <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#FF6633" />
           <Text style={styles.loadingOverlayText}>Carregando mapa...</Text>
         </View>
       )}
@@ -188,13 +219,19 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
+  loadingContainer: {
+    height: 300,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
   loadingText: {
     textAlign: "center",
     color: "#666",
-    marginVertical: 16,
-    height: 300,
-    textAlignVertical: 'center',
-    justifyContent: 'center',
+    marginTop: 10,
+    fontSize: 14,
   },
   errorContainer: {
     height: 300,
@@ -228,6 +265,7 @@ const styles = StyleSheet.create({
   loadingOverlayText: {
     fontSize: 16,
     color: '#333',
+    marginTop: 10,
   }
 });
 
