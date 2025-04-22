@@ -56,9 +56,31 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
       });  
   
       if (existingPost) {  
+        let imageUrl: string | undefined = existingPost.imageUrl;  
+        if (req.file) {  
+          console.log("Arquivo recebido para atualização:", req.file);  
+          imageUrl = await uploadImageToS3(req.file, req.user.id);  
+          console.log("Nova URL da imagem:", imageUrl);  
+        }
+        
+        const updatedPost = await prisma.post.update({
+          where: { id: existingPost.id },
+          data: {
+            title,
+            content,
+            imageUrl,
+            tags: tagsArray,
+            location,
+            latitude: latitude ? parseFloat(latitude) : null,
+            longitude: longitude ? parseFloat(longitude) : null,
+            ranking: ranking || 'Baixo',
+            weight: weight || '0',
+          }
+        });
+        
         return res.status(200).json({  
-          message: 'Post already created or duplicated, returning existing one',  
-          post: existingPost,  
+          message: 'Post updated successfully',  
+          post: updatedPost,  
         });  
       }  
     }  
