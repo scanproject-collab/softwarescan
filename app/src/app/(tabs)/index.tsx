@@ -426,7 +426,7 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      {isOffline && <OfflineMessage />}
+      {isOffline && <OfflineMessage isOffline={isOffline} />}
 
       <SearchBar
         searchQuery={searchQuery}
@@ -437,7 +437,7 @@ export default function Home() {
       <TagFilter
         allTags={allTags}
         selectedTags={selectedTags}
-        onToggleTag={handleToggleTag}
+        handleToggleTag={handleToggleTag}
       />
 
       {(loading || refreshing) ? (
