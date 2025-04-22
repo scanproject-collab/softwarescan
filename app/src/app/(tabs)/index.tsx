@@ -44,6 +44,7 @@ export default function Home() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isOffline, setIsOffline] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const syncingRef = useRef(false);
@@ -314,47 +315,6 @@ export default function Home() {
     initialize();
   }, [clearOldCachePosts, fetchPosts, loadOfflinePosts, checkActualConnectivity, sendOfflinePosts]);
 
-  // Use useMemo for filtered posts to avoid unnecessary recalculations
-  useEffect(() => {
-    const filterPosts = () => {
-      let combinedPosts = isOffline
-        ? [...posts, ...offlinePosts.map(post => ({ ...post, isOffline: true }))]
-        : [...posts];
-
-      let filtered = combinedPosts;
-
-      // Apply tag filtering
-      if (selectedTags.length > 0) {
-        filtered = filtered.filter(post => {
-          if (!post.tags) return false;
-          return selectedTags.some(tag => post.tags.includes(tag));
-        });
-      }
-
-      // Apply search filtering
-      if (debouncedSearchQuery.trim()) {
-        const query = debouncedSearchQuery.toLowerCase().trim();
-        filtered = filtered.filter(post => {
-          const title = (post.title || '').toLowerCase();
-          const content = (post.content || post.description || '').toLowerCase();
-          const location = (post.location || '').toLowerCase();
-          const tagsText = (post.tags || []).join(' ').toLowerCase();
-
-          return (
-            title.includes(query) ||
-            content.includes(query) ||
-            location.includes(query) ||
-            tagsText.includes(query)
-          );
-        });
-      }
-
-      setFilteredPosts(filtered);
-    };
-
-    filterPosts();
-  }, [posts, offlinePosts, isOffline, selectedTags, debouncedSearchQuery]);
-
   const handleDeletePost = useCallback(async (postId: string) => {
     try {
       const isValid = await validateToken();
@@ -415,8 +375,54 @@ export default function Home() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
+    setIsRefreshing(true);
+    setFilteredPosts([]); // Clear posts during refresh
     await fetchPosts(true);
+    setIsRefreshing(false);
   }, [fetchPosts]);
+
+  // Use useMemo for filtered posts to avoid unnecessary recalculations
+  useEffect(() => {
+    const filterPosts = () => {
+      if (isRefreshing) return; // Don't filter during refresh
+
+      let combinedPosts = isOffline
+        ? [...posts, ...offlinePosts.map(post => ({ ...post, isOffline: true }))]
+        : [...posts];
+
+      let filtered = combinedPosts;
+
+      // Apply tag filtering
+      if (selectedTags.length > 0) {
+        filtered = filtered.filter(post => {
+          if (!post.tags) return false;
+          return selectedTags.every(tag => post.tags.includes(tag));
+        });
+      }
+
+      // Apply search filtering
+      if (debouncedSearchQuery.trim()) {
+        const query = debouncedSearchQuery.toLowerCase().trim();
+        filtered = filtered.filter(post => {
+          const title = (post.title || '').toLowerCase();
+          const content = (post.content || post.description || '').toLowerCase();
+          const location = (post.location || '').toLowerCase();
+          const tagsText = (post.tags || []).join(' ').toLowerCase();
+
+          return (
+            title.includes(query) ||
+            content.includes(query) ||
+            location.includes(query) ||
+            tagsText.includes(query)
+          );
+        });
+      }
+
+      setFilteredPosts(filtered);
+    };
+
+    filterPosts();
+  }, [posts, offlinePosts, isOffline, selectedTags, debouncedSearchQuery, isRefreshing]);
 
   return (
     <View style={styles.container}>
@@ -434,7 +440,7 @@ export default function Home() {
         onToggleTag={handleToggleTag}
       />
 
-      {loading && !refreshing ? (
+      {(loading || refreshing) ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0000ff" />
         </View>

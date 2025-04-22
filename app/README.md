@@ -1,6 +1,6 @@
 # Softwarescan
 
-![Version](https://img.shields.io/badge/version-2.9.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.9.5-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-18.x-green.svg)
 ![React Native](https://img.shields.io/badge/React%20Native-expo-61DBFB.svg)
@@ -8,6 +8,37 @@
 ## Visão Geral
 
 O **Softwarescan** é uma plataforma móvel avançada que permite aos usuários registrar interações georreferenciadas, visualizar posts com informações detalhadas e interagir com outros participantes. Desenvolvido com React Native e Expo, oferece uma experiência fluida e otimizada para dispositivos iOS e Android.
+
+## ✨ Novidades na versão 2.9.5
+
+### 🚀 Melhorias de Performance
+
+A versão 2.9.5 traz melhorias significativas na performance e estabilidade:
+
+- **Carregamento Otimizado**
+  - Carregamento inicial mais rápido das postagens
+  - Refresh aprimorado com transições suaves
+  - Sistema de cache inteligente para dados offline
+
+- **Interface Aprimorada**
+  - Cards de interação com visual moderno e intuitivo
+  - Badge "Recente" para postagens novas (últimos 2 dias)
+  - Botão "Ver Detalhes" para melhor navegação
+  - Processo de verificação de e-mail mais seguro
+
+- **Funcionalidades Estáveis**
+  - Captura de localização mais precisa e rápida
+  - Suporte offline aprimorado para localização
+  - Sistema de filtragem de tags mais confiável
+  - Correção de bugs na exibição de descrições
+
+### 🐛 Correções Importantes
+
+- Resolvido crash ao filtrar por tags
+- Melhorado comportamento do refresh
+- Corrigidos problemas de exibição de descrições
+- Aprimorada navegação entre postagens
+- Otimizado processo de verificação de e-mail
 
 ## ✨ Novidades na versão 2.9.0
 
