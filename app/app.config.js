@@ -40,7 +40,7 @@ export default {
       },
       adaptiveIcon: {
         foregroundImage: "./assets/images/scan-removebg-preview.png",
-        foregroundImageScale: 0.75,
+        foregroundImageScale: 0.5,
         backgroundColor: "#ffffff"
       }
     },

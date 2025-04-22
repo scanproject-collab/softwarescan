@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { validateToken } from "@/src/app/utils/ValidateAuth";
 import { useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
+import Toast from "react-native-toast-message";
 
 interface Tag {
   name: string;
@@ -153,6 +154,16 @@ export default function NewInteraction() {
         await checkConnection();
         if (!isMounted.current) return;
 
+        // Show toast for location loading
+        if (isMounted.current && isLocationLoading) {
+          Toast.show({
+            type: 'info',
+            text1: 'Carregando localização...',
+            position: 'bottom',
+            visibilityTime: 2000,
+          });
+        }
+
         // Carregamento de tags com tratamento de erros
         try {
           const cachedTags = await AsyncStorage.getItem("cachedTags");
@@ -192,8 +203,8 @@ export default function NewInteraction() {
 
             try {
               const currentTime = Date.now();
-              isRecentCache = cachedTimestamp &&
-                (currentTime - parseInt(cachedTimestamp)) < 5 * 60 * 1000;
+              isRecentCache = cachedTimestamp !== null &&
+                (currentTime - parseInt(cachedTimestamp || '0')) < 5 * 60 * 1000;
             } catch (error) {
               console.error("Erro ao verificar timestamp do cache:", error);
             }
@@ -673,16 +684,18 @@ export default function NewInteraction() {
     isLocationLoading, availableTags, router, status, handleSubmit]);
 
   return (
-    <FlatList
-      data={["title", "date", "time", "description", "tags", "location",
-        // Passar o item "map" apenas se tivermos coordenadas válidas ou estivermos carregando
-        ...(coords || isLocationLoading ? ["map"] : []),
-        "image", "buttons"]}
-      renderItem={renderItem}
-      keyExtractor={(item) => item}
-      contentContainerStyle={styles.container}
-      ListHeaderComponent={isLocationLoading ? <Text style={styles.loadingText}>Carregando localização...</Text> : null}
-    />
+    <>
+      <FlatList
+        data={["title", "date", "time", "description", "tags", "location",
+          // Passar o item "map" apenas se tivermos coordenadas válidas ou estivermos carregando
+          ...((coords !== null && coords !== undefined) || isLocationLoading ? ["map"] : []),
+          "image", "buttons"]}
+        renderItem={renderItem}
+        keyExtractor={(item) => item}
+        contentContainerStyle={styles.container}
+      />
+      <Toast />
+    </>
   );
 }
 

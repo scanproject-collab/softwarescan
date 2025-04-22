@@ -425,6 +425,7 @@ export default function Home() {
       <SearchBar
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        handleRefresh={handleRefresh}
       />
 
       <TagFilter
