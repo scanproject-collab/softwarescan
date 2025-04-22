@@ -38,11 +38,6 @@ export default {
           apiKey: process.env.EXPO_PUBLIC_GOOGLE_API_KEY
         }
       },
-      adaptiveIcon: {
-        foregroundImage: "./assets/images/scan-removebg-preview.png",
-        foregroundImageScale: 0.5,
-        backgroundColor: "#ffffff"
-      }
     },
     web: {
       bundler: 'metro',
@@ -61,7 +56,7 @@ export default {
         'expo-splash-screen',
         {
           image: './assets/images/scan-removebg-preview.png',
-          imageWidth: 150,
+          imageWidth: 200,
           resizeMode: 'contain',
           backgroundColor: '#ffffff',
         },
