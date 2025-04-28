@@ -11,6 +11,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import NotificationModal from './NotificationModal';
 
+
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -70,12 +71,20 @@ const Navbar: React.FC = () => {
                 Gerenciar Instituições
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => navigate('/managers')}
+                onClick={() => navigate('/operators')}
                 className="cursor-pointer hover:bg-gray-100"
               >
-                Gerenciar Gerentes
+                Gerenciar Operadores
               </DropdownMenuItem>
             </>
+          )}
+          {user?.role === "ADMIN" && (
+            <DropdownMenuItem
+            onClick={() => navigate('/managers')}
+            className="cursor-pointer hover:bg-gray-100"
+            >
+              Gerenciar Gerentes
+            </DropdownMenuItem>
           )}
           <DropdownMenuItem
             onClick={() => navigate('/polygons')}

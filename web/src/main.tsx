@@ -16,6 +16,7 @@ import PasswordResetScreen from './pages/auth/passwordResetScreen';
 import UserProfileAdmin from './components/UserProfileAdmin';
 import PolygonManagement from './pages/PolygonManagement.tsx';
 import ProfileManager from './pages/manager/ProfileManager';
+import OperatorManagement from './pages/OperatorManagement.tsx';
 import 'leaflet/dist/leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -27,7 +28,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<App />} />
           <Route path="/tags" element={<TagManagement />} />
           <Route path="/institutions" element={<InstitutionManagement />} /> 
-          <Route path="/managers" element={<ManagerManagement />} /> {/* New route for manager management */}
+          <Route path="/managers" element={<ManagerManagement />} />
           <Route path="/admin/profile" element={<ProfileAdmin />} />
           <Route path="/manager/profile" element={<ProfileManager />} />
           <Route path="/admin/update" element={<UpdateAdmin />} />
@@ -37,6 +38,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/recovery/verify-code" element={<PasswordResetCodeVerificationScreen />} />
           <Route path="/recovery/reset" element={<PasswordResetScreen />} />
           <Route path="/user/:userId" element={<UserProfileAdmin />} />
+          <Route path="/operators" element={<OperatorManagement />} />
         </Routes>
       </Router>
     </StrictMode>

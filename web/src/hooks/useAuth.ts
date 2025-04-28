@@ -73,5 +73,11 @@ export const useAuth = () => {
     }
   };
 
-  return { token, setAuthToken, user, verifyToken };
+  // Adiciona função para atualizar os dados do usuário
+  const updateUserData = (userData: User) => {
+    setUser(userData);
+    localStorage.setItem("userData", JSON.stringify(userData));
+  };
+
+  return { token, setAuthToken, user, verifyToken, updateUserData };
 };
