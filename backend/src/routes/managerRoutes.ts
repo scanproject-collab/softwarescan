@@ -7,6 +7,9 @@ import {
     listPostsForManager,
     deletePostForManager,
     listNotificationsForManager,
+    getOperatorDetails,
+    updateOperator,
+    deleteOperator,
 } from '../controllers/managerController';
 import { authMiddleware, roleMiddleware } from '../middlewares/authMiddleware';
 
@@ -19,5 +22,10 @@ router.delete('/reject-operator/:operatorId', authMiddleware, roleMiddleware(['M
 router.get('/listAllPosts', authMiddleware, roleMiddleware(['MANAGER']), listPostsForManager);
 router.delete('/posts/:postId', authMiddleware, roleMiddleware(['MANAGER']), deletePostForManager);
 router.get('/notifications', authMiddleware, roleMiddleware(['MANAGER']), listNotificationsForManager);
+
+// Rotas para gerenciamento de operadores
+router.get('/operators/:operatorId', authMiddleware, roleMiddleware(['MANAGER']), getOperatorDetails);
+router.put('/operators/:operatorId', authMiddleware, roleMiddleware(['MANAGER']), updateOperator);
+router.delete('/operators/:operatorId', authMiddleware, roleMiddleware(['MANAGER']), deleteOperator);
 
 export default router;

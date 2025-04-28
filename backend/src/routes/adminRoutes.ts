@@ -1,5 +1,20 @@
 import { Router, Response, NextFunction } from 'express';
-import { listAllOperators, deleteOperatorByAdmin, listPendingOperators, approveOperator, rejectOperator, updateAdminAccount, listNotifications, deleteExpiredOperators, listAllManagers, createManager, updateManagerInstitution, deleteManager } from '../controllers/adminController';
+import { 
+    listAllOperators, 
+    deleteOperatorByAdmin, 
+    listPendingOperators, 
+    approveOperator, 
+    rejectOperator, 
+    updateAdminAccount, 
+    listNotifications, 
+    deleteExpiredOperators, 
+    listAllManagers, 
+    createManager, 
+    updateManagerInstitution, 
+    deleteManager,
+    getOperatorDetailsByAdmin,
+    updateOperatorByAdmin
+} from '../controllers/adminController';
 import { authMiddleware, roleMiddleware } from '../middlewares/authMiddleware';
 import { CustomRequest } from '../middlewares/authMiddleware';
 import { listAllPosts } from "../controllers/postController";
@@ -48,6 +63,11 @@ router.delete(
 router.get('/pending-operators', authMiddleware, roleMiddleware(['ADMIN']), listPendingOperators);
 router.post('/approve-operator/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), approveOperator);
 router.delete('/reject-operator/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), rejectOperator);
+
+// Rotas para gerenciamento detalhado de operadores
+router.get('/operators/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), getOperatorDetailsByAdmin);
+router.put('/operators/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), updateOperatorByAdmin);
+
 router.get('/listAllPosts', authMiddleware, roleMiddleware(['ADMIN']), listAllPosts);
 router.get('/notifications', authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), listNotifications);
 

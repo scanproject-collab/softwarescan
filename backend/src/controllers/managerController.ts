@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { sendWelcomeEmail, sendRejectionEmail } from '../services/mailer';
 import { sendOneSignalNotification } from '../services/oneSignalNotification';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -357,5 +358,200 @@ export const listNotificationsForManager = async (req: RequestWithUser, res: Res
     });
   } catch (error) {
     res.status(400).json({ message: 'Error listing notifications: ' + (error as any).message });
+  }
+};
+
+export const getOperatorDetails = async (req: RequestWithUser, res: Response) => {
+  const { operatorId } = req.params;
+
+  if (!req.user?.institutionId) {
+    return res.status(400).json({ message: 'Manager must belong to an institution' });
+  }
+
+  try {
+    const operator = await prisma.user.findFirst({
+      where: {
+        id: operatorId,
+        role: 'OPERATOR',
+        institutionId: req.user.institutionId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isPending: true,
+        createdAt: true,
+        institution: {
+          select: { title: true },
+        },
+      },
+    });
+
+    if (!operator) {
+      return res.status(404).json({ message: 'Operador não encontrado ou não pertence à sua instituição' });
+    }
+
+    // Buscar posts do operador
+    const posts = await prisma.post.findMany({
+      where: {
+        authorId: operatorId,
+      },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
+        ranking: true,
+      },
+    });
+
+    res.status(200).json({
+      message: 'Detalhes do operador obtidos com sucesso',
+      operator: {
+        id: operator.id,
+        name: operator.name || 'Unnamed',
+        email: operator.email,
+        isPending: operator.isPending,
+        institution: operator.institution?.title || 'Unassigned',
+        createdAt: operator.createdAt?.toISOString() ?? new Date().toISOString(),
+        postsCount: posts.length,
+      },
+      posts: posts.map(post => ({
+        id: post.id,
+        title: post.title,
+        createdAt: post.createdAt.toISOString(),
+        ranking: post.ranking,
+      })),
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Erro ao buscar detalhes do operador: ' + (error as any).message });
+  }
+};
+
+export const updateOperator = async (req: RequestWithUser, res: Response) => {
+  const { operatorId } = req.params;
+  const { name, email, password, isActive } = req.body;
+
+  if (!req.user?.institutionId) {
+    return res.status(400).json({ message: 'Manager must belong to an institution' });
+  }
+
+  try {
+    // Verificar se o operador existe e pertence à instituição do manager
+    const operator = await prisma.user.findFirst({
+      where: {
+        id: operatorId,
+        role: 'OPERATOR',
+        institutionId: req.user.institutionId,
+      },
+    });
+
+    if (!operator) {
+      return res.status(404).json({ message: 'Operador não encontrado ou não pertence à sua instituição' });
+    }
+
+    // Verificar se o email está sendo alterado e não está em uso
+    if (email && email !== operator.email) {
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Este email já está em uso' });
+      }
+    }
+
+    // Preparar dados para atualização
+    const updateData: any = {};
+    
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateData.password = hashedPassword;
+    }
+    if (isActive !== undefined) {
+      updateData.isPending = !isActive;
+    }
+
+    // Atualizar operador
+    const updatedOperator = await prisma.user.update({
+      where: { id: operatorId },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isPending: true,
+        institution: {
+          select: { title: true },
+        },
+      },
+    });
+
+    // Criar notificação para o operador
+    await prisma.notification.create({
+      data: {
+        type: 'profile_updated',
+        message: `Seu perfil foi atualizado pelo gerente.`,
+        userId: operatorId,
+      },
+    });
+
+    res.status(200).json({
+      message: 'Operador atualizado com sucesso',
+      operator: {
+        id: updatedOperator.id,
+        name: updatedOperator.name || 'Unnamed',
+        email: updatedOperator.email,
+        isActive: !updatedOperator.isPending,
+        institution: updatedOperator.institution?.title || 'Unassigned',
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Erro ao atualizar operador: ' + (error as any).message });
+  }
+};
+
+export const deleteOperator = async (req: RequestWithUser, res: Response) => {
+  const { operatorId } = req.params;
+
+  if (!req.user?.institutionId) {
+    return res.status(400).json({ message: 'Manager must belong to an institution' });
+  }
+
+  try {
+    // Verificar se o operador existe e pertence à instituição do manager
+    const operator = await prisma.user.findFirst({
+      where: {
+        id: operatorId,
+        role: 'OPERATOR',
+        institutionId: req.user.institutionId,
+      },
+    });
+
+    if (!operator) {
+      return res.status(404).json({ message: 'Operador não encontrado ou não pertence à sua instituição' });
+    }
+
+    // Verificar se há posts do operador
+    const postsCount = await prisma.post.count({
+      where: { authorId: operatorId },
+    });
+
+    // Excluir posts do operador (opcional, dependendo da regra de negócios)
+    if (postsCount > 0) {
+      await prisma.post.deleteMany({
+        where: { authorId: operatorId },
+      });
+    }
+
+    // Excluir o operador
+    await prisma.user.delete({
+      where: { id: operatorId },
+    });
+
+    res.status(200).json({ 
+      message: 'Operador excluído com sucesso',
+      deletedPostsCount: postsCount
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Erro ao excluir operador: ' + (error as any).message });
   }
 };

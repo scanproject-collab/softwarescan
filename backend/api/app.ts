@@ -93,8 +93,8 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // Start the server
-const server = app.listen(3000, () => {
-  console.log("Server is running on port 3000");
-});
-
+app.listen(3000, function(err){
+  if (err) console.log("Error in server setup")
+  console.log("Server listening on Port");
+})
 export default app;

@@ -576,3 +576,162 @@ export const deleteManager = async (req: Request, res: Response) => {
     res.status(400).json({ message: 'Error deleting manager: ' + (error as any).message });
   }
 };
+
+export const getOperatorDetailsByAdmin = async (req: Request, res: Response) => {
+  const { operatorId } = req.params;
+
+  try {
+    const operator = await prisma.user.findFirst({
+      where: {
+        id: operatorId,
+        role: 'OPERATOR',
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isPending: true,
+        createdAt: true,
+        institution: {
+          select: { id: true, title: true },
+        },
+      },
+    });
+
+    if (!operator) {
+      return res.status(404).json({ message: 'Operador não encontrado' });
+    }
+
+    // Buscar posts do operador
+    const posts = await prisma.post.findMany({
+      where: {
+        authorId: operatorId,
+      },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
+        ranking: true,
+      },
+    });
+
+    res.status(200).json({
+      message: 'Detalhes do operador obtidos com sucesso',
+      operator: {
+        id: operator.id,
+        name: operator.name || 'Unnamed',
+        email: operator.email,
+        isPending: operator.isPending,
+        institution: operator.institution ? { 
+          id: operator.institution.id, 
+          title: operator.institution.title 
+        } : 'Unassigned',
+        createdAt: operator.createdAt?.toISOString() ?? new Date().toISOString(),
+        postsCount: posts.length,
+      },
+      posts: posts.map(post => ({
+        id: post.id,
+        title: post.title,
+        createdAt: post.createdAt.toISOString(),
+        ranking: post.ranking,
+      })),
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Erro ao buscar detalhes do operador: ' + (error as any).message });
+  }
+};
+
+export const updateOperatorByAdmin = async (req: Request, res: Response) => {
+  const { operatorId } = req.params;
+  const { name, email, password, institutionId, isActive } = req.body;
+
+  try {
+    // Verificar se o operador existe
+    const operator = await prisma.user.findFirst({
+      where: {
+        id: operatorId,
+        role: 'OPERATOR',
+      },
+    });
+
+    if (!operator) {
+      return res.status(404).json({ message: 'Operador não encontrado' });
+    }
+
+    // Verificar se o email está sendo alterado e não está em uso
+    if (email && email !== operator.email) {
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Este email já está em uso' });
+      }
+    }
+
+    // Verificar se a instituição existe, se fornecida
+    if (institutionId) {
+      const institution = await prisma.institution.findUnique({
+        where: { id: institutionId },
+      });
+      if (!institution) {
+        return res.status(400).json({ message: 'Instituição não encontrada' });
+      }
+    }
+
+    // Preparar dados para atualização
+    const updateData: any = {};
+    
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateData.password = hashedPassword;
+    }
+    if (isActive !== undefined) {
+      updateData.isPending = !isActive;
+    }
+    if (institutionId !== undefined) {
+      updateData.institutionId = institutionId;
+    }
+
+    // Atualizar operador
+    const updatedOperator = await prisma.user.update({
+      where: { id: operatorId },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isPending: true,
+        institutionId: true,
+        institution: {
+          select: { id: true, title: true },
+        },
+      },
+    });
+
+    // Criar notificação para o operador
+    await prisma.notification.create({
+      data: {
+        type: 'profile_updated',
+        message: `Seu perfil foi atualizado pelo administrador.`,
+        userId: operatorId,
+      },
+    });
+
+    res.status(200).json({
+      message: 'Operador atualizado com sucesso',
+      operator: {
+        id: updatedOperator.id,
+        name: updatedOperator.name || 'Unnamed',
+        email: updatedOperator.email,
+        isActive: !updatedOperator.isPending,
+        institutionId: updatedOperator.institutionId,
+        institution: updatedOperator.institution ? { 
+          id: updatedOperator.institution.id, 
+          title: updatedOperator.institution.title 
+        } : null,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Erro ao atualizar operador: ' + (error as any).message });
+  }
+};

@@ -1,5 +1,5 @@
 import { Router, Request, Response, RequestHandler } from 'express';
-import { registerController, loginController, verifyResetCodeController, verifyTokenController } from '../controllers/authController';
+import { registerController, loginController, verifyResetCodeController, verifyTokenController, updateUserProfileController } from '../controllers/authController';
 import { generateResetPasswordCode, resetPassword } from '../services/authService';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import crypto from 'crypto';
@@ -193,5 +193,8 @@ router.post('/password-recovery/reset', (async (req: Request, res: Response) => 
 }) as RequestHandler);
 
 router.get('/verify-token', authMiddleware, verifyTokenController);
+
+// Rota para atualizar o perfil do usuário
+router.put('/update-profile', authMiddleware, updateUserProfileController);
 
 export default router;
