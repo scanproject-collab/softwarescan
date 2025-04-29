@@ -103,21 +103,30 @@ export const loginUser = async (email: string, password: string) => {
       throw new Error('Invalid password');
     }
 
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        lastLoginDate: new Date()
+      },
+      include: { institution: true }
+    });
+
     const token = jwt.sign(
       {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        institutionId: user.institutionId,
-        createdAt: user.createdAt,
-        institution: user.institution ? { title: user.institution.title } : null,
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        institutionId: updatedUser.institutionId,
+        createdAt: updatedUser.createdAt,
+        lastLoginDate: updatedUser.lastLoginDate,
+        institution: updatedUser.institution ? { title: updatedUser.institution.title } : null,
       },
       JWT_SECRET,
       { expiresIn: '1d' }
     );
 
-    return { user, token };
+    return { user: updatedUser, token };
   } catch (error: any) {
     throw new Error(`Error logging in: ${error.message}`);
   }

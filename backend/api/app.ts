@@ -51,19 +51,21 @@ apiRouter.get("/api-reference", (_req: Request, res: Response) => {
   }
 });
 
-apiRouter.get("/google-maps-api-url", (_req: Request, res: Response) => {
+apiRouter.get("/google-maps-api-url", (_req: Request, res: Response): void => {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ message: "Google Maps API key not configured" });
+    res.status(500).json({ message: "Google Maps API key not configured" });
+    return;
   }
-  const url = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
+  const url = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,visualization`;
   res.json({ url });
 });
 
-apiRouter.post("/send-notification", async (req: Request, res: Response) => {
+apiRouter.post("/send-notification", async (req: Request, res: Response): Promise<void> => {
   const { playerId, title, body, data } = req.body;
   if (!playerId || !title || !body) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    res.status(400).json({ error: 'Missing required fields' });
+    return;
   }
   console.log('Sending notification to playerId:', playerId);
   try {
@@ -92,9 +94,4 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).send("Internal Server Error");
 });
 
-// Start the server
-app.listen(3000, function(err){
-  if (err) console.log("Error in server setup")
-  console.log("Server listening on Port");
-})
 export default app;

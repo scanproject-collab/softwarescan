@@ -177,13 +177,42 @@ export const deleteExpiredOperators = async () => {
   }
 };
 
-export const listAllOperators = async (_req: Request, res: Response) => {
+export const listAllOperators = async (req: Request, res: Response) => {
   try {
+    // Get pagination parameters from query
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    // Get filter parameters
+    const searchTerm = req.query.search as string || '';
+    const institutionId = req.query.institutionId as string || undefined;
+
+    // Build the filter object
+    const filter: any = {
+      role: 'OPERATOR',
+      isPending: false,
+    };
+
+    // Add search term filter if provided
+    if (searchTerm) {
+      filter.$or = [
+        { name: { $regex: searchTerm, $options: 'i' } },
+        { email: { $regex: searchTerm, $options: 'i' } }
+      ];
+    }
+
+    // Add institution filter if provided
+    if (institutionId) {
+      filter.institutionId = institutionId;
+    }
+
+    // Get the total count for pagination
+    const totalCount = await prisma.user.count({ where: filter });
+
+    // Execute the query with pagination
     const operators = await prisma.user.findMany({
-      where: {
-        role: 'OPERATOR',
-        isPending: false,
-      },
+      where: filter,
       select: {
         id: true,
         name: true,
@@ -191,6 +220,7 @@ export const listAllOperators = async (_req: Request, res: Response) => {
         institutionId: true,
         createdAt: true,
         updatedAt: true,
+        lastLoginDate: true,
         institution: {
           select: {
             id: true,
@@ -198,6 +228,9 @@ export const listAllOperators = async (_req: Request, res: Response) => {
           },
         },
       },
+      skip,
+      take: limit,
+      orderBy: { name: 'asc' }
     });
 
     const totalOperators = operators.length;
@@ -218,6 +251,12 @@ export const listAllOperators = async (_req: Request, res: Response) => {
 
     const response = {
       message: 'Operators listed successfully',
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        pages: Math.ceil(totalCount / limit)
+      },
       summary: {
         totalOperators,
         recentOperators,
@@ -238,6 +277,7 @@ export const listAllOperators = async (_req: Request, res: Response) => {
           : null,
         createdAt: op.createdAt?.toISOString() ?? new Date().toISOString(),
         updatedAt: op.updatedAt?.toISOString() ?? new Date().toISOString(),
+        lastLoginDate: op.lastLoginDate?.toISOString() ?? null,
       })),
     };
 
@@ -592,6 +632,7 @@ export const getOperatorDetailsByAdmin = async (req: Request, res: Response) => 
         email: true,
         isPending: true,
         createdAt: true,
+        lastLoginDate: true,
         institution: {
           select: { id: true, title: true },
         },
@@ -622,11 +663,12 @@ export const getOperatorDetailsByAdmin = async (req: Request, res: Response) => 
         name: operator.name || 'Unnamed',
         email: operator.email,
         isPending: operator.isPending,
-        institution: operator.institution ? { 
-          id: operator.institution.id, 
-          title: operator.institution.title 
+        institution: operator.institution ? {
+          id: operator.institution.id,
+          title: operator.institution.title
         } : 'Unassigned',
         createdAt: operator.createdAt?.toISOString() ?? new Date().toISOString(),
+        lastLoginDate: operator.lastLoginDate?.toISOString() ?? null,
         postsCount: posts.length,
       },
       posts: posts.map(post => ({
@@ -678,7 +720,7 @@ export const updateOperatorByAdmin = async (req: Request, res: Response) => {
 
     // Preparar dados para atualização
     const updateData: any = {};
-    
+
     if (name) updateData.name = name;
     if (email) updateData.email = email;
     if (password) {
@@ -725,9 +767,9 @@ export const updateOperatorByAdmin = async (req: Request, res: Response) => {
         email: updatedOperator.email,
         isActive: !updatedOperator.isPending,
         institutionId: updatedOperator.institutionId,
-        institution: updatedOperator.institution ? { 
-          id: updatedOperator.institution.id, 
-          title: updatedOperator.institution.title 
+        institution: updatedOperator.institution ? {
+          id: updatedOperator.institution.id,
+          title: updatedOperator.institution.title
         } : null,
       },
     });

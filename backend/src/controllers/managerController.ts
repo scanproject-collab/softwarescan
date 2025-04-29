@@ -16,21 +16,48 @@ export const listOperatorsForManager = async (req: RequestWithUser, res: Respons
   }
 
   try {
+    // Get pagination parameters from query
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    // Get filter parameters
+    const searchTerm = req.query.search as string || '';
+
+    // Build the filter object
+    const filter: any = {
+      role: 'OPERATOR',
+      institutionId: req.user.institutionId,
+      isPending: false,
+    };
+
+    // Add search term filter if provided
+    if (searchTerm) {
+      filter.$or = [
+        { name: { $regex: searchTerm, $options: 'i' } },
+        { email: { $regex: searchTerm, $options: 'i' } }
+      ];
+    }
+
+    // Get the total count for pagination
+    const totalCount = await prisma.user.count({ where: filter });
+
+    // Execute the query with pagination
     const operators = await prisma.user.findMany({
-      where: {
-        role: 'OPERATOR',
-        institutionId: req.user.institutionId,
-        isPending: false,
-      },
+      where: filter,
       select: {
         id: true,
         name: true,
         email: true,
         createdAt: true,
+        lastLoginDate: true,
         institution: {
           select: { title: true },
         },
       },
+      skip,
+      take: limit,
+      orderBy: { name: 'asc' }
     });
 
     const totalOperators = operators.length;
@@ -43,6 +70,12 @@ export const listOperatorsForManager = async (req: RequestWithUser, res: Respons
 
     const response = {
       message: 'Operators listed successfully',
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        pages: Math.ceil(totalCount / limit)
+      },
       summary: {
         totalOperators,
         recentOperators,
@@ -53,6 +86,7 @@ export const listOperatorsForManager = async (req: RequestWithUser, res: Respons
         email: op.email,
         institution: op.institution?.title || 'Unassigned',
         createdAt: op.createdAt?.toISOString() ?? new Date().toISOString(),
+        lastLoginDate: op.lastLoginDate?.toISOString() ?? null,
       })),
     };
 
@@ -362,11 +396,11 @@ export const listNotificationsForManager = async (req: RequestWithUser, res: Res
 };
 
 export const getOperatorDetails = async (req: RequestWithUser, res: Response) => {
-  const { operatorId } = req.params;
-
   if (!req.user?.institutionId) {
     return res.status(400).json({ message: 'Manager must belong to an institution' });
   }
+
+  const { operatorId } = req.params;
 
   try {
     const operator = await prisma.user.findFirst({
@@ -381,17 +415,14 @@ export const getOperatorDetails = async (req: RequestWithUser, res: Response) =>
         email: true,
         isPending: true,
         createdAt: true,
-        institution: {
-          select: { title: true },
-        },
+        lastLoginDate: true,
       },
     });
 
     if (!operator) {
-      return res.status(404).json({ message: 'Operador não encontrado ou não pertence à sua instituição' });
+      return res.status(404).json({ message: 'Operator not found' });
     }
 
-    // Buscar posts do operador
     const posts = await prisma.post.findMany({
       where: {
         authorId: operatorId,
@@ -405,14 +436,15 @@ export const getOperatorDetails = async (req: RequestWithUser, res: Response) =>
     });
 
     res.status(200).json({
-      message: 'Detalhes do operador obtidos com sucesso',
+      message: 'Operator details retrieved successfully',
       operator: {
         id: operator.id,
         name: operator.name || 'Unnamed',
         email: operator.email,
         isPending: operator.isPending,
-        institution: operator.institution?.title || 'Unassigned',
+        institution: req.user.institution?.title || 'Unassigned',
         createdAt: operator.createdAt?.toISOString() ?? new Date().toISOString(),
+        lastLoginDate: operator.lastLoginDate?.toISOString() ?? null,
         postsCount: posts.length,
       },
       posts: posts.map(post => ({
@@ -423,7 +455,7 @@ export const getOperatorDetails = async (req: RequestWithUser, res: Response) =>
       })),
     });
   } catch (error) {
-    res.status(400).json({ message: 'Erro ao buscar detalhes do operador: ' + (error as any).message });
+    res.status(400).json({ message: 'Error retrieving operator details: ' + (error as any).message });
   }
 };
 
@@ -459,7 +491,7 @@ export const updateOperator = async (req: RequestWithUser, res: Response) => {
 
     // Preparar dados para atualização
     const updateData: any = {};
-    
+
     if (name) updateData.name = name;
     if (email) updateData.email = email;
     if (password) {
@@ -547,7 +579,7 @@ export const deleteOperator = async (req: RequestWithUser, res: Response) => {
       where: { id: operatorId },
     });
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'Operador excluído com sucesso',
       deletedPostsCount: postsCount
     });
