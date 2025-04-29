@@ -40,11 +40,10 @@ const TagManagement: React.FC = () => {
     if (!token) return;
     try {
       setLoading(true);
-      const response = await api.get<TagResponse>("/tags", { 
+      const response = await api.get<TagResponse>("/tags", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const tagList = response.data.tags || [];
-      console.log("Fetched tags:", tagList); 
       setTags(tagList);
     } catch (err) {
       toast.error("Erro ao carregar tags.");
@@ -56,8 +55,8 @@ const TagManagement: React.FC = () => {
 
   useEffect(() => {
     fetchTags();
-    const interval = setInterval(fetchTags, 30000); 
-    return () => clearInterval(interval); 
+    const interval = setInterval(fetchTags, 30000);
+    return () => clearInterval(interval);
   }, [token]);
 
   const handleCreateTag = async () => {

@@ -49,6 +49,7 @@ const PolygonManagement: React.FC = () => {
     const [selectedPolygon, setSelectedPolygon] = useState<any | null>(null);
     const [isMapLoaded, setIsMapLoaded] = useState(false);
     const [drawingGuideVisible, setDrawingGuideVisible] = useState(false);
+    const [showHeatmap, setShowHeatmap] = useState(false); // Novo estado para controlar o heatmap
     const mapRef = useRef<google.maps.Map | null>(null);
 
     const basePath = user?.role === "MANAGER" ? "/manager" : "/admin";
@@ -59,7 +60,6 @@ const PolygonManagement: React.FC = () => {
                 const response = await api.get('/google-maps-api-url');
                 const url = response.data.url;
                 const apiKey = new URLSearchParams(new URL(url).search).get('key') || '';
-                // API key logging removed for security reasons
                 if (!url.includes('libraries=geometry')) {
                     console.error('A URL da API do Google Maps não inclui a biblioteca geometry:', url);
                     toast.error('Configuração da API do Google Maps inválida.');
@@ -83,7 +83,6 @@ const PolygonManagement: React.FC = () => {
                 });
                 setPosts(response.data.posts);
             } catch (error) {
-                // Properly type check the error before accessing message property
                 const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
                 console.error('Erro ao carregar posts:', errorMessage);
                 toast.error('Erro ao carregar posts. Verifique o console para mais detalhes.');
@@ -95,8 +94,6 @@ const PolygonManagement: React.FC = () => {
         const fetchPolygons = async () => {
             try {
                 setLoadingPolygons(true);
-                // Caso seja MANAGER, só buscar polígonos criados pelo próprio usuário ou
-                // polígonos associados à mesma instituição 
                 const response = await api.get('/polygons', {
                     headers: { Authorization: `Bearer ${token}` },
                     params: { role: user?.role, institutionId: user?.institutionId }
@@ -134,10 +131,8 @@ const PolygonManagement: React.FC = () => {
         return posts.filter((post) => {
             const postDate = new Date(post.createdAt);
 
-            // Melhorar a lógica de filtragem por data
             let matchesDateStart = true;
             if (filterDateStart) {
-                // Definir início do dia selecionado
                 const startDate = new Date(filterDateStart);
                 startDate.setHours(0, 0, 0, 0);
                 matchesDateStart = postDate >= startDate;
@@ -145,7 +140,6 @@ const PolygonManagement: React.FC = () => {
 
             let matchesDateEnd = true;
             if (filterDateEnd) {
-                // Definir fim do dia selecionado
                 const endDate = new Date(filterDateEnd);
                 endDate.setHours(23, 59, 59, 999);
                 matchesDateEnd = postDate <= endDate;
@@ -170,7 +164,6 @@ const PolygonManagement: React.FC = () => {
     }, [posts, filterDateStart, filterDateEnd, filterTag, selectedLocation, filterCoords]);
 
     useEffect(() => {
-        // Debug post data without exposing sensitive info
         const postsWithLocation = filteredPosts.filter(post =>
             post.latitude && post.longitude
         ).length;
@@ -179,11 +172,30 @@ const PolygonManagement: React.FC = () => {
         }
     }, [filteredPosts, posts.length]);
 
+    // Adicionando o HeatmapLayer
+    useEffect(() => {
+        if (isMapLoaded && mapRef.current && window.google.maps.visualization && showHeatmap) {
+            const heatmapData = filteredPosts
+                .filter(post => post.latitude && post.longitude)
+                .map(post => new window.google.maps.LatLng(post.latitude, post.longitude));
+
+            const heatmap = new window.google.maps.visualization.HeatmapLayer({
+                data: heatmapData,
+                map: mapRef.current,
+                radius: 20,
+                opacity: 0.6,
+            });
+
+            return () => {
+                heatmap.setMap(null);
+            };
+        }
+    }, [isMapLoaded, filteredPosts, showHeatmap]);
+
     useEffect(() => {
         if (isMapLoaded && mapRef.current && window.google?.maps?.geometry) {
             const newPostsInPolygons = new Map<string, any[]>();
 
-            // Fetch tag information to get weights
             const fetchTagWeights = async () => {
                 try {
                     const response = await api.get('/tags', {
@@ -191,7 +203,6 @@ const PolygonManagement: React.FC = () => {
                     });
                     const tagsWithWeights = response.data.tags;
 
-                    // Process each polygon
                     polygons.forEach((polygon) => {
                         const postsInPolygon = filteredPosts.filter((post) => {
                             if (!post.latitude || !post.longitude) return false;
@@ -200,19 +211,15 @@ const PolygonManagement: React.FC = () => {
                             return window.google.maps.geometry.poly.containsLocation(point, polygonPath);
                         });
 
-                        // Calculate total weight for each post based on its tags
                         const postsWithCalculatedWeights = postsInPolygon.map(post => {
-                            // Get the numeric weights of all tags in the post
                             const postTagWeights = (post.tags || []).map((tag: any) => {
                                 const tagName = typeof tag === 'string' ? tag : tag.name;
                                 const foundTag = tagsWithWeights.find((t: any) => t.name === tagName);
                                 return foundTag && foundTag.weight ? parseFloat(foundTag.weight) : 0;
                             });
 
-                            // Sum up the weights
                             const totalWeight = postTagWeights.reduce((sum: number, weight: number) => sum + weight, 0);
 
-                            // Determine ranking based on total weight
                             let ranking = 'Baixo';
                             if (totalWeight > 350) ranking = 'Alto';
                             else if (totalWeight > 250) ranking = 'Médio';
@@ -371,7 +378,6 @@ const PolygonManagement: React.FC = () => {
 
     const onMapLoad = (map: google.maps.Map) => {
         mapRef.current = map;
-        // console logging removed
     };
 
     const getMarkerIcon = (tag: string) => {
@@ -404,10 +410,8 @@ const PolygonManagement: React.FC = () => {
     const getPolygonRankingInfo = (polygonId: string) => {
         const postsInPolygon = postsInPolygons.get(polygonId) || [];
 
-        // Calculate total weight by summing weights of all posts
         const totalWeight = postsInPolygon.reduce((sum, post) => sum + (post.calculatedWeight || 0), 0);
 
-        // Determine overall ranking based on highest post ranking
         let ranking = 'Baixo';
         if (postsInPolygon.some(post => post.calculatedRanking === 'Alto')) {
             ranking = 'Alto';
@@ -418,7 +422,6 @@ const PolygonManagement: React.FC = () => {
         return { totalWeight, ranking, count: postsInPolygon.length };
     };
 
-    // Função para formatar a data em formato brasileiro
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
         const date = new Date(dateString);
@@ -466,7 +469,6 @@ const PolygonManagement: React.FC = () => {
                                             <span className="text-green-700">{filteredPosts.length}</span>
                                         </>
                                     )}
-
                                     {filteredPosts.filter(post => post.latitude && post.longitude).length !== filteredPosts.length && (
                                         <>
                                             <span className="mx-2">|</span>
@@ -475,7 +477,6 @@ const PolygonManagement: React.FC = () => {
                                         </>
                                     )}
                                 </div>
-
                                 {(filterDateStart || filterDateEnd || filterTag || selectedLocation) && (
                                     <div className="flex items-center gap-2">
                                         {(filterDateStart || filterDateEnd) && (
@@ -511,7 +512,7 @@ const PolygonManagement: React.FC = () => {
                             </div>
                             <LoadScript
                                 googleMapsApiKey={googleMapsApiKey}
-                                libraries={['geometry']}
+                                libraries={['geometry', 'visualization']} // Adicionado 'visualization' para o heatmap
                                 loadingElement={<MapLoader />}
                                 onLoad={() => {
                                     setIsMapLoaded(true);
@@ -632,7 +633,6 @@ const PolygonManagement: React.FC = () => {
                                             )}
                                             {drawing && currentPolygon.length > 0 && (
                                                 <>
-                                                    {/* Linha de conexão entre os pontos */}
                                                     <Polyline
                                                         path={currentPolygon}
                                                         options={{
@@ -641,8 +641,6 @@ const PolygonManagement: React.FC = () => {
                                                             strokeOpacity: 0.8,
                                                         }}
                                                     />
-
-                                                    {/* Polígono em construção */}
                                                     <GooglePolygon
                                                         paths={currentPolygon}
                                                         options={{
@@ -653,8 +651,6 @@ const PolygonManagement: React.FC = () => {
                                                             strokeOpacity: 0.5,
                                                         }}
                                                     />
-
-                                                    {/* Marcadores para cada ponto */}
                                                     {currentPolygon.map((point, index) => (
                                                         <Marker
                                                             key={`point-${index}`}
@@ -731,7 +727,6 @@ const PolygonManagement: React.FC = () => {
                                 </>
                             )}
                         </button>
-
                         <button
                             onClick={toggleDrawingGuide}
                             className="w-full flex items-center justify-center gap-2 bg-blue-100 text-blue-700 border border-blue-300 px-4 py-2 rounded-lg hover:bg-blue-200"
@@ -739,7 +734,6 @@ const PolygonManagement: React.FC = () => {
                             <Info className="h-4 w-4" />
                             <span>Como desenhar?</span>
                         </button>
-
                         {drawingGuideVisible && (
                             <div className="mt-2 p-3 bg-white rounded shadow-md text-sm">
                                 <h3 className="font-bold text-blue-800 mb-1">Como desenhar um polígono:</h3>
@@ -753,8 +747,24 @@ const PolygonManagement: React.FC = () => {
                                 <p className="mt-2 text-gray-600">Um polígono deve ter pelo menos 3 pontos para ser válido.</p>
                             </div>
                         )}
+                        {/* Botão para ativar/desativar o heatmap */}
+                        <button
+                            onClick={() => setShowHeatmap(!showHeatmap)}
+                            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white ${showHeatmap ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
+                        >
+                            {showHeatmap ? (
+                                <>
+                                    <X className="h-5 w-5" />
+                                    <span>Desativar Heatmap</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Check className="h-5 w-5" />
+                                    <span>Ativar Heatmap</span>
+                                </>
+                            )}
+                        </button>
                     </div>
-
                     <div className="mt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Gerenciar Locais</label>
                         <select
@@ -870,7 +880,8 @@ const PolygonManagement: React.FC = () => {
                             </button>
                             <button
                                 onClick={() => saveMap('jpg')}
-                                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-gray-700 to-gray-800 text-white py-3 px-4 rounded-lg shadow-md hover:from-gray-800 hover:to-gray-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-gray-7
+00 to-gray-800 text-white py-3 px-4 rounded-lg shadow-md hover:from-gray-800 hover:to-gray-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
                             >
                                 <Download className="w-5 h-5" />
                                 <span>JPG</span>

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import api from "../../services/api";
+import api from "../services/api";
 import toast from "react-hot-toast";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../hooks/useAuth";
 
 export const useDeleteInteractionModal = (setInteractions: (interactions: any[]) => void, interactions: any[]) => {
     const [isModalOpen, setIsModalOpen] = useState(false);

@@ -17,11 +17,12 @@ const UpdateAdminScreen = () => {
 
   const handleUpdate = async () => {
     if (password && password !== confirmPassword) {
-      toast.error("As senhas não coincidem.");
+      toast.error("As senhas não coincidem!");
       return;
     }
 
     setLoading(true);
+
     try {
       const updatedData: any = {};
 
@@ -29,18 +30,12 @@ const UpdateAdminScreen = () => {
       if (email) updatedData.email = email;
       if (password) updatedData.password = password;
 
-      console.log("Enviando dados para atualização:", updatedData);
-
-      const response = await api.put(`/admin/update`, updatedData);
-
-      console.log("Resposta da atualização:", response.data);
+      await api.put(`/admin/update`, updatedData);
 
       toast.success("Dados atualizados com sucesso!");
       navigate("/admin/profile");
     } catch (error: any) {
-      console.error("Erro ao atualizar administrador:", error.message);
-      toast.error("Erro ao atualizar dados. Tente novamente.");
-    } finally {
+      toast.error(error.response?.data?.message || "Erro ao atualizar dados!");
       setLoading(false);
     }
   };
@@ -105,16 +100,15 @@ const UpdateAdminScreen = () => {
           <button
             onClick={handleUpdate}
             disabled={loading}
-            className={`w-full rounded-md bg-blue-900 py-3 text-lg font-bold text-white transition-all duration-200 ${
-              loading ? "opacity-70" : "hover:opacity-90"
-            }`}
+            className={`w-full rounded-md bg-blue-900 py-3 text-lg font-bold text-white transition-all duration-200 ${loading ? "opacity-70" : "hover:opacity-90"
+              }`}
           >
             {loading ? "Atualizando..." : "Atualizar"}
           </button>
 
           <div className="mt-5 flex w-full justify-between">
             <button onClick={() => navigate("/admin/profile")} className="text-blue-900 hover:underline">
-            Voltar
+              Voltar
             </button>
           </div>
         </div>

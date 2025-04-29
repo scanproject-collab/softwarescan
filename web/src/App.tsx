@@ -5,14 +5,14 @@ import { Toaster, toast } from "react-hot-toast";
 import { useAuth } from "./hooks/useAuth";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import Modal from "react-modal";
-import { usePendingOperators } from "./components/admin/usePendingOperators";
-import { useInteractions } from "./components/admin/useInteractions";
-import { useInteractionFilters } from "./components/admin/useInteractionFilters";
-import { useDeleteInteractionModal } from "./components/admin/useDeleteInteractionModal";
-import { useMapModal } from "./components/admin/useMapModal";
+import { usePendingOperators } from "./components/usePendingOperators";
+import { useInteractions } from "./components/useInteractions";
+import { useInteractionFilters } from "./components/useInteractionFilters";
+import { useDeleteInteractionModal } from "./components/useDeleteInteractionModal";
+import { useMapModal } from "./components/useMapModal";
 import MapModal from "./components/MapModal";
 import { Interaction } from "./types/types"; 
-import TagFilterDropdown from "./components/admin/dropdownTagFilter";
+import TagFilterDropdown from "./components/dropdownTagFilter";
 import { ExportButton } from "./components/ExportDatasForExcel";
 
 Modal.setAppElement("#root");
@@ -132,8 +132,8 @@ const App: React.FC = () => {
 
   const getWeightBadgeColor = (weight: string | number | undefined) => {
     const weightValue = parseFloat(String(weight)) || 0;
-    if (weightValue >= 10) return "bg-red-500 text-white";
-    if (weightValue >= 5) return "bg-orange-500 text-white";
+    if (weightValue >= 350) return "bg-red-500 text-white";
+    if (weightValue >= 150) return "bg-orange-500 text-white";
     return "bg-yellow-500 text-black";
   };
 

@@ -23,11 +23,9 @@ export const useAuth = () => {
 
   const verifyToken = async (currentToken: string): Promise<boolean> => {
     try {
-      console.log("Verificando token:", currentToken);
-      const response = await api.get("/auth/verify-token", {
+      await api.get("/auth/verify-token", {
         headers: { Authorization: `Bearer ${currentToken}` },
       });
-      console.log("Resposta do verifyToken:", response.data);
       return true;
     } catch (error) {
       console.error("Erro ao verificar token:", error);
@@ -36,27 +34,22 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
-    console.log("Token atualizado:", token);
     if (!token) {
-      console.log("Nenhum token encontrado, redirecionando para /login...");
       setUser(null);
       navigate("/login");
     }
   }, [token, navigate]);
 
   const setAuthToken = async (newToken: string | null, userData?: User) => {
-    console.log("setAuthToken chamado com:", { newToken, userData });
     if (newToken) {
       localStorage.setItem("userToken", newToken);
       if (userData) {
-        console.log("Definindo user inicial com:", userData);
         setUser(userData); // Define o user com os dados completos do login
         localStorage.setItem("userData", JSON.stringify(userData));
       }
       setToken(newToken);
 
       const isValid = await verifyToken(newToken);
-      console.log("Token verificado com sucesso?", isValid);
       if (!isValid) {
         localStorage.removeItem("userToken");
         localStorage.removeItem("userData");

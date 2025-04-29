@@ -18,9 +18,7 @@ const Navbar: React.FC = () => {
   const { setAuthToken, user } = useAuth();
 
   const handleLogout = () => {
-    console.log('Tentando fazer logout...');
     setAuthToken(null);
-    console.log('Logout iniciado, redirecionamento será gerenciado pelo useAuth');
   };
 
   const handleHomeClick = () => {
@@ -80,8 +78,8 @@ const Navbar: React.FC = () => {
           )}
           {user?.role === "ADMIN" && (
             <DropdownMenuItem
-            onClick={() => navigate('/managers')}
-            className="cursor-pointer hover:bg-gray-100"
+              onClick={() => navigate('/managers')}
+              className="cursor-pointer hover:bg-gray-100"
             >
               Gerenciar Gerentes
             </DropdownMenuItem>

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import api from "../../services/api";
-import { useAuth } from "../../hooks/useAuth";
-import { Interaction } from "../../types/types"; 
+import api from "../services/api";
+import { useAuth } from "../hooks/useAuth";
+import { Interaction } from "../types/types"; 
 
 export const useInteractionFilters = (interactions: Interaction[]) => {
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -12,7 +12,6 @@ export const useInteractionFilters = (interactions: Interaction[]) => {
   const [usersInInstitution, setUsersInInstitution] = useState<any[]>([]);
   const [uniqueInstitutions, setUniqueInstitutions] = useState<any[]>([]);
   const { token, user } = useAuth();
-
 
   const fetchInstitutions = async () => {
     if (!token || user?.role !== "ADMIN") return;
@@ -57,7 +56,7 @@ export const useInteractionFilters = (interactions: Interaction[]) => {
       const matchesAuthor =
         interaction.author.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
       const matchesTags =
-      selectedTags.length === 0 || (Array.isArray(interaction.tags) && interaction.tags.some(tag => selectedTags.includes(tag)));
+        selectedTags.length === 0 || (Array.isArray(interaction.tags) && interaction.tags.some(tag => selectedTags.includes(tag)));
       const matchesRanking = !selectedRanking || interaction.ranking === selectedRanking;
       const matchesInstitution =
         !selectedInstitution || interaction.author.institution?.id === selectedInstitution;
@@ -83,11 +82,10 @@ export const useInteractionFilters = (interactions: Interaction[]) => {
     return filtered;
   }, [interactions, searchTerm, selectedTags, selectedRanking, selectedInstitution, selectedUser]);
 
-    const uniqueTags = useMemo(() => {
-      const allTags = ["Todas as tags", ...new Set((interactions ?? []).flatMap((interaction) => interaction.tags || []))];
-      return allTags;
-    }, [interactions]);
-    
+  const uniqueTags = useMemo(() => {
+    const allTags = ["Todas as tags", ...new Set((interactions ?? []).flatMap((interaction) => interaction.tags || []))];
+    return allTags;
+  }, [interactions]);
 
   const uniqueRankings = useMemo(() => {
     return [...new Set(interactions.map((interaction) => interaction.ranking || ""))];
