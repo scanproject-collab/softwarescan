@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTrigger } from './ui/dialog.tsx';
-import api from '../services/api';
+import api from '../shared/services/api';
 import { Bell, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.ts';
 

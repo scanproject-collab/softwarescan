@@ -1,45 +1,127 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import './index.css';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import App from './App';
-import Login from './pages/auth/LoginScreen';
-import UpdateAdmin from './pages/admin/UpdateAdmin';
-import ProfileAdmin from './pages/admin/ProfileAdmin';
-import TagManagement from "./pages/admin/TagManagement";
-import InstitutionManagement from "./pages/admin/InstitutionManagement"; 
-import ManagerManagement from "./pages/admin/ManagerManagement"; // Import the new component
-import PasswordRecoveryRequestScreen from './pages/auth/PasswordRecoveryRequestScreen';
-import PasswordRecoverySuccessScreen from './pages/auth/passwordRecoverySuccessScreen';
-import PasswordResetCodeVerificationScreen from './pages/auth/passwordResetCodeVerificationScreen';
-import PasswordResetScreen from './pages/auth/passwordResetScreen';
-import UserProfileAdmin from './components/UserProfileAdmin';
-import PolygonManagement from './pages/PolygonManagement.tsx';
-import ProfileManager from './pages/manager/ProfileManager';
-import OperatorManagement from './pages/OperatorManagement.tsx';
 import 'leaflet/dist/leaflet';
 import 'leaflet/dist/leaflet.css';
 
-createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<App />} />
-          <Route path="/tags" element={<TagManagement />} />
-          <Route path="/institutions" element={<InstitutionManagement />} /> 
-          <Route path="/managers" element={<ManagerManagement />} />
-          <Route path="/admin/profile" element={<ProfileAdmin />} />
-          <Route path="/manager/profile" element={<ProfileManager />} />
-          <Route path="/admin/update" element={<UpdateAdmin />} />
-          <Route path="/polygons" element={<PolygonManagement />} />
-          <Route path="/recovery" element={<PasswordRecoveryRequestScreen />} />
-          <Route path="/recovery/success" element={<PasswordRecoverySuccessScreen />} />
-          <Route path="/recovery/verify-code" element={<PasswordResetCodeVerificationScreen />} />
-          <Route path="/recovery/reset" element={<PasswordResetScreen />} />
-          <Route path="/user/:userId" element={<UserProfileAdmin />} />
-          <Route path="/operators" element={<OperatorManagement />} />
-        </Routes>
-      </Router>
-    </StrictMode>
+// Pages
+import LoginPage from './pages/auth/LoginPage';
+import PasswordRecoveryPage from './pages/auth/PasswordRecoveryPage';
+import PasswordRecoverySuccessPage from './pages/auth/PasswordRecoverySuccessPage';
+import PasswordResetCodeVerificationPage from './pages/auth/PasswordResetCodeVerificationPage';
+import PasswordResetPage from './pages/auth/PasswordResetPage';
+import ProfileAdminPage from './pages/admin/ProfileAdmin';
+import UpdateAdminPage from './pages/admin/UpdateAdmin';
+import TagManagementPage from './pages/admin/TagManagementPage';
+import InstitutionManagementPage from './pages/admin/InstitutionManagement';
+import ManagerManagementPage from './pages/admin/ManagerManagement';
+import ProfileManagerPage from './pages/manager/ProfileManager';
+import PolygonManagementPage from './pages/PolygonManagementPage';
+import OperatorManagementPage from './pages/OperatorManagementPage';
+import NotFoundPage from './pages/NotFoundPage';
+
+// Features
+import { ProtectedRoute } from './shared/components/ProtectedRoute';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <Toaster position="top-right" />
+      <Routes>
+        {/* Rotas Públicas */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/recovery" element={<PasswordRecoveryPage />} />
+        <Route path="/recovery/success" element={<PasswordRecoverySuccessPage />} />
+        <Route path="/verify-code" element={<PasswordResetCodeVerificationPage />} />
+        <Route path="/reset-password/:code" element={<PasswordResetPage />} />
+
+        {/* Home - Dashboard */}
+        <Route path="/" element={<App />} />
+
+        {/* Rotas de Admin */}
+        <Route
+          path="/admin/profile"
+          element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <ProfileAdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/update"
+          element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <UpdateAdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tags"
+          element={
+            <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
+              <TagManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/institutions"
+          element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <InstitutionManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/managers"
+          element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <ManagerManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/operators"
+          element={
+            <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
+              <OperatorManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/polygons"
+          element={
+            <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
+              <PolygonManagementPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Rotas de Manager */}
+        <Route
+          path="/manager/profile"
+          element={
+            <ProtectedRoute roles={['MANAGER']}>
+              <ProfileManagerPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* User Profile route */}
+        <Route
+          path="/user/:userId"
+          element={
+            <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
+              <div>User Profile Page</div>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Rota 404 */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </BrowserRouter>
+  </React.StrictMode>
 );

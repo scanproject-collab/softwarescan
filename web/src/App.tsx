@@ -1,19 +1,80 @@
 import { useEffect, useState } from "react";
-import Navbar from "./components/Navbar";
-import { CheckCircle, XCircle, Trash2, RefreshCw, Loader2, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Toaster, toast } from "react-hot-toast";
-import { useAuth } from "./hooks/useAuth";
-import { useNavigate, useLocation, Link } from "react-router-dom";
 import Modal from "react-modal";
-import { usePendingOperators } from "./components/usePendingOperators";
-import { useInteractions } from "./components/useInteractions";
-import { useInteractionFilters } from "./components/useInteractionFilters";
-import { useDeleteInteractionModal } from "./components/useDeleteInteractionModal";
-import { useMapModal } from "./components/useMapModal";
-import MapModal from "./components/MapModal";
-import { Interaction } from "./types/types"; 
-import TagFilterDropdown from "./components/dropdownTagFilter";
-import { ExportButton } from "./components/ExportDatasForExcel";
+import { CheckCircle, XCircle, Trash2, RefreshCw, Loader2, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+
+// Components
+import Navbar from "./features/common/components/Navbar";
+import TagFilterDropdown from "./features/tags/components/TagFilterDropdown";
+import MapModal from "./features/maps/components/MapModal";
+
+// Custom hooks
+import { useAuth } from "./hooks/useAuth";
+import { useMapModal } from "./features/maps/hooks/useMapModal";
+
+// Types
+import { Interaction } from "./features/interactions/types/interactions";
+
+// Mocks and placeholders
+// These would be replaced with actual implementations from your features directory
+const usePendingOperators = () => {
+  return {
+    pendingOperators: [],
+    error: null,
+    handleApproveOperator: (id: string) => { },
+    handleRejectOperator: (id: string) => { },
+  };
+};
+
+const useInteractions = () => {
+  return {
+    interactions: [],
+    loading: false,
+    error: null,
+    handleRefresh: () => { },
+    setInteractions: (interactions: any) => { },
+  };
+};
+
+const useInteractionFilters = (interactions: any) => {
+  return {
+    searchTerm: "",
+    setSearchTerm: (term: string) => { },
+    selectedTags: [],
+    setSelectedTags: (tags: string[]) => { },
+    selectedRanking: null,
+    setSelectedRanking: (ranking: string | null) => { },
+    selectedInstitution: null,
+    setSelectedInstitution: (institution: string | null) => { },
+    selectedUser: null,
+    setSelectedUser: (user: string | null) => { },
+    usersInInstitution: [],
+    filteredInteractions: [],
+    uniqueTags: [],
+    uniqueRankings: [],
+    uniqueInstitutions: [],
+  };
+};
+
+const useDeleteInteractionModal = (setInteractions: any, interactions: any) => {
+  return {
+    isModalOpen: false,
+    openDeleteModal: (id: string) => { },
+    closeDeleteModal: () => { },
+    handleDeleteInteraction: () => { },
+  };
+};
+
+const ExportButton = ({ interactions, disabled }: { interactions: any; disabled?: boolean }) => (
+  <button
+    className="flex items-center gap-2 rounded bg-green-600 px-3 py-2 text-white hover:bg-green-700"
+    disabled={disabled}
+  >
+    <RefreshCw className="h-4 w-4" />
+    Exportar
+  </button>
+);
 
 Modal.setAppElement("#root");
 
@@ -28,20 +89,6 @@ const App: React.FC = () => {
       navigate("/login");
     }
   }, [token, pathname, navigate]);
-
-  const toggleTagSelection = (tag: string) => {
-    if (tag === "Todas as tags") {
-      if (selectedTags.length === uniqueTags.length) {
-        setSelectedTags([]);
-      } else {
-        setSelectedTags(uniqueTags);
-      }
-    } else {
-      setSelectedTags((prevTags) =>
-        prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]
-      );
-    }
-  };
 
   const {
     pendingOperators,
@@ -76,10 +123,30 @@ const App: React.FC = () => {
     uniqueInstitutions,
   } = useInteractionFilters(interactions);
 
+  const toggleTagSelection = (tag: string) => {
+    if (tag === "Todas as tags") {
+      if (selectedTags.length === uniqueTags.length) {
+        setSelectedTags([]);
+      } else {
+        setSelectedTags(uniqueTags);
+      }
+    } else {
+      const updateTags = (prevTags: string[]): string[] => {
+        return prevTags.includes(tag)
+          ? prevTags.filter((t: string) => t !== tag)
+          : [...prevTags, tag];
+      };
+
+      setSelectedTags(updateTags(selectedTags));
+    }
+  };
+
   // Reset to first page when filters change
+  const [currentPage, setCurrentPage] = useState(1);
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedTags, selectedInstitution, selectedRanking, searchTerm, selectedUser]);
+
   const {
     isModalOpen,
     openDeleteModal,
@@ -93,9 +160,8 @@ const App: React.FC = () => {
     openMapModal,
     closeMapModal,
   } = useMapModal();
-  
+
   // Pagination state and handlers
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
   const totalPages = Math.ceil(filteredInteractions.length / itemsPerPage);
 
@@ -114,6 +180,7 @@ const App: React.FC = () => {
       toast.error("Não há mais páginas disponíveis");
     }
   };
+
   if (loading) {
     return (
       <div className="p-6 flex justify-center items-center min-h-screen">
@@ -156,9 +223,9 @@ const App: React.FC = () => {
               <h2 className="text-lg font-semibold">Vínculos</h2>
             </div>
             <div className="mb-4 flex items-center gap-2 rounded bg-blue-50 p-3">
-            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-gray-300 text-gray-700 font-bold">
-              {user?.name?.charAt(0)?.toUpperCase() || "G"}
-            </div>
+              <div className="h-10 w-10 flex items-center justify-center rounded-full bg-gray-300 text-gray-700 font-bold">
+                {user?.name?.charAt(0)?.toUpperCase() || "G"}
+              </div>
               <div>
                 <p className="font-medium">{user?.name || "Gestor"}</p>
                 <p className="text-sm text-gray-600">{user?.institution?.title || "DINT PMAL"}</p>
@@ -166,7 +233,7 @@ const App: React.FC = () => {
             </div>
             <div>
               <h3 className="mb-2 font-semibold">Aprovações pendentes</h3>
-              {pendingOperators.map((operator) => (
+              {pendingOperators.map((operator: any) => (
                 <div
                   key={operator.id}
                   className="mb-2 flex items-center justify-between rounded bg-gray-50 p-3"
@@ -224,7 +291,7 @@ const App: React.FC = () => {
                 className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
               >
                 <option value="">Todas as Prioridades</option>
-                {uniqueRankings.map((ranking) => (
+                {uniqueRankings.map((ranking: any) => (
                   <option key={ranking} value={ranking}>
                     {ranking}
                   </option>
@@ -238,7 +305,7 @@ const App: React.FC = () => {
                     className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
                   >
                     <option value="">Todas as Instituições</option>
-                    
+
                     {uniqueInstitutions.map((institution: any) => (
                       <option key={institution.id} value={institution.id}>
                         {institution.title}
@@ -252,18 +319,18 @@ const App: React.FC = () => {
                       className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
                     >
                       <option value="">Todos os Usuários</option>
-                      {usersInInstitution.map((user) => (
+                      {usersInInstitution.map((user: any) => (
                         <option key={user.id} value={user.id}>
                           {user.name || "Unnamed"} ({user.email})
                         </option>
                       ))}
                     </select>
                   )}
-                <TagFilterDropdown 
-                uniqueTags={uniqueTags} 
-                selectedTags={selectedTags} 
-                toggleTagSelection={toggleTagSelection} 
-                />
+                  <TagFilterDropdown
+                    uniqueTags={uniqueTags}
+                    selectedTags={selectedTags}
+                    toggleTagSelection={toggleTagSelection}
+                  />
                 </>
               )}
             </div>
@@ -273,73 +340,73 @@ const App: React.FC = () => {
                   filteredInteractions
                     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                     .map((interaction: Interaction, index: number) => (
-                    <div key={index} className="rounded-lg bg-white p-4 shadow relative">
-                    <div className="absolute top-2 left-2">
-                      <span
-                        className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getWeightBadgeColor(
-                          interaction.weight
-                        )}`}
-                      >
-                        Peso: {interaction.weight || "0"}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => openDeleteModal(interaction.id)}
-                      className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
-                    <div className="mt-8 mb-4 flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-blue-100 text-center leading-8 text-blue-600">
-                        {interaction.author.name?.[0] || "A"}
+                      <div key={index} className="rounded-lg bg-white p-4 shadow relative">
+                        <div className="absolute top-2 left-2">
+                          <span
+                            className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getWeightBadgeColor(
+                              interaction.weight
+                            )}`}
+                          >
+                            Peso: {interaction.weight || "0"}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => openDeleteModal(interaction.id)}
+                          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                        <div className="mt-8 mb-4 flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 text-center leading-8 text-blue-600">
+                            {interaction.author?.name?.[0] || "A"}
+                          </div>
+                          <p className="font-medium">{interaction.title || "Interação"}</p>
+                        </div>
+                        {interaction.imageUrl ? (
+                          <img
+                            src={interaction.imageUrl}
+                            alt="Imagem da interação"
+                            className="mb-4 h-40 w-full object-cover rounded"
+                          />
+                        ) : (
+                          <div className="mb-4 h-24 rounded bg-gray-200" />
+                        )}
+                        <p className="text-sm text-gray-600">
+                          Data e hora: {new Date(interaction.createdAt || "").toLocaleString()}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Tipo: {interaction.tags?.join(", ") || "Sem tipo"}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Ranking: {interaction.ranking || "Não definido"}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Observações: {interaction.content || "Sem observações"}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Autor: {interaction.author?.name || "Unnamed"} ({interaction.author?.email || "Sem email"})
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Instituição: {interaction.author?.institution?.title || "Sem instituição"}
+                        </p>
+                        {interaction.latitude && interaction.longitude && (
+                          <button
+                            onClick={() => openMapModal(interaction)}
+                            className="mt-2 flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+                          >
+                            <MapPin className="h-4 w-4" />
+                            Localizar no Mapa
+                          </button>
+                        )}
+                        <Link
+                          to={`/user/${interaction.author?.id}`}
+                          className="mt-2 inline-block text-blue-600 hover:underline"
+                        >
+                          Ver Perfil do Usuário
+                        </Link>
                       </div>
-                      <p className="font-medium">{interaction.title || "Interação"}</p>
-                    </div>
-                    {interaction.imageUrl ? (
-                      <img
-                        src={interaction.imageUrl}
-                        alt="Imagem da interação"
-                        className="mb-4 h-40 w-full object-cover rounded"
-                      />
-                    ) : (
-                      <div className="mb-4 h-24 rounded bg-gray-200" />
-                    )}
-                    <p className="text-sm text-gray-600">
-                      Data e hora: {new Date(interaction.createdAt || "").toLocaleString()}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Tipo: {interaction.tags?.join(", ") || "Sem tipo"}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Ranking: {interaction.ranking || "Não definido"}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Observações: {interaction.content || "Sem observações"}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Autor: {interaction.author.name || "Unnamed"} ({interaction.author.email || "Sem email"})
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Instituição: {interaction.author.institution?.title || "Sem instituição"}
-                    </p>
-                    {interaction.latitude && interaction.longitude && (
-                      <button
-                        onClick={() => openMapModal(interaction)}
-                        className="mt-2 flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
-                      >
-                        <MapPin className="h-4 w-4" />
-                        Localizar no Mapa
-                      </button>
-                    )}
-                    <Link
-                      to={`/user/${interaction.author.id}`}
-                      className="mt-2 inline-block text-blue-600 hover:underline"
-                    >
-                      Ver Perfil do Usuário
-                    </Link>
-                  </div>
-                ))
-              ) : (
+                    ))
+                ) : (
                   <p className="text-gray-600 text-center col-span-full">
                     Nenhuma interação encontrada para os filtros selecionados.
                   </p>
@@ -433,6 +500,6 @@ const App: React.FC = () => {
       </Modal>
     </div>
   );
-}
+};
 
 export default App;
