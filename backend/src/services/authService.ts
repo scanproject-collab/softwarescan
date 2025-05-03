@@ -1,11 +1,23 @@
-import bcrypt from 'bcryptjs';
 import { PrismaClient, Role } from '@prisma/client';
-import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { sendResetPasswordEmail, sendWelcomeEmail, sendPendingApprovalEmail } from './mailer';
+import crypto from 'crypto';
+import { sendWelcomeEmail, sendResetPasswordEmail, sendPendingApprovalEmail } from './mailer';
 import { sendOneSignalNotification } from './oneSignalNotification';
 
-const prisma = new PrismaClient();
+const dbConfig = require('../../config/database');
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: dbConfig.url,
+    },
+  },
+});
+
+prisma.$connect()
+  .then(() => console.log('Database connection established successfully'))
+  .catch(e => console.error('Database connection failed:', e));
 
 const JWT_SECRET = process.env.SECRET_KEY_SESSION;
 

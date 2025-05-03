@@ -1,4 +1,4 @@
-import { Router, Request, Response, RequestHandler } from 'express';
+import express, { Router, Request, Response } from 'express';
 import { registerController, loginController, verifyResetCodeController, verifyTokenController, updateUserProfileController } from '../controllers/authController';
 import { generateResetPasswordCode, resetPassword } from '../services/authService';
 import { authMiddleware } from '../middlewares/authMiddleware';
@@ -88,6 +88,7 @@ router.post('/register', registerController);
  */
 router.post('/login', loginController);
 
+// Send verification code for new users
 router.post('/send-verification-code', async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
@@ -119,12 +120,13 @@ router.post('/send-verification-code', async (req: Request, res: Response) => {
     });
 
     await sendVerificationEmail(email, code);
-    res.status(200).json({ message: 'Código de verificação enviado para o seu email' });
+    return res.status(200).json({ message: 'Código de verificação enviado para o seu email' });
   } catch (error) {
-    res.status(400).json({ message: (error as Error).message });
+    return res.status(400).json({ message: (error as Error).message });
   }
 });
 
+// Generate verification code for admin-created users
 router.post('/generate-verification-code', async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
@@ -155,46 +157,50 @@ router.post('/generate-verification-code', async (req: Request, res: Response) =
       },
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       message: 'Código de verificação gerado com sucesso',
       verificationCode: verificationCode  // Return the code to the admin
     });
   } catch (error) {
-    res.status(400).json({ message: (error as Error).message });
+    return res.status(400).json({ message: (error as Error).message });
   }
 });
 
-router.post('/password-recovery/request', (async (req: Request, res: Response) => {
+// Request password recovery
+router.post('/password-recovery/request', async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
     }
     const response = await generateResetPasswordCode(email);
-    res.status(200).json(response);
+    return res.status(200).json(response);
   } catch (error) {
-    res.status(400).json({ message: (error as Error).message });
+    return res.status(400).json({ message: (error as Error).message });
   }
-}) as RequestHandler);
+});
 
-router.post('/password-recovery/verify-code', (verifyResetCodeController as RequestHandler));
+// Verify reset code
+router.post('/password-recovery/verify-code', verifyResetCodeController);
 
-router.post('/password-recovery/reset', (async (req: Request, res: Response) => {
+// Reset password with verified code
+router.post('/password-recovery/reset', async (req: Request, res: Response) => {
   try {
     const { email, resetCode, newPassword } = req.body;
     if (!email || !resetCode || !newPassword) {
       return res.status(400).json({ message: 'Email, reset code, and new password are required' });
     }
     const response = await resetPassword(email, resetCode, newPassword);
-    res.status(200).json(response);
+    return res.status(200).json(response);
   } catch (error) {
-    res.status(400).json({ message: (error as Error).message });
+    return res.status(400).json({ message: (error as Error).message });
   }
-}) as RequestHandler);
+});
 
+// Verify authentication token
 router.get('/verify-token', authMiddleware, verifyTokenController);
 
-// Rota para atualizar o perfil do usuário
+// Update user profile
 router.put('/update-profile', authMiddleware, updateUserProfileController);
 
 export default router;

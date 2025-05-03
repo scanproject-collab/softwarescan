@@ -12,7 +12,6 @@
       "Node.js",
       "Express",
       "TypeScript",
-      "MongoDB",
       "Prisma",
       "JWT"
     ]
@@ -25,10 +24,89 @@
     },
     "playground": {
       "enabled": true
+    },
+    "search": {
+      "enabled": true
+    },
+    "typings": {
+      "enabled": true
     }
   },
   "theme": {
     "primaryColor": "#1E54B7",
-    "showSidebar": true
+    "showSidebar": true,
+    "sidebar": {
+      "hideSections": false,
+      "hideIntroduction": false
+    }
+  },
+  "api": {
+    "baseUrl": "/api",
+    "info": {
+      "title": "Plataforma Scan API",
+      "version": "1.0.0",
+      "description": "API da Plataforma Scan para gerenciamento de usuários, instituições, posts e tags",
+      "contact": {
+        "name": "Equipe de Desenvolvimento",
+        "email": "suporte@scan-software.com"
+      }
+    },
+    "security": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "components": {
+      "securitySchemes": {
+        "bearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT",
+          "description": "JWT Token de autenticação. Utilize o prefixo 'Bearer ' antes do token."
+        },
+        "cronSecret": {
+          "type": "apiKey",
+          "in": "header",
+          "name": "x-cron-secret",
+          "description": "Chave secreta para rotas de cron jobs."
+        }
+      },
+      "responses": {
+        "UnauthorizedError": {
+          "description": "Token de acesso ausente, inválido ou expirado",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Invalid or expired token"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "ForbiddenError": {
+          "description": "Sem permissão para acessar este recurso",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "You do not have permission to access this resource"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

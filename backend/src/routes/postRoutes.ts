@@ -4,7 +4,53 @@ import { authMiddleware, roleMiddleware, CustomRequest } from '../middlewares/au
 
 const router = Router();
 
-router.post('/create', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', 'MANAGER']), uploadImage, async (req: CustomRequest, res: Response, next: NextFunction) => {
+/**
+ * @openapi
+ * /posts:
+ *   post:
+ *     summary: Create a new post
+ *     description: Create a new post with optional image upload
+ *     tags:
+ *       - Posts
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - content
+ *             properties:
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *               tagIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               location:
+ *                 type: object
+ *                 properties:
+ *                   lat:
+ *                     type: number
+ *                   lng:
+ *                     type: number
+ *     responses:
+ *       201:
+ *         description: Post created successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Not authorized to create posts
+ */
+router.post('/', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', 'MANAGER']), uploadImage, async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     await createPost(req, res);
   } catch (err) {
@@ -12,7 +58,25 @@ router.post('/create', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', 'MAN
   }
 });
 
-router.get('/my-posts', authMiddleware, roleMiddleware(['OPERATOR']), async (req: CustomRequest, res: Response, next: NextFunction) => {
+/**
+ * @openapi
+ * /posts/my:
+ *   get:
+ *     summary: List user's posts
+ *     description: Retrieve a list of posts created by the current operator
+ *     tags:
+ *       - Posts
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of user's posts
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Not an operator
+ */
+router.get('/my', authMiddleware, roleMiddleware(['OPERATOR']), async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     await listUserPosts(req, res);
   } catch (err) {
@@ -20,6 +84,33 @@ router.get('/my-posts', authMiddleware, roleMiddleware(['OPERATOR']), async (req
   }
 });
 
+/**
+ * @openapi
+ * /posts/{postId}:
+ *   get:
+ *     summary: Get post details
+ *     description: Retrieve detailed information about a specific post
+ *     tags:
+ *       - Posts
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the post to retrieve
+ *     responses:
+ *       200:
+ *         description: Post details
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Post not found
+ */
 router.get('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', 'MANAGER']), async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     await getPostById(req, res);
@@ -28,6 +119,33 @@ router.get('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', 'MAN
   }
 });
 
+/**
+ * @openapi
+ * /posts/{postId}:
+ *   delete:
+ *     summary: Delete a post
+ *     description: Delete a post from the system
+ *     tags:
+ *       - Posts
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the post to delete
+ *     responses:
+ *       200:
+ *         description: Post deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Not authorized to delete this post
+ *       404:
+ *         description: Post not found
+ */
 router.delete('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', 'MANAGER']), async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     await deletePost(req, res);
@@ -35,7 +153,5 @@ router.delete('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', '
     next(err);
   }
 });
-
-
 
 export default router;

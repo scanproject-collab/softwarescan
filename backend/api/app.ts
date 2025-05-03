@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction, Router } from "express";
-import { authRoutes, operatorRoutes, postRoutes, tagRoutes, managerRoutes, institutionRoutes, adminRoutes, polygnosRoutes } from "../src/routes/index";
+import { authRoutes, operatorRoutes, postRoutes, tagRoutes, managerRoutes, institutionRoutes, adminRoutes, polygonsRoutes } from "../src/routes/index";
 import { sendOneSignalNotification } from '../src/services/oneSignalNotification';
 import dotenv from "dotenv";
 import cors from "cors";
@@ -27,13 +27,13 @@ if (fs.existsSync(apiDocsPath)) {
 
 // Root Routes
 app.use("/auth", authRoutes);
-app.use("/operator", operatorRoutes);
+app.use("/operators", operatorRoutes);
 app.use("/admin", adminRoutes);
-app.use("/manager", managerRoutes);
+app.use("/managers", managerRoutes);
 app.use("/institutions", institutionRoutes);
 app.use("/posts", postRoutes);
 app.use("/tags", tagRoutes);
-app.use("/polygons", polygnosRoutes);
+app.use("/polygons", polygonsRoutes);
 
 // Create a router for the api routes
 const apiRouter = express.Router();
@@ -93,5 +93,11 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Error occurred:", err);
   res.status(500).send("Internal Server Error");
 });
+
+// Start the server
+app.listen(3000, function (err) {
+  if (err) console.log("Error in server setup")
+  console.log("Server listening on Port");
+})
 
 export default app;
