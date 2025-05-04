@@ -145,7 +145,6 @@ const App: React.FC = () => {
     handleRefresh,
     setInteractions,
     refreshing,
-    setRefreshing
   } = useInteractions();
 
   const {
