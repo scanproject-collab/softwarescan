@@ -94,10 +94,6 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).send("Internal Server Error");
 });
 
-// Start the server
-app.listen(3000, function (err) {
-  if (err) console.log("Error in server setup")
-  console.log("Server listening on Port");
-})
+
 
 export default app;
