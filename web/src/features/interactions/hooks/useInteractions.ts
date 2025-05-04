@@ -28,6 +28,7 @@ interface Interaction {
 export const useInteractions = () => {
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const { token, user } = useAuth();
 
@@ -52,8 +53,22 @@ export const useInteractions = () => {
   };
 
   const handleRefresh = () => {
-    setLoading(true);
-    fetchInteractions();
+    setRefreshing(true);
+
+    api.get(user?.role === "MANAGER" ? "/managers/posts" : "/admin/posts", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(response => {
+        setInteractions(response.data.posts || []);
+        setError(null);
+      })
+      .catch(err => {
+        const errorMessage = handleApiError(err, "Erro ao atualizar interações.");
+        setError(errorMessage);
+      })
+      .finally(() => {
+        setRefreshing(false);
+      });
   };
 
   useEffect(() => {
@@ -61,7 +76,23 @@ export const useInteractions = () => {
 
     // Automatic refresh every 30 seconds
     const interval = setInterval(() => {
-      fetchInteractions();
+      // Usar o modo refreshing para atualizações automáticas também
+      setRefreshing(true);
+
+      api.get(user?.role === "MANAGER" ? "/managers/posts" : "/admin/posts", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(response => {
+          setInteractions(response.data.posts || []);
+          setError(null);
+        })
+        .catch(err => {
+          console.error("Erro ao atualizar interações:", err);
+          // Não exibir erros para atualizações automáticas de fundo
+        })
+        .finally(() => {
+          setRefreshing(false);
+        });
     }, 30000);
 
     return () => clearInterval(interval);
@@ -70,10 +101,12 @@ export const useInteractions = () => {
   return {
     interactions,
     loading,
+    refreshing,
     error,
     fetchInteractions,
     handleRefresh,
     setInteractions,
     setLoading,
+    setRefreshing,
   };
 };

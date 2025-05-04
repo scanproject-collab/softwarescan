@@ -83,7 +83,7 @@ const ExportButton = ({ interactions, disabled }: { interactions: any; disabled?
     // Combine everything with proper escaping
     const csvContent = [
       headers.map(escapeCSV).join(','),
-      ...data.map(row => row.map(escapeCSV).join(','))
+      ...data.map((row: any[]) => row.map(escapeCSV).join(','))
     ].join('\n');
 
     // Add UTF-8 BOM for better Excel compatibility
@@ -144,6 +144,8 @@ const App: React.FC = () => {
     error: interactionsError,
     handleRefresh,
     setInteractions,
+    refreshing,
+    setRefreshing
   } = useInteractions();
 
   const {
@@ -221,14 +223,6 @@ const App: React.FC = () => {
       showError("Não há mais páginas disponíveis");
     }
   };
-
-  if (loading) {
-    return (
-      <div className="p-6 min-h-screen">
-        <LoadingSpinner size="lg" text="Carregando dados..." color="primary" />
-      </div>
-    );
-  }
 
   if (pendingOperatorsError || interactionsError) {
     return (
@@ -311,9 +305,13 @@ const App: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleRefresh}
-                  className="rounded bg-blue-600 p-2 text-white hover:bg-blue-700"
+                  className={`rounded ${refreshing ? 'bg-blue-400' : 'bg-blue-600'} p-2 text-white hover:bg-blue-700 transition-colors relative`}
+                  disabled={refreshing}
                 >
-                  <RefreshCw className="h-5 w-5" />
+                  <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-blue-300 animate-ping"></span>
+                  )}
                 </button>
               </div>
             </div>
@@ -375,103 +373,113 @@ const App: React.FC = () => {
               )}
             </div>
             <div className="space-y-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredInteractions.length > 0 ? (
-                  filteredInteractions
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    .map((interaction: Interaction, index: number) => (
-                      <div key={index} className="rounded-lg bg-white p-4 shadow relative">
-                        <div className="absolute top-2 left-2">
-                          <span
-                            className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getWeightBadgeColor(
-                              interaction.weight
-                            )}`}
-                          >
-                            Peso: {interaction.weight || "0"}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => openDeleteModal(interaction.id)}
-                          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                        <div className="mt-8 mb-4 flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-blue-100 text-center leading-8 text-blue-600">
-                            {interaction.author?.name?.[0] || "A"}
+              {loading && !refreshing ? (
+                <div className="flex justify-center py-12">
+                  <LoadingSpinner size="md" text="Carregando interações..." color="primary" />
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredInteractions.length > 0 ? (
+                      filteredInteractions
+                        .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                        .map((interaction: Interaction, index: number) => (
+                          <div key={index} className="rounded-lg bg-white p-4 shadow relative">
+                            <div className="absolute top-2 left-2">
+                              <span
+                                className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getWeightBadgeColor(
+                                  interaction.weight
+                                )}`}
+                              >
+                                Peso: {interaction.weight || "0"}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => openDeleteModal(interaction.id)}
+                              className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </button>
+                            <div className="mt-8 mb-4 flex items-center gap-2">
+                              <div className="h-8 w-8 rounded-full bg-blue-100 text-center leading-8 text-blue-600">
+                                {interaction.author?.name?.[0] || "A"}
+                              </div>
+                              <p className="font-medium">{interaction.title || "Interação"}</p>
+                            </div>
+                            {interaction.imageUrl ? (
+                              <img
+                                src={interaction.imageUrl}
+                                alt="Imagem da interação"
+                                className="mb-4 h-40 w-full object-cover rounded"
+                              />
+                            ) : (
+                              <div className="mb-4 h-24 rounded bg-gray-200" />
+                            )}
+                            <p className="text-sm text-gray-600">
+                              Data e hora: {new Date(interaction.createdAt || "").toLocaleString()}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Tipo: {interaction.tags?.join(", ") || "Sem tipo"}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Ranking: {interaction.ranking || "Não definido"}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Observações: {interaction.content || "Sem observações"}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Autor: {interaction.author?.name || "Unnamed"} ({interaction.author?.email || "Sem email"})
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Instituição: {interaction.author?.institution?.title || "Sem instituição"}
+                            </p>
+                            {interaction.latitude && interaction.longitude && (
+                              <button
+                                onClick={() => openMapModal(interaction)}
+                                className="mt-2 flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+                              >
+                                <MapPin className="h-4 w-4" />
+                                Localizar no Mapa
+                              </button>
+                            )}
+                            <Link
+                              to={`/user/${interaction.author?.id}`}
+                              className="mt-2 inline-block text-blue-600 hover:underline"
+                            >
+                              Ver Perfil do Usuário
+                            </Link>
                           </div>
-                          <p className="font-medium">{interaction.title || "Interação"}</p>
-                        </div>
-                        {interaction.imageUrl ? (
-                          <img
-                            src={interaction.imageUrl}
-                            alt="Imagem da interação"
-                            className="mb-4 h-40 w-full object-cover rounded"
-                          />
-                        ) : (
-                          <div className="mb-4 h-24 rounded bg-gray-200" />
-                        )}
-                        <p className="text-sm text-gray-600">
-                          Data e hora: {new Date(interaction.createdAt || "").toLocaleString()}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Tipo: {interaction.tags?.join(", ") || "Sem tipo"}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Ranking: {interaction.ranking || "Não definido"}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Observações: {interaction.content || "Sem observações"}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Autor: {interaction.author?.name || "Unnamed"} ({interaction.author?.email || "Sem email"})
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Instituição: {interaction.author?.institution?.title || "Sem instituição"}
-                        </p>
-                        {interaction.latitude && interaction.longitude && (
-                          <button
-                            onClick={() => openMapModal(interaction)}
-                            className="mt-2 flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
-                          >
-                            <MapPin className="h-4 w-4" />
-                            Localizar no Mapa
-                          </button>
-                        )}
-                        <Link
-                          to={`/user/${interaction.author?.id}`}
-                          className="mt-2 inline-block text-blue-600 hover:underline"
-                        >
-                          Ver Perfil do Usuário
-                        </Link>
-                      </div>
-                    ))
-                ) : (
-                  <p className="text-gray-600 text-center col-span-full">
-                    Nenhuma interação encontrada para os filtros selecionados.
-                  </p>
-                )}
-              </div>
-              {/* Pagination Controls */}
-              <div className="flex justify-center items-center gap-4">
-                <button
-                  onClick={handlePreviousPage}
-                  className="p-2 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-                <span className="text-gray-700">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <button
-                  onClick={handleNextPage}
-                  className="p-2 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-              </div>
+                        ))
+                    ) : (
+                      <p className="text-gray-600 text-center col-span-full">
+                        Nenhuma interação encontrada para os filtros selecionados.
+                      </p>
+                    )}
+                  </div>
+                  {/* Pagination Controls */}
+                  {filteredInteractions.length > 0 && (
+                    <div className="flex justify-center items-center gap-4">
+                      <button
+                        onClick={handlePreviousPage}
+                        className="p-2 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-6 w-6" />
+                      </button>
+                      <span className="text-gray-700">
+                        Página {currentPage} de {totalPages}
+                      </span>
+                      <button
+                        onClick={handleNextPage}
+                        className="p-2 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
+                        disabled={currentPage === totalPages}
+                      >
+                        <ChevronRight className="h-6 w-6" />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
