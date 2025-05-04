@@ -46,7 +46,20 @@ export const useOperators = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setOperators(response.data.operators || []);
+      // Map operators from the API response, converting isPending to isActive
+      const mappedOperators = (response.data.operators || []).map((op: any) => ({
+        id: op.id,
+        name: op.name || 'Unnamed',
+        email: op.email,
+        // Convert isPending to isActive (isActive is the opposite of isPending)
+        isActive: op.isActive !== undefined ? op.isActive : !op.isPending,
+        institution: op.institution,
+        postsCount: op.postsCount || 0,
+        createdAt: op.createdAt,
+        lastLoginDate: op.lastLoginDate
+      }));
+
+      setOperators(mappedOperators);
 
       if (response.data.pagination) {
         setPagination({
@@ -73,6 +86,12 @@ export const useOperators = () => {
       });
       const operator = response.data.operator;
 
+      // Convert isPending to isActive for the operator details
+      const mappedOperator = {
+        ...operator,
+        isActive: operator.isActive !== undefined ? operator.isActive : !operator.isPending
+      };
+
       // Fetch all posts
       const postsResponse = await api.get(`${basePath}/posts`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -85,7 +104,7 @@ export const useOperators = () => {
 
       // Update the operator object with posts and correct count
       const updatedOperator = {
-        ...operator,
+        ...mappedOperator,
         posts: operatorPosts,
         postsCount: operatorPosts.length
       };
