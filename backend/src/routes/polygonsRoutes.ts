@@ -23,11 +23,11 @@ const router = Router();
  *             type: object
  *             required:
  *               - name
- *               - coordinates
+ *               - points
  *             properties:
  *               name:
  *                 type: string
- *               coordinates:
+ *               points:
  *                 type: array
  *                 items:
  *                   type: object
@@ -36,6 +36,8 @@ const router = Router();
  *                       type: number
  *                     lng:
  *                       type: number
+ *               notes:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Polygon created successfully
@@ -92,7 +94,7 @@ router.get('/', authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), listPolygo
  *             properties:
  *               name:
  *                 type: string
- *               coordinates:
+ *               points:
  *                 type: array
  *                 items:
  *                   type: object
@@ -101,6 +103,8 @@ router.get('/', authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), listPolygo
  *                       type: number
  *                     lng:
  *                       type: number
+ *               notes:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Polygon updated successfully

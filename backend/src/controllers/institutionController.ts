@@ -113,6 +113,10 @@ export const listInstitutions = async (_req: Request, res: Response) => {
 
     res.status(200).json(response);
   } catch (error) {
-    res.status(400).json({ message: 'Error listing institutions: ' + (error as any).message });
+    console.error('Error listing institutions:', error);
+    res.status(500).json({
+      message: 'Error listing institutions',
+      error: (error as any).message
+    });
   }
 };

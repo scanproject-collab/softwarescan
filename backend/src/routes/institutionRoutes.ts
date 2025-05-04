@@ -149,8 +149,10 @@ router.delete('/:id', authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), asyn
  */
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    console.log('GET /institutions request received');
     await listInstitutions(req, res);
   } catch (error) {
+    console.error('Error handling GET /institutions:', error);
     next(error);
   }
 });
