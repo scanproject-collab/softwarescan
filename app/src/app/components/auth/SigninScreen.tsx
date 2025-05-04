@@ -4,6 +4,7 @@ import axios, { AxiosError } from 'axios';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { checkAppVersion } from '../../utils/VersionCheck';
 
 interface ToastParams {
   type: 'success' | 'error' | 'info';
@@ -62,6 +63,9 @@ const LoginScreen = () => {
       try {
         await AsyncStorage.setItem('userToken', token);
         console.log('Token saved to AsyncStorage:', token);
+
+        // Check for app updates after successful login
+        await checkAppVersion();
       } catch (storageError) {
         console.error('Failed to save token to AsyncStorage:', storageError);
       }

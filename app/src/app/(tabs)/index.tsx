@@ -8,6 +8,8 @@ import PostList from '../components/home/PostList';
 import SearchBar from '../components/home/SearchBar';
 import TagFilter from '../components/home/TagFilter';
 import OfflineMessage from '../components/home/OfflineMessage';
+import UpdateNotification from '../components/home/UpdateNotification';
+import { checkAppVersion } from '../utils/VersionCheck';
 
 // Define constant for storage keys
 const STORAGE_KEYS = {
@@ -45,6 +47,7 @@ export default function Home() {
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isOffline, setIsOffline] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState<{ version: string, required: boolean } | null>(null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const syncingRef = useRef(false);
@@ -290,30 +293,65 @@ export default function Home() {
     }
   }, [API_URL, checkActualConnectivity, fetchPosts]);
 
-  useEffect(() => {
-    const initialize = async () => {
+  // Initialize function with useCallback
+  const initialize = useCallback(async () => {
+    try {
+      const isValid = await validateToken();
+      if (!isValid) {
+        router.replace('/pages/auth');
+        return;
+      }
+
+      // Check for app updates
+      const versionInfo = await checkAppVersion();
+      if (versionInfo) {
+        setUpdateAvailable(versionInfo);
+      }
+
       await clearOldCachePosts();
       await fetchPosts();
       await loadOfflinePosts();
 
-      const unsubscribe = NetInfo.addEventListener(async state => {
-        const isConnected = state.isConnected && (await checkActualConnectivity());
-        setIsOffline(!isConnected);
-        if (isConnected) {
-          sendOfflinePosts();
+      // Check network status
+      const netInfo = await NetInfo.fetch();
+      if (netInfo.isConnected) {
+        const actualConnectivity = await checkActualConnectivity();
+        if (actualConnectivity) {
+          setIsOffline(false);
+          await sendOfflinePosts();
+        } else {
+          setIsOffline(true);
         }
-      });
+      } else {
+        setIsOffline(true);
+      }
+    } catch (error) {
+      console.error('Error in initialization:', error);
+      setLoading(false);
+    }
+  }, [clearOldCachePosts, fetchPosts, loadOfflinePosts, checkActualConnectivity, sendOfflinePosts, router]);
 
-      return () => {
-        unsubscribe();
-        if (fetchTimeoutRef.current) {
-          clearTimeout(fetchTimeoutRef.current);
-        }
-      };
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  // Add this useEffect for periodic version checks
+  useEffect(() => {
+    // Check for updates on component mount
+    const checkForUpdates = async () => {
+      const versionInfo = await checkAppVersion();
+      if (versionInfo) {
+        setUpdateAvailable(versionInfo);
+      }
     };
 
-    initialize();
-  }, [clearOldCachePosts, fetchPosts, loadOfflinePosts, checkActualConnectivity, sendOfflinePosts]);
+    checkForUpdates();
+
+    // Setup periodic checks (every 6 hours)
+    const intervalId = setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleDeletePost = useCallback(async (postId: string) => {
     try {
@@ -426,12 +464,19 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      {isOffline && <OfflineMessage isOffline={isOffline} />}
+      {isOffline && <OfflineMessage />}
+
+      {updateAvailable && (
+        <UpdateNotification
+          latestVersion={updateAvailable.version}
+          isRequired={updateAvailable.required}
+        />
+      )}
 
       <SearchBar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        handleRefresh={handleRefresh}
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        onClear={() => setSearchQuery('')}
       />
 
       <TagFilter

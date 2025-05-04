@@ -56,7 +56,7 @@ export default function NewInteraction() {
 
   const router = useRouter();
   // Certifica-se de que API_URL sempre tenha um valor
-  const API_URL = process.env.EXPO_PUBLIC_API_URL || "https://api.example.com";
+  const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
   // Reset de formulário com segurança para todos os campos
   const resetForm = useCallback(() => {
@@ -714,7 +714,7 @@ export default function NewInteraction() {
         setSelectedTags([]);
         setImage(null);
         setStatus("idle");
-        
+
         // Não resetar a localização, apenas obter a localização atual
         try {
           const isValid = await validateToken();
@@ -726,9 +726,9 @@ export default function NewInteraction() {
           console.error("Erro ao recarregar localização:", error);
         }
       };
-      
+
       loadLocationOnly();
-      
+
       return () => {
         // Código executado quando a tela perde o foco
         console.log("NewInteraction perdeu foco");

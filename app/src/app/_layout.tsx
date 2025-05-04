@@ -3,6 +3,7 @@ import { StatusBar, View, Button, Text } from 'react-native';
 import { useEffect, useState } from 'react';
 import { initializeOneSignalNotification } from './utils/OneSignalNotification';
 import { validateToken } from '@/src/app/utils/ValidateAuth';
+import { checkAppVersion } from '@/src/app/utils/VersionCheck';
 import React from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -96,6 +97,7 @@ export default function RootLayout() {
         // Start multiple initialization tasks in parallel
         const notificationPromise = initializeOneSignalNotification();
         const tokenPromise = validateToken();
+        const versionPromise = checkAppVersion();
 
         // Start location initialization in parallel, but don't wait for it
         initializeLocation().then(coords => {
@@ -109,6 +111,11 @@ export default function RootLayout() {
           notificationPromise,
           tokenPromise
         ]);
+
+        // Don't wait for version check to complete since it's not critical for app startup
+        versionPromise.catch(error => {
+          console.error('Error checking app version:', error);
+        });
 
         setIsCheckingToken(false);
         setInitialCheckDone(true);
