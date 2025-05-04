@@ -1,14 +1,5 @@
-import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { showSuccess, showError, handleApiError } from '../utils/errorHandler';
-
-/**
- * Interface para opções do toast
- */
-interface ToastOptions {
-  duration?: number;
-  position?: 'top-right' | 'top-center' | 'top-left' | 'bottom-right' | 'bottom-center' | 'bottom-left';
-}
 
 /**
  * Hook for standardized toast notifications

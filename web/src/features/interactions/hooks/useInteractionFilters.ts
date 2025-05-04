@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import api from "../../../shared/services/api";
 import { useAuth } from "../../../hooks/useAuth";
 
@@ -64,8 +64,14 @@ export const useInteractionFilters = (interactions: Interaction[]) => {
     let filtered = interactions.filter((interaction) => {
       const matchesAuthor =
         interaction.author.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+
+      // Fix the tag check to handle both string and object tags
       const matchesTags =
-        selectedTags.length === 0 || (Array.isArray(interaction.tags) && interaction.tags.some(tag => selectedTags.includes(tag)));
+        selectedTags.length === 0 || (Array.isArray(interaction.tags) && interaction.tags.some(tag => {
+          const tagName = typeof tag === 'string' ? tag : tag.name;
+          return selectedTags.includes(tagName);
+        }));
+
       const matchesRanking = !selectedRanking || interaction.ranking === selectedRanking;
       const matchesInstitution =
         !selectedInstitution || interaction.author.institution?.id === selectedInstitution;
@@ -92,8 +98,14 @@ export const useInteractionFilters = (interactions: Interaction[]) => {
   }, [interactions, searchTerm, selectedTags, selectedRanking, selectedInstitution, selectedUser]);
 
   const uniqueTags = useMemo(() => {
-    const allTags = ["Todas as tags", ...new Set((interactions ?? []).flatMap((interaction) => interaction.tags || []))];
-    return allTags;
+    // Extract tag names from both string and object tags
+    const allTagsRaw = interactions.flatMap(interaction =>
+      (interaction.tags || []).map(tag => typeof tag === 'string' ? tag : tag.name)
+    );
+
+    // Add 'Todas as tags' and deduplicate
+    const allTags = ["Todas as tags", ...new Set(allTagsRaw)];
+    return allTags as string[];
   }, [interactions]);
 
   const uniqueRankings = useMemo(() => {
@@ -102,7 +114,7 @@ export const useInteractionFilters = (interactions: Interaction[]) => {
 
   const toggleTagSelection = (tag: string) => {
     if (tag === "Todas as tags") {
-      setSelectedTags(uniqueTags);
+      setSelectedTags(uniqueTags.filter(t => t !== "Todas as tags"));
     } else {
       setSelectedTags((prev) =>
         prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]

@@ -15,16 +15,14 @@ import MainLayout from '../layouts/MainLayout';
 import MapLoader from '../features/polygons/components/MapLoader';
 import PolygonList from '../features/polygons/components/PolygonList';
 import DrawingGuide from '../features/polygons/components/DrawingGuide';
-import DrawingControls from '../features/polygons/components/DrawingControls';
 import FilterControls from '../features/polygons/components/FilterControls';
-import ExportMapControls from '../features/polygons/components/ExportMapControls';
 import MapComponent from '../features/polygons/components/MapComponent';
 import PolygonDialog from '../features/polygons/components/PolygonDialog';
 import PredefinedShapes from '../features/polygons/components/PredefinedShapes';
 
 // Hooks e Utilitários
 import { usePolygons } from '../features/polygons/hooks/usePolygons';
-import { calculateDistance, formatDate } from '../features/polygons/utils/mapUtils';
+import { formatDate } from '../features/polygons/utils/mapUtils';
 import { useInteractions } from '../features/interactions/hooks/useInteractions';
 
 // Define libraries as a constant to avoid new array on each render
@@ -76,7 +74,6 @@ const PolygonManagementPage: React.FC = () => {
   const [drawingGuideVisible, setDrawingGuideVisible] = useState(false);
 
   // Estados para filtros
-  const [filterCoords, setFilterCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [filterDateStart, setFilterDateStart] = useState<string>('');
   const [filterDateEnd, setFilterDateEnd] = useState<string>('');
   const [filterTag, setFilterTag] = useState<string>('');
@@ -161,23 +158,6 @@ const PolygonManagementPage: React.FC = () => {
       return matchesStartDate && matchesEndDate && matchesTag && matchesSelectedLocation;
     });
   }, [posts, filterDateStart, filterDateEnd, filterTag, selectedLocation]);
-
-  // Fix type issues with post coordinates
-  const points = useMemo(() => {
-    if (isMapLoaded && window.google && window.google.maps) {
-      return filteredPosts
-        .filter(post => typeof post.latitude === 'number' && typeof post.longitude === 'number')
-        .map(post => new window.google.maps.LatLng(post.latitude as number, post.longitude as number));
-    }
-    return [];
-  }, [filteredPosts, isMapLoaded]);
-
-  // Fix locations type issues
-  const locations = useMemo(() => {
-    return filteredPosts
-      .filter(post => (post as any).location)
-      .map(post => (post as any).location);
-  }, [filteredPosts]);
 
   // Fix filteredPosts issue for MapComponent
   const typedFilteredPosts = useMemo(() => {
@@ -446,7 +426,7 @@ const PolygonManagementPage: React.FC = () => {
   const savePolygon = async (name: string, notes: string) => {
     try {
       const points = currentPolygon.map((point) => ({ lat: point.lat, lng: point.lng }));
-      const response = await api.post(
+      await api.post(
         '/polygons',
         { name, points, notes },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -461,14 +441,6 @@ const PolygonManagementPage: React.FC = () => {
     } catch (error) {
       console.error('Erro ao salvar polígono:', error);
       toast.error('Erro ao salvar polígono.');
-    }
-  };
-
-  // Função para cancelar o desenho atual
-  const handleCancelDrawing = () => {
-    if (window.confirm('Deseja cancelar o desenho atual?')) {
-      setCurrentPolygon([]);
-      setDrawing(false);
     }
   };
 
@@ -556,7 +528,6 @@ const PolygonManagementPage: React.FC = () => {
     setFilterDateEnd('');
     setFilterTag('');
     setSelectedLocation('');
-    setFilterCoords(null);
   };
 
   // Obter localizações únicas dos posts

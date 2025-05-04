@@ -25,10 +25,8 @@ interface MapComponentProps {
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
-  mapRef,
   onMapLoad,
   center,
-  containerStyle,
   filteredPosts,
   polygons,
   handleMapClick,

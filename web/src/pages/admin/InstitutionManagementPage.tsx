@@ -29,9 +29,7 @@ const InstitutionManagement: React.FC = () => {
   const toast = useToast();
 
   const {
-    institutions,
     loading,
-    fetchInstitutions,
     createInstitution,
     updateInstitution,
     deleteInstitution,

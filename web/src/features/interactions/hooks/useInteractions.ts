@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import api from "../../../shared/services/api";
 import { useAuth } from "../../../hooks/useAuth";
 import { handleApiError } from "../../../shared/utils/errorHandler";
-import toast from "react-hot-toast";
 
 interface Interaction {
   id: string;

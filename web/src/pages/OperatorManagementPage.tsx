@@ -35,7 +35,6 @@ const OperatorManagementPage: React.FC = () => {
 
   // Estados para instituições (apenas para admin)
   const [institutions, setInstitutions] = useState<any[]>([]);
-  const [loadingInstitutions, setLoadingInstitutions] = useState(false);
 
   // Estados para pesquisa e filtros
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,16 +55,13 @@ const OperatorManagementPage: React.FC = () => {
     if (user?.role === 'ADMIN') {
       const fetchInstitutions = async () => {
         try {
-          setLoadingInstitutions(true);
           const response = await api.get('/institutions', {
-            headers: { Authorization: `Bearer ${user?.token || ''}` }
+            headers: { Authorization: `Bearer ${(user as any)?.token || ''}` }
           });
           setInstitutions(response.data.institutions || []);
         } catch (error) {
           console.error('Erro ao buscar instituições:', error);
           toast.error('Não foi possível carregar a lista de instituições.');
-        } finally {
-          setLoadingInstitutions(false);
         }
       };
       fetchInstitutions();
@@ -217,7 +213,7 @@ const OperatorManagementPage: React.FC = () => {
         const endpoint = `${basePath}/operators/create`;
 
         await api.post(endpoint, formData, {
-          headers: { Authorization: `Bearer ${user?.token || ''}` }
+          headers: { Authorization: `Bearer ${(user as any)?.token || ''}` }
         });
 
         toast.success('Operador criado com sucesso!');

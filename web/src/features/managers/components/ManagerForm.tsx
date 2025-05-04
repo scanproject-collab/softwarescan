@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../../hooks/useAuth';
+// import { useAuth } from '../../../hooks/useAuth';
 import { Institution } from '../../institutions/types/institutions';
 import { CreateManagerDto } from '../types/managers';
 import { UserRole } from '../../../shared/types';
@@ -24,14 +24,6 @@ export const ManagerForm: React.FC<ManagerFormProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedInstitution, setSelectedInstitution] = useState('');
-
-  const initialFormData: CreateManagerDto = {
-    name: '',
-    email: '',
-    password: '',
-    role: UserRole.MANAGER,
-    institutionId: ''
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

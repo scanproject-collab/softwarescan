@@ -16,7 +16,6 @@ import { useInteractionFilters } from "./features/interactions/hooks/useInteract
 import { useDeleteInteractionModal } from "./features/interactions/hooks/useDeleteInteractionModal";
 import { usePendingOperators } from "./features/operators/hooks/usePendingOperators";
 
-import { Interaction } from "./features/interactions/types/interactions";
 import { showError } from "./shared/utils/errorHandler";
 
 
@@ -163,7 +162,7 @@ const App: React.FC = () => {
     uniqueTags,
     uniqueRankings,
     uniqueInstitutions,
-  } = useInteractionFilters(interactions);
+  } = useInteractionFilters(interactions as any);
 
   const toggleTagSelection = (tag: string) => {
     if (tag === "Todas as tags") {
@@ -382,7 +381,7 @@ const App: React.FC = () => {
                     {filteredInteractions.length > 0 ? (
                       filteredInteractions
                         .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                        .map((interaction: Interaction, index: number) => (
+                        .map((interaction: any, index: number) => (
                           <div key={index} className="rounded-lg bg-white p-4 shadow relative">
                             <div className="absolute top-2 left-2">
                               <span
