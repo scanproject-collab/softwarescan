@@ -45,7 +45,7 @@ export const usePolygons = () => {
     const createPolygon = async (name: string, points: any[], notes?: string) => {
         try {
             const response = await api.post(
-                '/polygons/create',
+                '/polygons',
                 { name, points, notes },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

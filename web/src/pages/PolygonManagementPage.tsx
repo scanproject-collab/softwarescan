@@ -67,7 +67,7 @@ interface ExtendedInteraction {
 
 const PolygonManagementPage: React.FC = () => {
   const { token } = useAuth();
-  const { polygons, loading: loadingPolygons, deletePolygon } = usePolygons();
+  const { polygons, loading: loadingPolygons, deletePolygon, fetchPolygons } = usePolygons();
   const { interactions: posts, loading: loadingPosts } = useInteractions();
 
   // Estados para o desenho de polígonos
@@ -446,8 +446,8 @@ const PolygonManagementPage: React.FC = () => {
   const savePolygon = async (name: string, notes: string) => {
     try {
       const points = currentPolygon.map((point) => ({ lat: point.lat, lng: point.lng }));
-      await api.post(
-        '/polygons/create',
+      const response = await api.post(
+        '/polygons',
         { name, points, notes },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -455,6 +455,9 @@ const PolygonManagementPage: React.FC = () => {
       setDrawing(false);
       setIsDialogOpen(false);
       toast.success('Polígono salvo com sucesso!');
+
+      // Atualizar a lista de polígonos
+      await fetchPolygons();
     } catch (error) {
       console.error('Erro ao salvar polígono:', error);
       toast.error('Erro ao salvar polígono.');
@@ -567,6 +570,31 @@ const PolygonManagementPage: React.FC = () => {
     );
   }, [posts]);
 
+  // Função para centralizar o mapa em um polígono específico
+  const centerPolygonOnMap = useCallback((polygon: any) => {
+    if (!mapRef.current || !polygon.points || polygon.points.length === 0) return;
+
+    // Calcular o centro do polígono
+    const bounds = new window.google.maps.LatLngBounds();
+    polygon.points.forEach((point: { lat: number; lng: number }) => {
+      bounds.extend(new window.google.maps.LatLng(point.lat, point.lng));
+    });
+
+    // Centralizar o mapa nesse polígono
+    mapRef.current.fitBounds(bounds);
+
+    // Selecionar o polígono para mostrar suas informações
+    setSelectedPolygon(polygon);
+
+    // Aplicar um pequeno zoom out para melhor visualização
+    setTimeout(() => {
+      if (mapRef.current) {
+        const currentZoom = mapRef.current.getZoom() || 15;
+        mapRef.current.setZoom(currentZoom - 0.5);
+      }
+    }, 100);
+  }, [mapRef]);
+
   if (!googleMapsApiKey) {
     return (
       <MainLayout>
@@ -664,6 +692,7 @@ const PolygonManagementPage: React.FC = () => {
           <PolygonList
             polygons={polygons}
             deletePolygonHandler={deletePolygon}
+            onCenterPolygon={centerPolygonOnMap}
           />
 
           <div className="mt-6 space-y-3">

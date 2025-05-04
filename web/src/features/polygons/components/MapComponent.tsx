@@ -155,6 +155,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       {polygons.map((polygon) => {
         const { ranking } = getPolygonRankingInfo(polygon.id);
         const { fillColor, strokeColor } = getPolygonColor(ranking);
+        const isSelected = selectedPolygon && selectedPolygon.id === polygon.id;
 
         return (
           <GooglePolygon
@@ -162,9 +163,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
             paths={polygon.points}
             options={{
               fillColor,
-              fillOpacity: 0.5,
-              strokeColor,
-              strokeWeight: 2,
+              fillOpacity: isSelected ? 0.7 : 0.5,
+              strokeColor: isSelected ? '#000000' : strokeColor,
+              strokeWeight: isSelected ? 3 : 2,
+              strokeOpacity: 1,
+              clickable: true,
+              zIndex: isSelected ? 100 : 1 // Polígono selecionado fica acima dos outros
             }}
             onClick={() => setSelectedPolygon(polygon)}
           />
