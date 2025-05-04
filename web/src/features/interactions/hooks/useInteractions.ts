@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../../../shared/services/api";
-import toast from "react-hot-toast";
 import { useAuth } from "../../../hooks/useAuth";
+import { handleApiError } from "../../../shared/utils/errorHandler";
 
 interface Interaction {
   id: string;
@@ -31,19 +31,21 @@ export const useInteractions = () => {
   const [error, setError] = useState<string | null>(null);
   const { token, user } = useAuth();
 
-  const basePath = user?.role === "MANAGER" ? "/manager" : "/admin";
+  const basePath = user?.role === "MANAGER" ? "/managers" : "/admin";
 
   const fetchInteractions = async () => {
     if (!token) return;
+
+    setLoading(true);
     try {
       const response = await api.get(user?.role === "MANAGER" ? "/managers/posts" : "/admin/posts", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setInteractions(response.data.posts || []);
+      setError(null);
     } catch (err) {
-      setError("Erro ao carregar interações.");
-      toast.error("Erro ao carregar interações.");
-      console.error(err);
+      const errorMessage = handleApiError(err, "Erro ao carregar interações.");
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -56,9 +58,12 @@ export const useInteractions = () => {
 
   useEffect(() => {
     fetchInteractions();
+
+    // Automatic refresh every 30 seconds
     const interval = setInterval(() => {
       fetchInteractions();
-    }, 10000);
+    }, 30000);
+
     return () => clearInterval(interval);
   }, [token, user?.role]);
 

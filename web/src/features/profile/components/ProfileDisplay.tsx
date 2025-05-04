@@ -15,7 +15,7 @@ const ProfileDisplay: React.FC<ProfileDisplayProps> = ({ profile }) => {
   };
 
   const getEditPath = () => {
-    return profile.role === "ADMIN" ? "/admin/update" : "/manager/update";
+    return profile.role === "ADMIN" ? "/admin/update" : "/managers/update";
   };
 
   return (

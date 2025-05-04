@@ -636,6 +636,7 @@ export const getOperatorDetailsByAdmin = async (req: Request, res: Response) => 
         institution: {
           select: { id: true, title: true },
         },
+        playerId: true
       },
     });
 
@@ -670,6 +671,7 @@ export const getOperatorDetailsByAdmin = async (req: Request, res: Response) => 
         createdAt: operator.createdAt?.toISOString() ?? new Date().toISOString(),
         lastLoginDate: operator.lastLoginDate?.toISOString() ?? null,
         postsCount: posts.length,
+        playerId: operator.playerId
       },
       posts: posts.map(post => ({
         id: post.id,
@@ -694,6 +696,14 @@ export const updateOperatorByAdmin = async (req: Request, res: Response) => {
         id: operatorId,
         role: 'OPERATOR',
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isPending: true,
+        institutionId: true,
+        playerId: true
+      }
     });
 
     if (!operator) {
@@ -754,10 +764,20 @@ export const updateOperatorByAdmin = async (req: Request, res: Response) => {
     await prisma.notification.create({
       data: {
         type: 'profile_updated',
-        message: `Seu perfil foi atualizado pelo administrador.`,
+        message: `O administrador ${(req as RequestWithUser).user?.name || 'Admin'} atualizou seu perfil.`,
         userId: operatorId,
       },
     });
+
+    // Enviar notificação pelo OneSignal se o operador tiver playerId
+    if (operator.playerId) {
+      await sendOneSignalNotification(
+        operator.playerId,
+        'Perfil Atualizado',
+        `O administrador ${(req as RequestWithUser).user?.name || 'Admin'} atualizou seu perfil.`,
+        { type: 'profile_updated' }
+      );
+    }
 
     res.status(200).json({
       message: 'Operador atualizado com sucesso',

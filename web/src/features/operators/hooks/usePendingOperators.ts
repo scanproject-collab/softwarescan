@@ -8,12 +8,12 @@ export const usePendingOperators = () => {
     const [error, setError] = useState<string | null>(null);
     const { token, user } = useAuth();
 
-    const basePath = user?.role === "MANAGER" ? "/manager" : "/admin";
+    const basePath = user?.role === "MANAGER" ? "/managers" : "/admin";
 
     const fetchPendingOperators = async () => {
         if (!token) return;
         try {
-            const response = await api.get(`${basePath}/pending-operators`, {
+            const response = await api.get(`${basePath}/operators/pending`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setPendingOperators(response.data.operators);
@@ -28,7 +28,7 @@ export const usePendingOperators = () => {
         if (!token) return;
         try {
             await api.post(
-                `${basePath}/approve-operator/${operatorId}`,
+                `${basePath}/operators/${operatorId}/approve`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -50,7 +50,7 @@ export const usePendingOperators = () => {
 
             toast.success("Operador rejeitado com sucesso!");
 
-            await api.delete(`${basePath}/reject-operator/${operatorId}`, {
+            await api.delete(`${basePath}/operators/${operatorId}/reject`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 

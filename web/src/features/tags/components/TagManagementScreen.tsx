@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { RefreshCw } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { RefreshCw, Plus, Search } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import { DialogTrigger } from "../../../components/ui/dialog";
 import { Tag, TagFormData } from "../types/tag.types";
 import { useTags } from "../hooks/useTags";
+import LoadingSpinner from "../../../shared/components/ui/LoadingSpinner";
 
 import TagList from "./TagList";
 import TagForm from "./TagForm";
@@ -11,11 +12,19 @@ import MainLayout from "../../../layouts/MainLayout";
 
 const TagManagementScreen: React.FC = () => {
   const { tags, loading, fetchTags, createTag, updateTag, deleteTag } = useTags();
+  const [initialLoad, setInitialLoad] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
+
+  useEffect(() => {
+    // Set initialLoad to false after first loading completes
+    if (!loading && initialLoad) {
+      setInitialLoad(false);
+    }
+  }, [loading, initialLoad]);
 
   const handleCreateTag = async (data: TagFormData) => {
     if (!data.name) {
@@ -51,39 +60,59 @@ const TagManagementScreen: React.FC = () => {
     }
   };
 
+  // Only show the full-page loading spinner on initial load
+  const showFullLoading = loading && initialLoad;
+
   return (
     <MainLayout>
       <div className="p-6">
         <Toaster />
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Gerenciamento de Tags</h1>
-          <button
-            onClick={fetchTags}
-            className="flex items-center gap-2 rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
-          >
-            <RefreshCw className="h-5 w-5" />
-            Atualizar
-          </button>
+          <h1 className="text-2xl font-bold text-gray-800">Gerenciamento de Tags</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={fetchTags}
+              className="flex items-center gap-2 rounded-md bg-blue-600 p-2 text-white hover:bg-blue-700 transition"
+              disabled={loading}
+            >
+              <RefreshCw className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="mb-6 flex gap-4">
-          <input
-            type="text"
-            placeholder="Pesquisar tag..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-          />
+          <div className="relative flex-grow">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Pesquisar tag..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-md border border-gray-300 pl-10 p-2 focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-2"
+            />
+          </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            className="rounded-md bg-orange-500 px-4 py-2 font-semibold text-white hover:bg-orange-600 transition flex items-center gap-2"
+            disabled={loading}
           >
+            <Plus className="h-5 w-5" />
             Criar Tag
           </button>
         </div>
 
-        {loading ? (
-          <div className="text-center py-10">Carregando...</div>
+        {loading && !initialLoad && (
+          <div className="mb-4 p-2 bg-blue-50 rounded">
+            <LoadingSpinner size="sm" text="Atualizando dados..." color="blue" inline />
+          </div>
+        )}
+
+        {showFullLoading ? (
+          <div className="h-64">
+            <LoadingSpinner size="lg" text="Carregando tags..." color="orange" />
+          </div>
         ) : (
           <TagList
             tags={tags}

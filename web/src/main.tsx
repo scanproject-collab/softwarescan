@@ -16,8 +16,8 @@ import PasswordResetPage from './pages/auth/PasswordResetPage';
 import ProfileAdminPage from './pages/admin/ProfileAdmin';
 import UpdateAdminPage from './pages/admin/UpdateAdmin';
 import TagManagementPage from './pages/admin/TagManagementPage';
-import InstitutionManagementPage from './pages/admin/InstitutionManagement';
-import ManagerManagementPage from './pages/admin/ManagerManagement';
+import InstitutionManagementPage from './pages/admin/InstitutionManagementPage';
+import ManagerManagementPage from './pages/admin/ManagerManagementPage';
 import ProfileManagerPage from './pages/manager/ProfileManager';
 import PolygonManagementPage from './pages/PolygonManagementPage';
 import OperatorManagementPage from './pages/OperatorManagementPage';
@@ -101,10 +101,19 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
         {/* Rotas de Manager */}
         <Route
-          path="/manager/profile"
+          path="/managers/profile"
           element={
             <ProtectedRoute roles={['MANAGER']}>
               <ProfileManagerPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/managers/update"
+          element={
+            <ProtectedRoute roles={['MANAGER']}>
+              <UpdateAdminPage />
             </ProtectedRoute>
           }
         />

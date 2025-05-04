@@ -33,13 +33,13 @@ const FilterControls: React.FC<FilterControlsProps> = ({
   formatDate
 }) => {
   return (
-    <>
-      <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Gerenciar Locais</label>
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Todas as Localizações</label>
         <select
           value={selectedLocation}
           onChange={(e) => setSelectedLocation(e.target.value)}
-          className="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700"
+          className="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 text-sm"
         >
           <option value="">Todas as Localizações</option>
           {postLocations.map((location) => (
@@ -50,9 +50,29 @@ const FilterControls: React.FC<FilterControlsProps> = ({
         </select>
       </div>
 
-      <div className="flex space-x-2">
-        <div className="flex flex-col">
-          <label htmlFor="date-start" className="text-sm font-medium text-gray-700 mb-1">
+      <div>
+        <label htmlFor="tag-filter" className="block text-sm font-medium text-gray-700 mb-1">
+          Filtrar por Tag
+        </label>
+        <select
+          id="tag-filter"
+          value={filterTag}
+          onChange={(e) => setFilterTag(e.target.value)}
+          className="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          aria-label="Filtrar postagens por tag"
+        >
+          <option value="">Todas as Tags</option>
+          {tags.map((tag) => (
+            <option key={tag} value={tag}>
+              {tag}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label htmlFor="date-start" className="block text-sm font-medium text-gray-700 mb-1">
             Data de início
           </label>
           <div className="relative">
@@ -61,7 +81,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({
               type="date"
               value={filterDateStart}
               onChange={(e) => setFilterDateStart(e.target.value)}
-              className="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              className="w-full px-3 py-2 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-label="Filtrar postagens a partir desta data"
               title="Selecione a data inicial para filtrar posts"
             />
@@ -76,8 +96,8 @@ const FilterControls: React.FC<FilterControlsProps> = ({
             )}
           </div>
         </div>
-        <div className="flex flex-col">
-          <label htmlFor="date-end" className="text-sm font-medium text-gray-700 mb-1">
+        <div>
+          <label htmlFor="date-end" className="block text-sm font-medium text-gray-700 mb-1">
             Data de fim
           </label>
           <div className="relative">
@@ -86,7 +106,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({
               type="date"
               value={filterDateEnd}
               onChange={(e) => setFilterDateEnd(e.target.value)}
-              className="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+              className="w-full px-3 py-2 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-label="Filtrar postagens até esta data"
               title="Selecione a data final para filtrar posts"
             />
@@ -101,29 +121,10 @@ const FilterControls: React.FC<FilterControlsProps> = ({
             )}
           </div>
         </div>
-        <div className="flex flex-col">
-          <label htmlFor="tag-filter" className="text-sm font-medium text-gray-700 mb-1">
-            Filtrar por Tag
-          </label>
-          <select
-            id="tag-filter"
-            value={filterTag}
-            onChange={(e) => setFilterTag(e.target.value)}
-            className="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Filtrar postagens por tag"
-          >
-            <option value="">Todas as Tags</option>
-            {tags.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
       {(filterDateStart || filterDateEnd || filterTag || selectedLocation) && (
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex flex-wrap items-center gap-2 mt-2">
           {(filterDateStart || filterDateEnd) && (
             <div className="flex items-center gap-1 text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded">
               <span>Período: </span>
@@ -148,7 +149,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({
           </button>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

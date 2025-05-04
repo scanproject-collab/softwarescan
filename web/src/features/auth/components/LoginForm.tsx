@@ -4,6 +4,7 @@ import api from "../../../shared/services/api";
 import toast from "react-hot-toast";
 import { useAuth } from "../../../hooks/useAuth";
 import { LoginCredentials } from "../types/auth.types";
+import { showSuccess, showError } from "../../../shared/utils/errorHandler";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -14,7 +15,7 @@ const LoginForm = () => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      toast.error("Por favor, preencha todos os campos.");
+      showError("Por favor, preencha todos os campos.");
       return;
     }
 
@@ -31,16 +32,8 @@ const LoginForm = () => {
       const role = user.role;
 
       if (role !== "ADMIN" && role !== "MANAGER") {
-        toast.error(
-          `Acesso negado! Apenas usuários ADMIN ou MANAGER podem fazer login nesta plataforma. Seu role: ${role}.`,
-          {
-            duration: 5000,
-            style: {
-              background: "#f8d7da",
-              color: "#721c24",
-              border: "1px solid #f5c6cb",
-            },
-          }
+        showError(
+          `Acesso negado! Apenas usuários ADMIN ou MANAGER podem fazer login nesta plataforma. Seu role: ${role}.`
         );
         setIsLoading(false);
         return;
@@ -48,17 +41,19 @@ const LoginForm = () => {
 
       const success = await setAuthToken(token, user);
       if (success) {
-        toast.success("Bem-vindo de volta!");
+        // Use userName if available, otherwise fallback to "de volta"
+        const userName = user?.name ? `, ${user.name}` : " de volta";
+        showSuccess(`Bem-vindo${userName}!`);
         navigate("/");
       } else {
-        toast.error("Falha ao verificar o token. Tente novamente.");
+        showError("Falha ao verificar o token. Tente novamente.");
         navigate("/login");
       }
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
         "Erro ao fazer login, verifique suas credenciais.";
-      toast.error(errorMessage);
+      showError(errorMessage);
       console.error("Erro no login:", error.response?.data || error.message);
     } finally {
       setIsLoading(false);
@@ -80,6 +75,11 @@ const LoginForm = () => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         className="mb-4 w-full rounded-md border border-gray-300 px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400"
+        onKeyPress={(e) => {
+          if (e.key === 'Enter') {
+            handleLogin();
+          }
+        }}
       />
 
       <button

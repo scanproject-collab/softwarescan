@@ -11,7 +11,7 @@ export const useAuth = () => {
 
   const checkToken = useCallback(async (token: string): Promise<boolean> => {
     try {
-      const response = await api.get('/auth/check-token', {
+      const response = await api.get('/auth/verify-token', {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.status === 200;

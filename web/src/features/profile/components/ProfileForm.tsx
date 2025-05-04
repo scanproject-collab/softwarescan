@@ -79,7 +79,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
     const success = await updateProfile(dataToSubmit);
     if (success) {
       // Redirecionar de volta ao perfil
-      const profilePath = initialData.role === "ADMIN" ? "/admin/profile" : "/manager/profile";
+      const profilePath = initialData.role === "ADMIN" ? "/admin/profile" : "/managers/profile";
       navigate(profilePath);
     }
   };
@@ -159,7 +159,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
           <button
             type="button"
             onClick={() => {
-              const profilePath = initialData.role === "ADMIN" ? "/admin/profile" : "/manager/profile";
+              const profilePath = initialData.role === "ADMIN" ? "/admin/profile" : "/managers/profile";
               navigate(profilePath);
             }}
             className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"

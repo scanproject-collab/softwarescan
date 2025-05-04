@@ -18,7 +18,7 @@ export const useProfile = () => {
       setLoading(true);
 
       // Caminho base de acordo com a função do usuário
-      const basePath = user.role === 'ADMIN' ? '/admin' : '/manager';
+      const basePath = user.role === 'ADMIN' ? '/admin' : '/managers';
 
       const response = await api.put(
         `${basePath}/update-profile`,

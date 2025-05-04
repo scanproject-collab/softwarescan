@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import api from '../../../shared/services/api';
-import { useToast } from '../../../shared/hooks/useToast';
 import { Manager, CreateManagerDto, UpdateManagerInstitutionDto } from '../types/managers';
 import { Institution } from '../../institutions/types/institutions';
+import { handleApiError, showSuccess } from '../../../shared/utils/errorHandler';
 
 /**
  * Hook para gerenciamento de gerentes
@@ -12,8 +12,6 @@ export const useManagers = () => {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [loading, setLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-
-  const toast = useToast();
 
   /**
    * Busca gerentes e instituições
@@ -35,14 +33,12 @@ export const useManagers = () => {
         institutions: institutionsResponse.data.institutions
       };
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || 'Erro ao carregar dados';
-      toast.error(errorMessage);
-      console.error('Erro:', err);
+      handleApiError(err, 'Erro ao carregar dados de gerentes e instituições');
       return null;
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   /**
    * Cria um novo gerente
@@ -69,20 +65,18 @@ export const useManagers = () => {
           createResponse.data.manager
         ]);
 
-        toast.success('Gerente criado com sucesso!');
+        showSuccess('Gerente criado com sucesso!');
         return createResponse.data.manager;
       } else {
         throw new Error('Não foi possível gerar o código de verificação');
       }
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || 'Erro ao criar gerente';
-      toast.error(errorMessage);
-      console.error('Erro:', err);
+      handleApiError(err, 'Erro ao criar gerente');
       return null;
     } finally {
       setIsCreating(false);
     }
-  }, [toast]);
+  }, []);
 
   /**
    * Atualiza a instituição de um gerente
@@ -108,15 +102,13 @@ export const useManagers = () => {
         )
       );
 
-      toast.success('Instituição do gerente atualizada com sucesso!');
+      showSuccess('Instituição do gerente atualizada com sucesso!');
       return true;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || 'Erro ao atualizar instituição do gerente';
-      toast.error(errorMessage);
-      console.error('Erro:', err);
+      handleApiError(err, 'Erro ao atualizar instituição do gerente');
       return false;
     }
-  }, [institutions, toast]);
+  }, [institutions]);
 
   /**
    * Deleta um gerente
@@ -130,15 +122,13 @@ export const useManagers = () => {
         prevManagers.filter(manager => manager.id !== managerId)
       );
 
-      toast.success('Gerente excluído com sucesso!');
+      showSuccess('Gerente excluído com sucesso!');
       return true;
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || 'Erro ao excluir gerente';
-      toast.error(errorMessage);
-      console.error('Erro:', err);
+      handleApiError(err, 'Erro ao excluir gerente');
       return false;
     }
-  }, [toast]);
+  }, []);
 
   return {
     managers,

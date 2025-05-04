@@ -13,15 +13,21 @@ export const useTags = () => {
     if (!token) return;
 
     try {
+      console.log('Fetching tags...');
       setLoading(true);
       const response = await api.get<TagResponse>('/tags', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
+      console.log('Tags API response:', response.data);
       const tagList = response.data.tags || [];
       setTags(tagList);
+      console.log('Tags set in state:', tagList);
     } catch (error) {
       console.error('Erro ao carregar tags:', error);
+      if (error.response) {
+        console.error('Response error details:', error.response.status, error.response.data);
+      }
       toast.error('Erro ao carregar tags.');
     } finally {
       setLoading(false);
@@ -35,7 +41,7 @@ export const useTags = () => {
       const capitalizedTagName = tagData.name.charAt(0).toUpperCase() + tagData.name.slice(1);
 
       await api.post(
-        '/tags/create',
+        '/tags',
         { name: capitalizedTagName, weight: tagData.weight },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -45,6 +51,9 @@ export const useTags = () => {
       return true;
     } catch (error) {
       console.error('Erro ao criar tag:', error);
+      if (error.response) {
+        console.error('Erro detalhado:', error.response.data);
+      }
       toast.error('Erro ao criar tag.');
       return false;
     }

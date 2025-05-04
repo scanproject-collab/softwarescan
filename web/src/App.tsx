@@ -1,80 +1,121 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Toaster, toast } from "react-hot-toast";
 import Modal from "react-modal";
-import { CheckCircle, XCircle, Trash2, RefreshCw, Loader2, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle, XCircle, Trash2, RefreshCw, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 
 // Components
 import Navbar from "./features/common/components/Navbar";
 import TagFilterDropdown from "./features/tags/components/TagFilterDropdown";
 import MapModal from "./features/maps/components/MapModal";
+import LoadingSpinner from "./shared/components/ui/LoadingSpinner";
 
-// Custom hooks
 import { useAuth } from "./hooks/useAuth";
 import { useMapModal } from "./features/maps/hooks/useMapModal";
+import { useInteractions } from "./features/interactions/hooks/useInteractions";
+import { useInteractionFilters } from "./features/interactions/hooks/useInteractionFilters";
+import { useDeleteInteractionModal } from "./features/interactions/hooks/useDeleteInteractionModal";
+import { usePendingOperators } from "./features/operators/hooks/usePendingOperators";
 
-// Types
 import { Interaction } from "./features/interactions/types/interactions";
+import { showError } from "./shared/utils/errorHandler";
 
-// Mocks and placeholders
-// These would be replaced with actual implementations from your features directory
-const usePendingOperators = () => {
-  return {
-    pendingOperators: [],
-    error: null,
-    handleApproveOperator: (id: string) => { },
-    handleRejectOperator: (id: string) => { },
+
+const ExportButton = ({ interactions, disabled }: { interactions: any; disabled?: boolean }) => {
+  const handleExport = () => {
+    if (interactions.length === 0) return;
+    const headers = [
+      'ID',
+      'Título da Ocorrência',
+      'Descrição',
+      'Tipo de Ocorrência',
+      'Latitude',
+      'Longitude',
+      'Data de Registro',
+      'Hora de Registro',
+      'Nome do Autor',
+      'Email do Autor',
+      'Instituição',
+      'Prioridade',
+      'Peso'
+    ];
+
+    const formatDate = (dateString: string) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('pt-BR');
+    };
+
+    const formatTime = (dateString: string) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleTimeString('pt-BR');
+    };
+
+    const data = interactions.map((interaction: any) => {
+      const createdAt = interaction.createdAt ? new Date(interaction.createdAt) : null;
+
+      return [
+        interaction.id || '',
+        interaction.title || 'Sem título',
+        interaction.content || 'Sem descrição',
+        (interaction.tags || []).join('; '),
+        interaction.latitude || '',
+        interaction.longitude || '',
+        createdAt ? formatDate(interaction.createdAt) : '',
+        createdAt ? formatTime(interaction.createdAt) : '',
+        interaction.author?.name || 'Não informado',
+        interaction.author?.email || 'Não informado',
+        interaction.author?.institution?.title || 'Não vinculado',
+        interaction.ranking || 'Não definido',
+        interaction.weight || '0'
+      ];
+    });
+
+    // Properly escape values that may contain commas, quotes or newlines
+    const escapeCSV = (value: any) => {
+      const stringValue = String(value).trim();
+      // Replace any double quotes with two double quotes (CSV standard for escaping quotes)
+      const escapedValue = stringValue.replace(/"/g, '""');
+      // Always wrap in quotes to handle any special characters
+      return `"${escapedValue}"`;
+    };
+
+    // Combine everything with proper escaping
+    const csvContent = [
+      headers.map(escapeCSV).join(','),
+      ...data.map(row => row.map(escapeCSV).join(','))
+    ].join('\n');
+
+    // Add UTF-8 BOM for better Excel compatibility
+    const BOM = '\uFEFF';
+    const csvContentWithBOM = BOM + csvContent;
+
+    // Create a blob and download
+    const blob = new Blob([csvContentWithBOM], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const date = new Date().toISOString().split('T')[0];
+    const time = new Date().toTimeString().split(' ')[0].replace(/:/g, '-');
+    link.setAttribute('download', `ocorrencias_${date}_${time}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url); // Clean up
   };
-};
 
-const useInteractions = () => {
-  return {
-    interactions: [],
-    loading: false,
-    error: null,
-    handleRefresh: () => { },
-    setInteractions: (interactions: any) => { },
-  };
+  return (
+    <button
+      onClick={handleExport}
+      className="flex items-center gap-2 rounded bg-green-600 px-3 py-2 text-white hover:bg-green-700"
+      disabled={disabled || interactions.length === 0}
+    >
+      <RefreshCw className="h-4 w-4" />
+      Exportar
+    </button>
+  );
 };
-
-const useInteractionFilters = (interactions: any) => {
-  return {
-    searchTerm: "",
-    setSearchTerm: (term: string) => { },
-    selectedTags: [],
-    setSelectedTags: (tags: string[]) => { },
-    selectedRanking: null,
-    setSelectedRanking: (ranking: string | null) => { },
-    selectedInstitution: null,
-    setSelectedInstitution: (institution: string | null) => { },
-    selectedUser: null,
-    setSelectedUser: (user: string | null) => { },
-    usersInInstitution: [],
-    filteredInteractions: [],
-    uniqueTags: [],
-    uniqueRankings: [],
-    uniqueInstitutions: [],
-  };
-};
-
-const useDeleteInteractionModal = (setInteractions: any, interactions: any) => {
-  return {
-    isModalOpen: false,
-    openDeleteModal: (id: string) => { },
-    closeDeleteModal: () => { },
-    handleDeleteInteraction: () => { },
-  };
-};
-
-const ExportButton = ({ interactions, disabled }: { interactions: any; disabled?: boolean }) => (
-  <button
-    className="flex items-center gap-2 rounded bg-green-600 px-3 py-2 text-white hover:bg-green-700"
-    disabled={disabled}
-  >
-    <RefreshCw className="h-4 w-4" />
-    Exportar
-  </button>
-);
 
 Modal.setAppElement("#root");
 
@@ -169,7 +210,7 @@ const App: React.FC = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
     } else {
-      toast.error("Você já está na primeira página");
+      showError("Você já está na primeira página");
     }
   };
 
@@ -177,14 +218,14 @@ const App: React.FC = () => {
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
     } else {
-      toast.error("Não há mais páginas disponíveis");
+      showError("Não há mais páginas disponíveis");
     }
   };
 
   if (loading) {
     return (
-      <div className="p-6 flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+      <div className="p-6 min-h-screen">
+        <LoadingSpinner size="lg" text="Carregando dados..." color="primary" />
       </div>
     );
   }
@@ -207,7 +248,6 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
-      <Toaster />
       <div className="p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">

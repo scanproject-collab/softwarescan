@@ -26,7 +26,7 @@ const Navbar: React.FC = () => {
     }
   };
 
-  const profilePath = user?.role === "MANAGER" ? "/manager/profile" : "/admin/profile";
+  const profilePath = user?.role === "MANAGER" ? "/managers/profile" : "/admin/profile";
 
   return (
     <nav className="flex items-center justify-between bg-blue-900 px-4 py-3 text-white">

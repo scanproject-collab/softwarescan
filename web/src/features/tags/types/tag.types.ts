@@ -4,6 +4,7 @@ export interface Tag {
   weight: string | null;
   createdAt: string;
   updatedAt: string;
+  usageCount?: number; // Number of posts using this tag
 }
 
 export interface TagResponse {

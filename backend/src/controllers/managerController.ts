@@ -453,6 +453,14 @@ export const updateOperator = async (req: RequestWithUser, res: Response) => {
         role: 'OPERATOR',
         institutionId: req.user.institutionId,
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isPending: true,
+        institutionId: true,
+        playerId: true
+      }
     });
 
     if (!operator) {
@@ -499,10 +507,20 @@ export const updateOperator = async (req: RequestWithUser, res: Response) => {
     await prisma.notification.create({
       data: {
         type: 'profile_updated',
-        message: `Seu perfil foi atualizado pelo gerente.`,
+        message: `O gerente ${req.user?.name || 'Gerente'} atualizou seu perfil.`,
         userId: operatorId,
       },
     });
+
+    // Enviar notificação pelo OneSignal se o operador tiver playerId
+    if (operator.playerId) {
+      await sendOneSignalNotification(
+        operator.playerId,
+        'Perfil Atualizado',
+        `O gerente ${req.user?.name || 'Gerente'} atualizou seu perfil.`,
+        { type: 'profile_updated' }
+      );
+    }
 
     res.status(200).json({
       message: 'Operador atualizado com sucesso',

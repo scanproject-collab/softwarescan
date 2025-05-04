@@ -33,7 +33,7 @@ const NotificationModal: React.FC<{ onOpen: () => void }> = ({ onOpen }) => {
             setError(null);
 
             // Endpoint correto com base no papel do usuário
-            const endpoint = user?.role === 'MANAGER' ? '/manager/notifications' : '/admin/notifications';
+            const endpoint = user?.role === 'MANAGER' ? '/managers/notifications' : '/admin/notifications';
 
             const response = await api.get(endpoint);
             let fetchedNotifications: Notification[] = response.data.notifications.map((notif: any) => ({

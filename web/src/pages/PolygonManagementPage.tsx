@@ -443,7 +443,9 @@ const PolygonManagementPage: React.FC = () => {
             </>
           )}
         </div>
-        <div className="w-1/4 bg-blue-100 p-4 overflow-y-auto">
+        <div className="w-1/4 bg-blue-100 p-4 overflow-y-auto h-screen">
+          <h2 className="text-lg font-semibold mb-4">Locais</h2>
+
           <PolygonList
             polygons={polygons}
             deletePolygonHandler={deletePolygon}
@@ -467,21 +469,24 @@ const PolygonManagementPage: React.FC = () => {
             />
           </div>
 
-          <FilterControls
-            filterDateStart={filterDateStart}
-            setFilterDateStart={setFilterDateStart}
-            filterDateEnd={filterDateEnd}
-            setFilterDateEnd={setFilterDateEnd}
-            filterTag={filterTag}
-            setFilterTag={setFilterTag}
-            tags={tags}
-            selectedLocation={selectedLocation}
-            setSelectedLocation={setSelectedLocation}
-            postLocations={uniqueLocations}
-            clearDateFilters={clearDateFilters}
-            clearAllFilters={clearAllFilters}
-            formatDate={formatDate}
-          />
+          <div className="mt-6">
+            <h3 className="text-md font-medium mb-2">Gerenciar Locais</h3>
+            <FilterControls
+              filterDateStart={filterDateStart}
+              setFilterDateStart={setFilterDateStart}
+              filterDateEnd={filterDateEnd}
+              setFilterDateEnd={setFilterDateEnd}
+              filterTag={filterTag}
+              setFilterTag={setFilterTag}
+              tags={tags}
+              selectedLocation={selectedLocation}
+              setSelectedLocation={setSelectedLocation}
+              postLocations={uniqueLocations}
+              clearDateFilters={clearDateFilters}
+              clearAllFilters={clearAllFilters}
+              formatDate={formatDate}
+            />
+          </div>
         </div>
       </div>
       <footer className="bg-gray-100 p-4 flex justify-end items-center">
