@@ -1,133 +1,113 @@
 import React from 'react';
-import { Button } from '../../../shared/components/ui/Button';
-import { Interaction, InteractionStatus } from '../types/interactions';
-import { formatDateForExport } from '../../../shared/utils/excelExport';
+import { Card, CardContent } from '../../../components/ui/card';
+import { MapPin, User, Calendar } from 'lucide-react';
+import { formatDate } from '../../../shared/utils/dateFormat';
+import { Badge } from '../../../components/ui/badge';
+
+// Define the Tag type
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+// Define the Operator type
+interface Operator {
+  id: string;
+  name: string;
+}
+
+// Define the Location type
+interface Location {
+  address: string;
+}
+
+// Update the Interaction type
+interface Interaction {
+  id: string;
+  title: string;
+  status?: string;
+  description?: string;
+  createdAt: string;
+  tags?: Tag[];
+  operator?: Operator;
+  location?: Location;
+}
 
 interface InteractionCardProps {
   interaction: Interaction;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
-  onViewDetails: (id: string) => void;
+  onClick: () => void;
 }
 
-/**
- * Componente para exibir um card de interação
- */
-export const InteractionCard: React.FC<InteractionCardProps> = ({
-  interaction,
-  onEdit,
-  onDelete,
-  onViewDetails,
-}) => {
-  /**
-   * Retorna cor baseada no status da interação
-   */
-  const getStatusColor = (status: InteractionStatus) => {
-    switch (status) {
-      case InteractionStatus.PENDING:
-        return 'bg-yellow-100 text-yellow-800';
-      case InteractionStatus.IN_PROGRESS:
-        return 'bg-blue-100 text-blue-800';
-      case InteractionStatus.COMPLETED:
-        return 'bg-green-100 text-green-800';
-      case InteractionStatus.CANCELLED:
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+// Status helper functions
+const getStatusColor = (status?: string) => {
+  if (!status) return 'bg-gray-100 text-gray-800';
 
-  /**
-   * Traduz o status para português
-   */
-  const getStatusText = (status: InteractionStatus) => {
-    switch (status) {
-      case InteractionStatus.PENDING:
-        return 'Pendente';
-      case InteractionStatus.IN_PROGRESS:
-        return 'Em Andamento';
-      case InteractionStatus.COMPLETED:
-        return 'Concluído';
-      case InteractionStatus.CANCELLED:
-        return 'Cancelado';
-      default:
-        return 'Desconhecido';
-    }
-  };
+  switch (status.toLowerCase()) {
+    case 'aberto':
+      return 'bg-green-100 text-green-800';
+    case 'em progresso':
+      return 'bg-blue-100 text-blue-800';
+    case 'fechado':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
 
+const getStatusText = (status?: string) => {
+  return status || 'Não definido';
+};
+
+export const InteractionCard: React.FC<InteractionCardProps> = ({ interaction, onClick }) => {
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="text-lg font-semibold text-gray-900 truncate" title={interaction.title}>
-          {interaction.title}
-        </h3>
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(interaction.status)}`}
-        >
-          {getStatusText(interaction.status)}
-        </span>
-      </div>
-
-      <p className="text-sm text-gray-600 mb-3 line-clamp-2" title={interaction.description}>
-        {interaction.description}
-      </p>
-
-      <div className="flex flex-wrap gap-1 mb-3">
-        {interaction.tags.map((tag) => (
-          <span
-            key={tag.id}
-            className="px-2 py-1 rounded-full text-xs font-medium"
-            style={{ backgroundColor: `${tag.color}25`, color: tag.color }}
+    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="font-medium text-base text-gray-800 line-clamp-1">{interaction.title}</h3>
+          <Badge
+            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(interaction.status)}`}
+            variant="outline"
           >
-            {tag.name}
-          </span>
-        ))}
-      </div>
+            {getStatusText(interaction.status)}
+          </Badge>
+        </div>
 
-      <div className="text-xs text-gray-500 mb-3">
-        <div className="flex justify-between">
-          <span>Operador:</span>
-          <span className="font-medium">{interaction.operator.name}</span>
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2" title={interaction.description || ''}>
+          {interaction.description || 'Sem descrição'}
+        </p>
+
+        <div className="flex flex-wrap gap-1 mb-3">
+          {interaction.tags && interaction.tags.map((tag) => (
+            <span
+              key={tag.id}
+              className="inline-block px-2 py-1 rounded-full text-xs"
+              style={{ backgroundColor: `${tag.color}25`, color: tag.color }}
+            >
+              {tag.name}
+            </span>
+          ))}
         </div>
-        <div className="flex justify-between">
-          <span>Criado em:</span>
-          <span>{formatDateForExport(interaction.createdAt)}</span>
+
+        <div className="text-sm text-gray-500 flex items-center mb-1">
+          <User className="w-4 h-4 mr-1" />
+          <span className="font-medium">{interaction.operator?.name || 'Não atribuído'}</span>
         </div>
+
+        <div className="text-sm text-gray-500 flex items-center mb-1">
+          <Calendar className="w-4 h-4 mr-1" />
+          <span>{formatDate(interaction.createdAt)}</span>
+        </div>
+
         {interaction.location && (
-          <div className="flex justify-between">
-            <span>Localização:</span>
+          <div className="text-sm text-gray-500 flex items-center">
+            <MapPin className="w-4 h-4 mr-1" />
             <span className="truncate max-w-[150px]" title={interaction.location.address}>
               {interaction.location.address || 'Sem endereço'}
             </span>
           </div>
         )}
-      </div>
-
-      <div className="flex justify-between gap-2 mt-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onViewDetails(interaction.id)}
-        >
-          Detalhes
-        </Button>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit(interaction.id)}
-          >
-            Editar
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => onDelete(interaction.id)}
-          >
-            Excluir
-          </Button>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }; 

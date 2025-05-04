@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "../../../shared/services/api";
 import { useAuth } from "../../../hooks/useAuth";
 import { handleApiError } from "../../../shared/utils/errorHandler";
+import toast from "react-hot-toast";
 
 interface Interaction {
   id: string;
@@ -31,8 +32,6 @@ export const useInteractions = () => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const { token, user } = useAuth();
-
-  const basePath = user?.role === "MANAGER" ? "/managers" : "/admin";
 
   const fetchInteractions = async () => {
     if (!token) return;

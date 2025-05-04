@@ -11,6 +11,7 @@ export const googleMapsConfig: LoadScriptProps = {
     libraries: ['places', 'geometry', 'drawing'],
     language: 'pt-BR',
     region: 'BR',
+    id: 'google-maps-script',
 };
 
 // Opções padrão para o mapa

@@ -10,6 +10,7 @@ export interface Manager {
   role: UserRole.MANAGER;
   createdAt: string;
   updatedAt: string;
+  lastLoginDate?: string;
   institution: {
     id: string;
     title: string;

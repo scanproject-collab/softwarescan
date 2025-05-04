@@ -42,9 +42,9 @@ const InstitutionManagement: React.FC = () => {
 
   // Use this callback to ensure we don't trigger unnecessary re-renders
   const loadData = useCallback(async () => {
-    await fetchInstitutions();
+    await getSortedInstitutions();
     setInitialLoadComplete(true);
-  }, [fetchInstitutions]);
+  }, [getSortedInstitutions]);
 
   useEffect(() => {
     loadData();
@@ -159,7 +159,7 @@ const InstitutionManagement: React.FC = () => {
       setTargetInstitutionId('');
 
       // Refresh institutions to update user counts
-      fetchInstitutions();
+      getSortedInstitutions();
     } catch (error) {
       toast.error('Erro ao mover usuário.');
       console.error(error);
@@ -174,9 +174,7 @@ const InstitutionManagement: React.FC = () => {
 
     try {
       setLoadingUsers(true);
-      // In a real app, this would open a dialog to select from users without institutions
-      // For now, redirect to user management or show a message
-      toast.info('Para adicionar usuários, vá para a página de gerenciamento de usuários.');
+      toast.success('Para adicionar usuários, vá para a página de gerenciamento de usuários.');
     } catch (error) {
       toast.error('Erro ao adicionar usuário.');
       console.error(error);
@@ -204,7 +202,7 @@ const InstitutionManagement: React.FC = () => {
       setTotalPages(Math.ceil((totalUsers - 1) / usersPerPage));
 
       // Refresh institutions to update user counts
-      fetchInstitutions();
+      getSortedInstitutions();
     } catch (error) {
       toast.error('Erro ao remover usuário.');
       console.error(error);
@@ -242,7 +240,7 @@ const InstitutionManagement: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    fetchInstitutions();
+    getSortedInstitutions();
   };
 
   const formatDate = (dateString: string) => {

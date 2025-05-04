@@ -1,4 +1,5 @@
-import { toast } from 'react-hot-toast';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { showSuccess, showError, handleApiError } from '../utils/errorHandler';
 
 /**
@@ -13,11 +14,6 @@ interface ToastOptions {
  * Hook for standardized toast notifications
  */
 export const useToast = () => {
-  const defaultOptions: ToastOptions = {
-    duration: 5000,
-    position: 'top-right',
-  };
-
   return {
     /**
      * Show a success toast

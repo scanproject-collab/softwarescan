@@ -23,7 +23,7 @@ export const useTags = () => {
       const tagList = response.data.tags || [];
       setTags(tagList);
       console.log('Tags set in state:', tagList);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar tags:', error);
       if (error.response) {
         console.error('Response error details:', error.response.status, error.response.data);
@@ -49,7 +49,7 @@ export const useTags = () => {
       toast.success('Tag criada com sucesso!');
       fetchTags();
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar tag:', error);
       if (error.response) {
         console.error('Erro detalhado:', error.response.data);
@@ -74,7 +74,7 @@ export const useTags = () => {
       toast.success('Tag atualizada com sucesso!');
       fetchTags();
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao atualizar tag:', error);
       toast.error('Erro ao atualizar tag.');
       return false;
@@ -92,7 +92,7 @@ export const useTags = () => {
       toast.success('Tag excluída com sucesso!');
       fetchTags();
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao excluir tag:', error);
       toast.error('Erro ao excluir tag.');
       return false;

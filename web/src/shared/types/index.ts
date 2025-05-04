@@ -8,9 +8,10 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  createdAt: string;
-  updatedAt: string;
   institutionId?: string;
+  institution?: { title: string };
+  createdAt?: string;
+  token?: string;
 }
 
 // Papéis de usuário
@@ -45,10 +46,5 @@ export interface PaginatedResponse<T> {
 
 // Filtros de pesquisa
 export interface SearchFilters {
-  page?: number;
-  limit?: number;
   search?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  [key: string]: any;
 } 

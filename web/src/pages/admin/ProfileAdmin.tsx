@@ -3,7 +3,7 @@ import { useProfile } from "../../features/profile/hooks/useProfile";
 import MainLayout from "../../layouts/MainLayout";
 import { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { Users, UserCheck, UserX, Bell, ChartPie, Settings } from "lucide-react";
+import { Users, UserCheck, UserX, Bell, Settings } from "lucide-react";
 import api from "../../shared/services/api";
 import LoadingSpinner from "../../shared/components/ui/LoadingSpinner";
 

@@ -7,8 +7,13 @@ export interface Institution {
   id: string;
   title: string;
   createdAt: string;
-  updatedAt: string;
-  userCount: number;
+  updatedAt?: string;
+  userCount?: number;
+  author?: {
+    id: string;
+    name?: string;
+    email?: string;
+  };
 }
 
 /**

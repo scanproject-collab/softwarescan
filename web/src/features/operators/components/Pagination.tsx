@@ -35,11 +35,14 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
     }
 
     // Adicionar a última página se não estiver no range
-    if (range[range.length - 1] < pages) {
-      if (range[range.length - 1] < pages - 1) {
-        range.push('...');
+    if (typeof range[range.length - 1] === 'number') {
+      const lastValue = range[range.length - 1] as number;
+      if (lastValue < pages) {
+        if (lastValue < pages - 1) {
+          range.push('...');
+        }
+        range.push(pages);
       }
-      range.push(pages);
     }
 
     return range;
@@ -66,8 +69,8 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
               onClick={() => page > 1 && onPageChange(page - 1)}
               disabled={page === 1}
               className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${page === 1
-                  ? 'text-gray-300 cursor-not-allowed'
-                  : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
                 }`}
             >
               <span className="sr-only">Anterior</span>
@@ -84,8 +87,8 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
                   <button
                     onClick={() => typeof pageNumber === 'number' && onPageChange(pageNumber)}
                     className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === pageNumber
-                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                       }`}
                   >
                     {pageNumber}
@@ -98,8 +101,8 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
               onClick={() => page < pages && onPageChange(page + 1)}
               disabled={page === pages}
               className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${page === pages
-                  ? 'text-gray-300 cursor-not-allowed'
-                  : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-gray-500 hover:bg-gray-50 cursor-pointer'
                 }`}
             >
               <span className="sr-only">Próxima</span>

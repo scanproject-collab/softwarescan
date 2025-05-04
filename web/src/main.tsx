@@ -1,9 +1,9 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import './index.css';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import App from './App';
+import App from './App.tsx';
 import 'leaflet/dist/leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -26,7 +26,7 @@ import NotFoundPage from './pages/NotFoundPage';
 // Features
 import { ProtectedRoute } from './shared/components/ProtectedRoute';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <Toaster position="top-right" />

@@ -39,6 +39,7 @@ const PolygonDrawingGuide: React.FC<PolygonDrawingGuideProps> = ({
             <li>Preencha o nome e as informações quando solicitado</li>
           </ol>
           <p className="mt-2 text-gray-600">Um polígono deve ter pelo menos 3 pontos para ser válido.</p>
+          <p className="mt-1 text-blue-600 text-xs">Dica: Use as formas pré-definidas para criar polígonos rapidamente!</p>
         </div>
       )}
 

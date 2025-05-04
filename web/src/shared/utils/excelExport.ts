@@ -1,5 +1,14 @@
 import * as XLSX from 'xlsx';
-import { Interaction } from '../types/types';
+// Define the Interaction type here
+interface Interaction {
+  id: string;
+  title: string;
+  description?: string;
+  status?: string;
+  createdAt: string;
+  updatedAt?: string;
+  [key: string]: any;
+}
 
 interface ExcelColumn {
   header: string;
@@ -15,24 +24,24 @@ const columns: ExcelColumn[] = [
   { header: 'Latitude', key: 'latitude', width: 15 },
   { header: 'Longitude', key: 'longitude', width: 15 },
   { header: 'Peso', key: 'weight', width: 10 },
-  { 
-    header: 'Tags', 
-    key: 'tags', 
+  {
+    header: 'Tags',
+    key: 'tags',
     width: 30,
     formatter: (tags: string[]) => tags?.join(', ') || ''
   },
   { header: 'Prioridade', key: 'ranking', width: 15 },
-  { 
-    header: 'Data de Criação', 
-    key: 'createdAt', 
+  {
+    header: 'Data de Criação',
+    key: 'createdAt',
     width: 20,
     formatter: (date: string) => new Date(date).toLocaleString('pt-BR')
   },
   { header: 'Autor', key: 'author.name', width: 25 },
   { header: 'Email do Autor', key: 'author.email', width: 30 },
-  { 
-    header: 'Instituição', 
-    key: 'author.institution.title', 
+  {
+    header: 'Instituição',
+    key: 'author.institution.title',
     width: 30,
     formatter: (value: any) => value || 'N/A'
   },
@@ -41,6 +50,12 @@ const columns: ExcelColumn[] = [
 
 const getNestedValue = (obj: any, path: string): any => {
   return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+};
+
+// Format date for export
+export const formatDateForExport = (dateString: string | Date): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('pt-BR');
 };
 
 export const exportToExcel = (interactions: Interaction[]): void => {

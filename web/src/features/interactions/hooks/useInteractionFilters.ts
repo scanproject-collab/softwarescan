@@ -1,7 +1,16 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import api from "../../../shared/services/api";
 import { useAuth } from "../../../hooks/useAuth";
-import { Interaction } from "../types/types";
+
+// Define the Interaction type here
+interface Interaction {
+  id: string;
+  title: string;
+  status?: string;
+  createdAt: string | Date;
+  tags?: Array<string | { id: string; name: string }>;
+  [key: string]: any;
+}
 
 export const useInteractionFilters = (interactions: Interaction[]) => {
   const [searchTerm, setSearchTerm] = useState<string>("");

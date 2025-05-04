@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { RefreshCw, Plus, Search } from "lucide-react";
 import { Toaster } from "react-hot-toast";
-import { DialogTrigger } from "../../../components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import { Tag, TagFormData } from "../types/tag.types";
 import { useTags } from "../hooks/useTags";
 import LoadingSpinner from "../../../shared/components/ui/LoadingSpinner";
+import { Button } from "../../../components/ui/button";
+import { Badge } from "../../../components/ui/badge";
 
 import TagList from "./TagList";
 import TagForm from "./TagForm";

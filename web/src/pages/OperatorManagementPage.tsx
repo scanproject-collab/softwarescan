@@ -58,7 +58,7 @@ const OperatorManagementPage: React.FC = () => {
         try {
           setLoadingInstitutions(true);
           const response = await api.get('/institutions', {
-            headers: { Authorization: `Bearer ${user.token}` }
+            headers: { Authorization: `Bearer ${user?.token || ''}` }
           });
           setInstitutions(response.data.institutions || []);
         } catch (error) {
@@ -179,8 +179,10 @@ const OperatorManagementPage: React.FC = () => {
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (selectedOperator) {
-        const data = { ...formData };
-        if (!data.password) delete data.password;
+        const data: any = { ...formData };
+        if (data.password?.length === 0) {
+          data.password = undefined;
+        }
 
         const success = await updateOperator(selectedOperator.id, data);
         if (success) {
@@ -215,7 +217,7 @@ const OperatorManagementPage: React.FC = () => {
         const endpoint = `${basePath}/operators/create`;
 
         await api.post(endpoint, formData, {
-          headers: { Authorization: `Bearer ${user?.token}` }
+          headers: { Authorization: `Bearer ${user?.token || ''}` }
         });
 
         toast.success('Operador criado com sucesso!');

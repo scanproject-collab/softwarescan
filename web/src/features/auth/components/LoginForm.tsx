@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../shared/services/api";
-import toast from "react-hot-toast";
 import { useAuth } from "../../../hooks/useAuth";
 import { LoginCredentials } from "../types/auth.types";
 import { showSuccess, showError } from "../../../shared/utils/errorHandler";
