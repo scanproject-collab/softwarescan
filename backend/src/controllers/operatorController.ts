@@ -17,7 +17,7 @@ export const updateOperatorAccount = async (req: RequestWithUser, res: Response)
   }
 
   try {
-  
+
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       include: { institution: true },
@@ -54,14 +54,14 @@ export const updateOperatorAccount = async (req: RequestWithUser, res: Response)
       data.password = hashedPassword;
     }
 
-    
+
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data,
       include: { institution: true },
     });
 
-    
+
     const token = jwt.sign(
       {
         id: updatedUser.id,

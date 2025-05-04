@@ -203,4 +203,31 @@ router.get('/verify-token', authMiddleware, verifyTokenController);
 // Update user profile
 router.put('/update-profile', authMiddleware, updateUserProfileController);
 
+/**
+ * @swagger
+ * /auth/version:
+ *   get:
+ *     summary: Get latest app version
+ *     description: Returns the latest app version information
+ *     responses:
+ *       200:
+ *         description: Version information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 version:
+ *                   type: string
+ *                 required:
+ *                   type: boolean
+ */
+router.get('/version', (req, res) => {
+  // Return the latest version information
+  res.json({
+    version: "3.0.0",
+    required: false
+  });
+});
+
 export default router;
