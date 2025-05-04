@@ -24,25 +24,33 @@ const InstitutionManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [sortedInstitutions, setSortedInstitutions] = useState<Institution[]>([]);
   const usersPerPage = 6;
   const { token } = useAuth();
   const toast = useToast();
 
   const {
+    institutions,
     loading,
     createInstitution,
     updateInstitution,
     deleteInstitution,
     searchTerm,
     setSearchTerm,
-    getSortedInstitutions
+    getSortedInstitutions,
+    fetchInstitutions
   } = useInstitutions();
+
+  // Update sorted institutions when the institutions or search term changes
+  useEffect(() => {
+    setSortedInstitutions(getSortedInstitutions());
+  }, [institutions, searchTerm, getSortedInstitutions]);
 
   // Use this callback to ensure we don't trigger unnecessary re-renders
   const loadData = useCallback(async () => {
-    await getSortedInstitutions();
+    await fetchInstitutions();
     setInitialLoadComplete(true);
-  }, [getSortedInstitutions]);
+  }, [fetchInstitutions]);
 
   useEffect(() => {
     loadData();
@@ -157,7 +165,7 @@ const InstitutionManagement: React.FC = () => {
       setTargetInstitutionId('');
 
       // Refresh institutions to update user counts
-      getSortedInstitutions();
+      fetchInstitutions();
     } catch (error) {
       toast.error('Erro ao mover usuário.');
       console.error(error);
@@ -200,7 +208,7 @@ const InstitutionManagement: React.FC = () => {
       setTotalPages(Math.ceil((totalUsers - 1) / usersPerPage));
 
       // Refresh institutions to update user counts
-      getSortedInstitutions();
+      fetchInstitutions();
     } catch (error) {
       toast.error('Erro ao remover usuário.');
       console.error(error);
@@ -237,8 +245,8 @@ const InstitutionManagement: React.FC = () => {
     return colorMap[role] || 'bg-blue-100 text-blue-800';
   };
 
-  const handleRefresh = () => {
-    getSortedInstitutions();
+  const handleRefresh = async () => {
+    await fetchInstitutions();
   };
 
   const formatDate = (dateString: string) => {
@@ -246,8 +254,7 @@ const InstitutionManagement: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    const institutions = getSortedInstitutions();
-    if (institutions.length === 0) return;
+    if (sortedInstitutions.length === 0) return;
 
     // Formato consistente para datas
     const formatDateForExport = (dateString: string) => {
@@ -268,7 +275,7 @@ const InstitutionManagement: React.FC = () => {
     ];
 
     // Dados das instituições com melhor organização
-    const data = institutions.map(institution => {
+    const data = sortedInstitutions.map(institution => {
       // Obter informações do autor quando disponíveis
       const authorName = institution.author?.name || 'Não informado';
       const authorEmail = institution.author?.email || 'Não informado';
@@ -322,8 +329,6 @@ const InstitutionManagement: React.FC = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url); // Liberar recursos
   };
-
-  const sortedInstitutions = getSortedInstitutions();
 
   // Only show loading on initial load, not during refreshes
   const showLoading = !initialLoadComplete && loading;

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import api from '../../../shared/services/api';
 import { useToast } from '../../../shared/hooks/useToast';
 import { Institution, CreateInstitutionDto, UpdateInstitutionDto } from '../types/institutions';
+import { useAuth } from '../../../hooks/useAuth';
 
 /**
  * Hook para gerenciamento de instituições
@@ -12,6 +13,7 @@ export const useInstitutions = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'title' | 'createdAt'>('title');
   const toast = useToast();
+  const { token } = useAuth();
 
   /**
    * Busca instituições
@@ -19,7 +21,9 @@ export const useInstitutions = () => {
   const fetchInstitutions = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get('/institutions');
+      const response = await api.get('/institutions', {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+      });
       const institutionList = response.data.institutions || [];
       setInstitutions(institutionList);
       return institutionList;
@@ -30,14 +34,16 @@ export const useInstitutions = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, token]);
 
   /**
    * Cria uma nova instituição
    */
   const createInstitution = useCallback(async (data: CreateInstitutionDto) => {
     try {
-      const response = await api.post('/institutions', data);
+      const response = await api.post('/institutions', data, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+      });
       toast.success('Instituição criada com sucesso!');
       await fetchInstitutions();
       return response.data;
@@ -46,14 +52,16 @@ export const useInstitutions = () => {
       console.error(err);
       return null;
     }
-  }, [fetchInstitutions, toast]);
+  }, [fetchInstitutions, toast, token]);
 
   /**
    * Atualiza uma instituição
    */
   const updateInstitution = useCallback(async (id: string, data: UpdateInstitutionDto) => {
     try {
-      const response = await api.put(`/institutions/${id}`, data);
+      const response = await api.put(`/institutions/${id}`, data, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+      });
       toast.success('Instituição atualizada com sucesso!');
       await fetchInstitutions();
       return response.data;
@@ -62,14 +70,16 @@ export const useInstitutions = () => {
       console.error(err);
       return null;
     }
-  }, [fetchInstitutions, toast]);
+  }, [fetchInstitutions, toast, token]);
 
   /**
    * Deleta uma instituição
    */
   const deleteInstitution = useCallback(async (id: string) => {
     try {
-      await api.delete(`/institutions/${id}`);
+      await api.delete(`/institutions/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+      });
       toast.success('Instituição excluída com sucesso!');
       await fetchInstitutions();
       return true;
@@ -78,7 +88,7 @@ export const useInstitutions = () => {
       console.error(err);
       return false;
     }
-  }, [fetchInstitutions, toast]);
+  }, [fetchInstitutions, toast, token]);
 
   /**
    * Filtra instituições pelo termo de busca
