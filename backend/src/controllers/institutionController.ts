@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { CustomRequest } from '../middlewares/authMiddleware'; 
+import { CustomRequest } from '../middlewares/authMiddleware';
 
 const prisma = new PrismaClient();
 
 export const createInstitution = async (req: CustomRequest, res: Response) => {
   try {
     const { title } = req.body;
-    const adminId = req.user?.id; 
+    const adminId = req.user?.id;
 
     if (!title) {
       return res.status(400).json({ message: 'Title is required' });
@@ -88,7 +88,7 @@ export const listInstitutions = async (_req: Request, res: Response) => {
         updatedAt: true,
         author: {
           select: { id: true, name: true, email: true },
-        }, 
+        },
         users: {
           select: { id: true, name: true, email: true, role: true },
         },

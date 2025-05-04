@@ -137,7 +137,7 @@ router.put("/:name", authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async
 
 /**
  * @openapi
- * /tags/{id}:
+ * /tags/{name}:
  *   delete:
  *     summary: Delete a tag
  *     description: Remove a tag from the system
@@ -147,11 +147,11 @@ router.put("/:name", authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: name
  *         required: true
  *         schema:
  *           type: string
- *         description: ID of the tag to delete
+ *         description: Name of the tag to delete
  *     responses:
  *       200:
  *         description: Tag deleted successfully
@@ -162,7 +162,7 @@ router.put("/:name", authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async
  *       404:
  *         description: Tag not found
  */
-router.delete("/:id", authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async (req: CustomRequest, res: Response, next: NextFunction) => {
+router.delete("/:name", authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async (req: CustomRequest, res: Response, next: NextFunction) => {
     try {
         await deleteTag(req, res);
     } catch (err) {

@@ -5,10 +5,32 @@ const prisma = new PrismaClient();
 
 export const listTags = async (_req: Request, res: Response) => {
   try {
+    // Get all tags
     const tags = await prisma.tag.findMany({
       orderBy: { name: "asc" },
     });
-    res.status(200).json({ message: "Tags retrieved successfully", tags });
+
+    // For each tag, count how many posts use it
+    const tagsWithUsage = await Promise.all(
+      tags.map(async (tag) => {
+        // Count posts that include this tag name in their tags array
+        const postsCount = await prisma.post.count({
+          where: {
+            tags: {
+              has: tag.name
+            }
+          }
+        });
+
+        // Return the tag with the usage count
+        return {
+          ...tag,
+          usageCount: postsCount
+        };
+      })
+    );
+
+    res.status(200).json({ message: "Tags retrieved successfully", tags: tagsWithUsage });
   } catch (error) {
     res.status(400).json({ message: "Error listing tags: " + (error as Error).message });
   }

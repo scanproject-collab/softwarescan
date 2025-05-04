@@ -5,12 +5,11 @@ import crypto from 'crypto';
 import { sendWelcomeEmail, sendResetPasswordEmail, sendPendingApprovalEmail } from './mailer';
 import { sendOneSignalNotification } from './oneSignalNotification';
 
-const dbConfig = require('../../config/database');
 
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: dbConfig.url,
+      url: process.env.DATABASE_URL,
     },
   },
 });
@@ -19,7 +18,7 @@ prisma.$connect()
   .then(() => console.log('Database connection established successfully'))
   .catch(e => console.error('Database connection failed:', e));
 
-const JWT_SECRET = process.env.SECRET_KEY_SESSION;
+const JWT_SECRET = process.env.SECRET_KEY_SESSION || 'your_jwt_secret_key';
 
 export const registerUser = async (
   name: string,
@@ -103,16 +102,20 @@ export const loginUser = async (email: string, password: string) => {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error('Usuário não encontrado');
     }
 
     if (user.isPending) {
-      throw new Error('Account is pending approval');
+      throw new Error('A conta está pendente de aprovação');
+    }
+
+    if (!user.password) {
+      throw new Error('Usuário não tem senha definida');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new Error('Invalid password');
+      throw new Error('Senha inválida');
     }
 
     const updatedUser = await prisma.user.update({

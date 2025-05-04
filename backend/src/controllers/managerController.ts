@@ -11,94 +11,62 @@ interface RequestWithUser extends Request {
 }
 
 export const listOperatorsForManager = async (req: RequestWithUser, res: Response) => {
+  // If manager has no institution, return empty operators
   if (!req.user?.institutionId) {
-    return res.status(400).json({ message: 'Manager must belong to an institution' });
+    console.log('Manager without institution accessing operators list:', req.user?.id);
+    return res.status(200).json({
+      message: 'No operators available - Manager is not associated with any institution',
+      operators: [],
+    });
   }
 
   try {
-    // Get pagination parameters from query
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
-
-    // Get filter parameters
-    const searchTerm = req.query.search as string || '';
-
-    // Build the filter object
-    const filter: any = {
-      role: 'OPERATOR',
-      institutionId: req.user.institutionId,
-      isPending: false,
-    };
-
-    // Add search term filter if provided
-    if (searchTerm) {
-      filter.$or = [
-        { name: { $regex: searchTerm, $options: 'i' } },
-        { email: { $regex: searchTerm, $options: 'i' } }
-      ];
-    }
-
-    // Get the total count for pagination
-    const totalCount = await prisma.user.count({ where: filter });
-
-    // Execute the query with pagination
     const operators = await prisma.user.findMany({
-      where: filter,
+      where: {
+        role: 'OPERATOR',
+        institutionId: req.user.institutionId,
+      },
       select: {
         id: true,
         name: true,
         email: true,
+        isPending: true,
         createdAt: true,
         lastLoginDate: true,
+        playerId: true,
         institution: {
-          select: { title: true },
-        },
+          select: { title: true }
+        }
       },
-      skip,
-      take: limit,
-      orderBy: { name: 'asc' }
+      orderBy: { createdAt: 'desc' }
     });
 
-    const totalOperators = operators.length;
-
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentOperators = operators.filter(
-      (op) => op.createdAt && new Date(op.createdAt) >= sevenDaysAgo
-    ).length;
-
-    const response = {
+    res.status(200).json({
       message: 'Operators listed successfully',
-      pagination: {
-        total: totalCount,
-        page,
-        limit,
-        pages: Math.ceil(totalCount / limit)
-      },
-      summary: {
-        totalOperators,
-        recentOperators,
-      },
-      operators: operators.map((op) => ({
-        id: op.id,
-        name: op.name || 'Unnamed',
-        email: op.email,
-        institution: op.institution?.title || 'Unassigned',
-        createdAt: op.createdAt?.toISOString() ?? new Date().toISOString(),
-        lastLoginDate: op.lastLoginDate?.toISOString() ?? null,
+      operators: operators.map(operator => ({
+        id: operator.id,
+        name: operator.name,
+        email: operator.email,
+        isPending: operator.isPending,
+        createdAt: operator.createdAt,
+        lastLoginDate: operator.lastLoginDate,
+        institution: operator.institution?.title || null,
+        hasPlayerId: !!operator.playerId
       })),
-    };
-
-    res.status(200).json(response);
+    });
   } catch (error) {
     res.status(400).json({ message: 'Error listing operators: ' + (error as any).message });
   }
 };
 
 export const listPendingOperatorsForManager = async (req: RequestWithUser, res: Response) => {
+  // If manager has no institution, return empty pending operators
   if (!req.user?.institutionId) {
-    return res.status(400).json({ message: 'Manager must belong to an institution' });
+    console.log('Manager without institution accessing pending operators list:', req.user?.id);
+    return res.status(200).json({
+      message: 'No pending operators available - Manager is not associated with any institution',
+      operators: [],
+    });
   }
 
   try {
@@ -234,8 +202,13 @@ export const rejectOperatorForManager = async (req: RequestWithUser, res: Respon
 };
 
 export const listPostsForManager = async (req: RequestWithUser, res: Response) => {
+  // If manager has no institution, return empty posts list
   if (!req.user?.institutionId) {
-    return res.status(400).json({ message: 'Manager must belong to an institution' });
+    console.log('Manager without institution accessing posts list:', req.user?.id);
+    return res.status(200).json({
+      message: 'No posts available - Manager is not associated with any institution',
+      posts: [],
+    });
   }
 
   try {
@@ -329,8 +302,13 @@ export const deletePostForManager = async (req: RequestWithUser, res: Response) 
 };
 
 export const listNotificationsForManager = async (req: RequestWithUser, res: Response) => {
+  // If manager has no institution, return empty notifications instead of error
   if (!req.user?.institutionId) {
-    return res.status(400).json({ message: 'Manager must belong to an institution' });
+    console.log('Manager without institution accessing notifications:', req.user?.id);
+    return res.status(200).json({
+      message: 'No notifications available - Manager is not associated with any institution',
+      notifications: [],
+    });
   }
 
   try {
