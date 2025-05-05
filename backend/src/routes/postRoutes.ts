@@ -1,5 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
-import { createPost, listUserPosts, getPostById, uploadImage, deletePost } from '../controllers/postController';
+import { createPost, listUserPosts, getPostById, uploadImage, deletePost, updatePost } from '../controllers/postController';
 import { authMiddleware, roleMiddleware, CustomRequest } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -149,6 +149,67 @@ router.get('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', 'MAN
 router.delete('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', 'MANAGER']), async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     await deletePost(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @openapi
+ * /posts/{postId}:
+ *   put:
+ *     summary: Editar uma postagem
+ *     description: Atualiza os dados de uma postagem existente
+ *     tags:
+ *       - Posts
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da postagem a ser editada
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *               tags:
+ *                 type: string
+ *               location:
+ *                 type: string
+ *               latitude:
+ *                 type: number
+ *               longitude:
+ *                 type: number
+ *               ranking:
+ *                 type: string
+ *               weight:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Postagem editada com sucesso
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Proibido
+ *       404:
+ *         description: Postagem não encontrada
+ */
+router.put('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', 'MANAGER']), uploadImage, async (req: CustomRequest, res: Response, next: NextFunction) => {
+  try {
+    await updatePost(req, res);
   } catch (err) {
     next(err);
   }

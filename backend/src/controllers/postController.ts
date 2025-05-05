@@ -38,31 +38,31 @@ const uploadImageToS3 = async (file: Express.Multer.File, userId: string) => {
   return `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
 };
 
-export const createPost = async (req: Request & { user?: { id: string } }, res: Response) => {  
-  try {  
-    if (!req.user?.id) {  
-      return res.status(401).json({ message: 'Unauthorized' });  
-    }  
-  
-    const { title, content, tags, location, latitude, longitude, playerId, weight, ranking, offlineId } = req.body;  
-    let tagsArray = tags ? tags.split(',') : [];  
-  
-    if (offlineId) {  
-      const existingPost = await prisma.post.findFirst({  
-        where: {  
-          authorId: req.user.id,  
-          offlineId: offlineId,  
-        },  
-      });  
-  
-      if (existingPost) {  
-        let imageUrl: string | undefined = existingPost.imageUrl;  
-        if (req.file) {  
-          console.log("Arquivo recebido para atualização:", req.file);  
-          imageUrl = await uploadImageToS3(req.file, req.user.id);  
-          console.log("Nova URL da imagem:", imageUrl);  
+export const createPost = async (req: Request & { user?: { id: string } }, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { title, content, tags, location, latitude, longitude, playerId, weight, ranking, offlineId } = req.body;
+    let tagsArray = tags ? tags.split(',') : [];
+
+    if (offlineId) {
+      const existingPost = await prisma.post.findFirst({
+        where: {
+          authorId: req.user.id,
+          offlineId: offlineId,
+        },
+      });
+
+      if (existingPost) {
+        let imageUrl: string | undefined = existingPost.imageUrl;
+        if (req.file) {
+          console.log("Arquivo recebido para atualização:", req.file);
+          imageUrl = await uploadImageToS3(req.file, req.user.id);
+          console.log("Nova URL da imagem:", imageUrl);
         }
-        
+
         const updatedPost = await prisma.post.update({
           where: { id: existingPost.id },
           data: {
@@ -77,48 +77,48 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
             weight: weight || '0',
           }
         });
-        
-        return res.status(200).json({  
-          message: 'Post updated successfully',  
-          post: updatedPost,  
-        });  
-      }  
-    }  
-  
-    let imageUrl: string | undefined;  
-    if (req.file) {  
-      console.log("Arquivo recebido:", req.file);  
-      imageUrl = await uploadImageToS3(req.file, req.user.id);  
-      console.log("URL da imagem:", imageUrl);  
-    } else {  
-      console.log("Nenhum arquivo foi enviado.");  
-    }  
 
-    const postData: any = {  
-      title,  
-      content,  
-      imageUrl,  
-      tags: tagsArray,  
-      location,  
-      latitude: latitude ? parseFloat(latitude) : null,  
-      longitude: longitude ? parseFloat(longitude) : null,  
-      authorId: req.user.id,  
-      ranking: ranking || 'Baixo',  
-      weight: weight || '0',  
-    };  
-    if (offlineId) {  
-      postData.offlineId = offlineId;  
-    }  
+        return res.status(200).json({
+          message: 'Post updated successfully',
+          post: updatedPost,
+        });
+      }
+    }
 
-    const post = await prisma.post.create({  
-      data: postData,  
-    });  
+    let imageUrl: string | undefined;
+    if (req.file) {
+      console.log("Arquivo recebido:", req.file);
+      imageUrl = await uploadImageToS3(req.file, req.user.id);
+      console.log("URL da imagem:", imageUrl);
+    } else {
+      console.log("Nenhum arquivo foi enviado.");
+    }
 
-    res.status(201).json({ message: 'Post created successfully', post });  
-  } catch (error) {  
-    console.error("Erro ao criar postagem:", error);  
-    res.status(400).json({ message: 'Error creating post: ' + (error as Error).message });  
-  }  
+    const postData: any = {
+      title,
+      content,
+      imageUrl,
+      tags: tagsArray,
+      location,
+      latitude: latitude ? parseFloat(latitude) : null,
+      longitude: longitude ? parseFloat(longitude) : null,
+      authorId: req.user.id,
+      ranking: ranking || 'Baixo',
+      weight: weight || '0',
+    };
+    if (offlineId) {
+      postData.offlineId = offlineId;
+    }
+
+    const post = await prisma.post.create({
+      data: postData,
+    });
+
+    res.status(201).json({ message: 'Post created successfully', post });
+  } catch (error) {
+    console.error("Erro ao criar postagem:", error);
+    res.status(400).json({ message: 'Error creating post: ' + (error as Error).message });
+  }
 };
 
 export const uploadImage = upload.single('image');
@@ -249,5 +249,73 @@ export const listAllPosts = async (_req: Request, res: Response) => {
     res.status(200).json(response);
   } catch (error) {
     res.status(400).json({ message: "Error listing posts: " + (error as any).message });
+  }
+};
+
+/**
+ * Atualiza uma postagem existente
+ * Permite que OPERATOR edite sua própria postagem e ADMIN/MANAGER editem qualquer postagem
+ * A imagem é opcional
+ */
+export const updatePost = async (req: Request & { user?: { id: string, role: string } }, res: Response) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // Buscar a postagem
+    const post = await prisma.post.findUnique({ where: { id: postId } });
+    if (!post) {
+      return res.status(404).json({ message: 'Postagem não encontrada' });
+    }
+
+    // Permissão: OPERATOR só pode editar a própria, ADMIN/MANAGER podem editar qualquer
+    if (userRole === 'OPERATOR' && post.authorId !== userId) {
+      return res.status(403).json({ message: 'Você não tem permissão para editar esta postagem.' });
+    }
+
+    // Preparar dados para atualização
+    const {
+      title,
+      content,
+      tags,
+      location,
+      latitude,
+      longitude,
+      ranking,
+      weight
+    } = req.body;
+
+    let tagsArray = tags ? (typeof tags === 'string' ? tags.split(',') : tags) : undefined;
+
+    let imageUrl = post.imageUrl;
+    if (req.file) {
+      // Se enviou nova imagem, faz upload e troca
+      imageUrl = await uploadImageToS3(req.file, post.authorId);
+    }
+
+    const updateData: any = {};
+    if (title !== undefined) updateData.title = title;
+    if (content !== undefined) updateData.content = content;
+    if (tagsArray !== undefined) updateData.tags = tagsArray;
+    if (location !== undefined) updateData.location = location;
+    if (latitude !== undefined) updateData.latitude = latitude ? parseFloat(latitude) : null;
+    if (longitude !== undefined) updateData.longitude = longitude ? parseFloat(longitude) : null;
+    if (ranking !== undefined) updateData.ranking = ranking;
+    if (weight !== undefined) updateData.weight = weight;
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+
+    const updatedPost = await prisma.post.update({
+      where: { id: postId },
+      data: updateData,
+    });
+
+    return res.status(200).json({ message: 'Postagem editada com sucesso', post: updatedPost });
+  } catch (error) {
+    console.error('Erro ao editar postagem:', error);
+    res.status(400).json({ message: 'Erro ao editar postagem: ' + (error as Error).message });
   }
 };
