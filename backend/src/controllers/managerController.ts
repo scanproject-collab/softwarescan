@@ -41,6 +41,26 @@ export const listOperatorsForManager = async (req: RequestWithUser, res: Respons
       orderBy: { createdAt: 'desc' }
     });
 
+    // Get post counts for all operators in a single query to improve performance
+    const operatorIds = operators.map(op => op.id);
+    const postCounts = await prisma.post.groupBy({
+      by: ['authorId'],
+      where: {
+        authorId: {
+          in: operatorIds
+        }
+      },
+      _count: {
+        id: true
+      }
+    });
+
+    // Create a map of operator ID -> post count for quick lookup
+    const postCountMap = new Map();
+    postCounts.forEach(pc => {
+      postCountMap.set(pc.authorId, pc._count.id);
+    });
+
     res.status(200).json({
       message: 'Operators listed successfully',
       operators: operators.map(operator => ({
@@ -51,7 +71,8 @@ export const listOperatorsForManager = async (req: RequestWithUser, res: Respons
         createdAt: operator.createdAt,
         lastLoginDate: operator.lastLoginDate,
         institution: operator.institution?.title || null,
-        hasPlayerId: !!operator.playerId
+        hasPlayerId: !!operator.playerId,
+        postsCount: postCountMap.get(operator.id) || 0
       })),
     });
   } catch (error) {

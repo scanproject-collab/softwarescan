@@ -233,6 +233,26 @@ export const listAllOperators = async (req: Request, res: Response) => {
       orderBy: { name: 'asc' }
     });
 
+    // Get post counts for all operators in a single query
+    const operatorIds = operators.map(op => op.id);
+    const postCounts = await prisma.post.groupBy({
+      by: ['authorId'],
+      where: {
+        authorId: {
+          in: operatorIds
+        }
+      },
+      _count: {
+        id: true
+      }
+    });
+
+    // Create a map of operator ID -> post count for quick lookup
+    const postCountMap = new Map();
+    postCounts.forEach(pc => {
+      postCountMap.set(pc.authorId, pc._count.id);
+    });
+
     const totalOperators = operators.length;
 
     const institutionBreakdown = operators.reduce((acc, op) => {
@@ -278,6 +298,7 @@ export const listAllOperators = async (req: Request, res: Response) => {
         createdAt: op.createdAt?.toISOString() ?? new Date().toISOString(),
         updatedAt: op.updatedAt?.toISOString() ?? new Date().toISOString(),
         lastLoginDate: op.lastLoginDate?.toISOString() ?? null,
+        postsCount: postCountMap.get(op.id) || 0
       })),
     };
 
