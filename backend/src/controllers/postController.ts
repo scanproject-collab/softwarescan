@@ -44,8 +44,24 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { title, content, tags, location, latitude, longitude, playerId, weight, ranking, offlineId } = req.body;
+    const { title, content, tags, location, latitude, longitude, playerId, weight, ranking, offlineId, createdAt } = req.body;
     let tagsArray = tags ? tags.split(',') : [];
+
+    // Validar data de criação se fornecida
+    let validatedCreatedAt;
+    if (createdAt) {
+      try {
+        validatedCreatedAt = new Date(createdAt);
+        // Verificar se é uma data válida
+        if (isNaN(validatedCreatedAt.getTime())) {
+          validatedCreatedAt = undefined;
+          console.log('Data inválida fornecida:', createdAt);
+        }
+      } catch (error) {
+        validatedCreatedAt = undefined;
+        console.log('Erro ao processar data:', error);
+      }
+    }
 
     if (offlineId) {
       const existingPost = await prisma.post.findFirst({
@@ -108,6 +124,10 @@ export const createPost = async (req: Request & { user?: { id: string } }, res: 
     };
     if (offlineId) {
       postData.offlineId = offlineId;
+    }
+    // Usar a data fornecida pelo cliente, se válida
+    if (validatedCreatedAt) {
+      postData.createdAt = validatedCreatedAt;
     }
 
     const post = await prisma.post.create({
@@ -286,10 +306,27 @@ export const updatePost = async (req: Request & { user?: { id: string, role: str
       latitude,
       longitude,
       ranking,
-      weight
+      weight,
+      createdAt
     } = req.body;
 
     let tagsArray = tags ? (typeof tags === 'string' ? tags.split(',') : tags) : undefined;
+
+    // Validar data de criação se fornecida
+    let validatedCreatedAt;
+    if (createdAt) {
+      try {
+        validatedCreatedAt = new Date(createdAt);
+        // Verificar se é uma data válida
+        if (isNaN(validatedCreatedAt.getTime())) {
+          validatedCreatedAt = undefined;
+          console.log('Data inválida fornecida:', createdAt);
+        }
+      } catch (error) {
+        validatedCreatedAt = undefined;
+        console.log('Erro ao processar data:', error);
+      }
+    }
 
     let imageUrl = post.imageUrl;
     if (req.file) {
@@ -307,6 +344,10 @@ export const updatePost = async (req: Request & { user?: { id: string, role: str
     if (ranking !== undefined) updateData.ranking = ranking;
     if (weight !== undefined) updateData.weight = weight;
     if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    // Atualizar a data de criação se fornecida e válida
+    if (validatedCreatedAt) {
+      updateData.createdAt = validatedCreatedAt;
+    }
 
     const updatedPost = await prisma.post.update({
       where: { id: postId },
