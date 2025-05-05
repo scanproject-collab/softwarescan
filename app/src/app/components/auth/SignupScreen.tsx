@@ -174,6 +174,15 @@ const RegisterScreen = () => {
             value={verificationCode}
             onChangeText={setVerificationCode}
           />
+          <TouchableOpacity
+            style={styles.resendCodeButton}
+            onPress={handleSendVerificationCode}
+            disabled={isLoading}
+          >
+            <Text style={styles.resendCodeText}>
+              {isLoading ? 'Enviando...' : 'Reenviar código de verificação'}
+            </Text>
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="Senha"
@@ -303,6 +312,14 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     marginBottom: 30,
     textAlign: 'center',
+  },
+  resendCodeButton: {
+    alignSelf: 'flex-end',
+    marginBottom: 10,
+  },
+  resendCodeText: {
+    color: '#F56C2E',
+    fontSize: 14,
   },
 });
 

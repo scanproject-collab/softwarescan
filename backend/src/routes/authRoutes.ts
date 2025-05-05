@@ -97,25 +97,24 @@ router.post('/send-verification-code', async (req: Request, res: Response) => {
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
+    if (existingUser && existingUser.password) {
       return res.status(400).json({ message: 'Email já está em uso' });
     }
 
     const code = crypto.randomBytes(3).toString('hex');
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // Extending to 30 minutes
 
-    await prisma.user.upsert({
+    // Instead of creating a user, store the verification info in a separate table
+    await prisma.verificationCode.upsert({
       where: { email },
       update: {
-        verificationCode: code,
-        verificationCodeExpiresAt: expiresAt,
+        code,
+        expiresAt,
       },
       create: {
         email,
-        verificationCode: code,
-        verificationCodeExpiresAt: expiresAt,
-        role: 'OPERATOR',
-        isPending: true,
+        code,
+        expiresAt,
       },
     });
 

@@ -35,8 +35,19 @@ export const registerUser = async (
       throw new Error('A senha é obrigatória para registrar o usuário');
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.verificationCode !== verificationCode || (user.verificationCodeExpiresAt && user.verificationCodeExpiresAt < new Date())) {
+    if (!institutionId) {
+      throw new Error('É necessário selecionar uma instituição');
+    }
+
+    // Check for existing user with this email
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser && existingUser.password) {
+      throw new Error('Este email já está em uso por um usuário ativo');
+    }
+
+    // Verify the code from the verification codes table
+    const verification = await prisma.verificationCode.findUnique({ where: { email } });
+    if (!verification || verification.code !== verificationCode || verification.expiresAt < new Date()) {
       throw new Error('Código de verificação inválido ou expirado');
     }
 
@@ -46,29 +57,44 @@ export const registerUser = async (
 
     const expiresAt = userRole === 'OPERATOR' ? new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) : null;
 
-    const updatedUser = await prisma.user.update({
-      where: { email },
-      data: {
-        name,
-        password: hashedPassword,
-        role: userRole as Role,
-        isPending: userRole === 'OPERATOR',
-        expiresAt,
-        playerId,
-        institutionId,
-        verificationCode: null,
-        verificationCodeExpiresAt: null,
-      },
-    });
+    // Create the user if verification is successful
+    const newUser = existingUser
+      ? await prisma.user.update({
+        where: { email },
+        data: {
+          name,
+          password: hashedPassword,
+          role: userRole as Role,
+          isPending: userRole === 'OPERATOR',
+          expiresAt,
+          playerId,
+          institutionId,
+        },
+      })
+      : await prisma.user.create({
+        data: {
+          email,
+          name,
+          password: hashedPassword,
+          role: userRole as Role,
+          isPending: userRole === 'OPERATOR',
+          expiresAt,
+          playerId,
+          institutionId,
+        },
+      });
 
-    console.log('PlayerId do usuário atualizado:', updatedUser.playerId);
+    // Delete the verification code after successful use
+    await prisma.verificationCode.delete({ where: { email } });
+
+    console.log('PlayerId do usuário atualizado:', newUser.playerId);
 
     if (userRole === 'OPERATOR' && expiresAt) {
       await prisma.notification.create({
         data: {
           type: 'pending',
-          message: `${updatedUser.name || 'Usuário'} está aguardando aprovação.`,
-          userId: updatedUser.id,
+          message: `${newUser.name || 'Usuário'} está aguardando aprovação.`,
+          userId: newUser.id,
         },
       });
 
@@ -86,7 +112,7 @@ export const registerUser = async (
       await sendWelcomeEmail(email, name, userRole);
     }
 
-    return updatedUser;
+    return newUser;
   } catch (error: any) {
     console.error('Erro ao registrar usuário:', error.message);
     throw new Error(`Erro ao registrar usuário: ${error.message}`);
