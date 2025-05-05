@@ -66,6 +66,7 @@ const PostList = ({ filteredPosts, handleDeletePost, refreshing = false, onRefre
         }
       }}
       onDelete={item.isOffline ? undefined : () => handleDeletePost(item.id)}
+      onEdit={item.isOffline ? undefined : () => router.push({ pathname: '/pages/posts/EditPost', params: { postId: item.id } })}
       isOffline={item.isOffline}
     />
   ), [handleDeletePost]);

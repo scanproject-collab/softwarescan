@@ -10,6 +10,7 @@ interface InteractionCardProps {
   location: string;
   onPress: PressableProps['onPress'];
   onDelete?: () => void;
+  onEdit?: () => void;
   isOffline?: boolean;
   isRecent?: boolean;
 }
@@ -63,6 +64,7 @@ const InteractionCard: React.FC<InteractionCardProps> = ({
   onPress,
   title,
   onDelete,
+  onEdit,
   location,
   isOffline = false,
   isRecent = false,
@@ -96,6 +98,17 @@ const InteractionCard: React.FC<InteractionCardProps> = ({
             style={styles.deleteButton}
           >
             <Ionicons name="trash-outline" size={20} color="#fff" />
+          </Pressable>
+        )}
+        {onEdit && (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            style={styles.editButton}
+          >
+            <Ionicons name="pencil-outline" size={20} color="#fff" />
           </Pressable>
         )}
       </View>
@@ -202,12 +215,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   deleteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     backgroundColor: '#FF3B30',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 16,
+    padding: 6,
+    marginLeft: 8,
+  },
+  editButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+    padding: 6,
+    marginLeft: 8,
   },
   offlineBadge: {
     backgroundColor: '#FF4D4F',
