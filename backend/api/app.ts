@@ -39,10 +39,45 @@ app.use("/polygons", polygonsRoutes);
 const apiRouter = express.Router();
 
 // API routes
+/**
+ * @openapi
+ * /:
+ *   get:
+ *     summary: API Health Check
+ *     description: Verify that the API server is operational
+ *     tags:
+ *       - Health
+ *     responses:
+ *       200:
+ *         description: API is working properly
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: "API is working!"
+ */
 apiRouter.get("/", (_req: Request, res: Response) => {
   res.send("API is working!");
 });
 
+/**
+ * @openapi
+ * /api-reference:
+ *   get:
+ *     summary: API Documentation Reference
+ *     description: Redirect to the API documentation
+ *     tags:
+ *       - Documentation
+ *     responses:
+ *       302:
+ *         description: Redirects to API documentation
+ *       200:
+ *         description: Message indicating documentation is not generated
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ */
 apiRouter.get("/api-reference", (_req: Request, res: Response) => {
   if (fs.existsSync(apiDocsPath)) {
     res.redirect('/api-docs');
@@ -51,6 +86,28 @@ apiRouter.get("/api-reference", (_req: Request, res: Response) => {
   }
 });
 
+/**
+ * @openapi
+ * /google-maps-api-url:
+ *   get:
+ *     summary: Get Google Maps API URL
+ *     description: Returns the Google Maps API URL with the API key
+ *     tags:
+ *       - Integrations
+ *     responses:
+ *       200:
+ *         description: Google Maps API URL
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 url:
+ *                   type: string
+ *                   format: uri
+ *       500:
+ *         description: Google Maps API key not configured
+ */
 apiRouter.get("/google-maps-api-url", (_req: Request, res: Response): void => {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
@@ -61,6 +118,45 @@ apiRouter.get("/google-maps-api-url", (_req: Request, res: Response): void => {
   res.json({ url });
 });
 
+/**
+ * @openapi
+ * /send-notification:
+ *   post:
+ *     summary: Send push notification
+ *     description: Send a push notification to a specific device
+ *     tags:
+ *       - Notifications
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - playerId
+ *               - title
+ *               - body
+ *             properties:
+ *               playerId:
+ *                 type: string
+ *                 description: OneSignal player ID of the target device
+ *               title:
+ *                 type: string
+ *                 description: Title of the notification
+ *               body:
+ *                 type: string
+ *                 description: Main content of the notification
+ *               data:
+ *                 type: object
+ *                 description: Additional data payload for the notification
+ *     responses:
+ *       200:
+ *         description: Notification sent successfully
+ *       400:
+ *         description: Missing required fields
+ *       500:
+ *         description: Failed to send notification
+ */
 apiRouter.post("/send-notification", async (req: Request, res: Response): Promise<void> => {
   const { playerId, title, body, data } = req.body;
   if (!playerId || !title || !body) {
@@ -76,6 +172,18 @@ apiRouter.post("/send-notification", async (req: Request, res: Response): Promis
   }
 });
 
+/**
+ * @openapi
+ * /ping:
+ *   get:
+ *     summary: Health check ping
+ *     description: Simple health check endpoint
+ *     tags:
+ *       - Health
+ *     responses:
+ *       200:
+ *         description: Server is alive
+ */
 apiRouter.get("/ping", (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
@@ -93,7 +201,6 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Error occurred:", err);
   res.status(500).send("Internal Server Error");
 });
-
 
 
 export default app;
