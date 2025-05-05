@@ -17,6 +17,7 @@
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "@radix-ui/react-slot": "^1.2.0",
+    "@radix-ui/react-tabs": "^1.1.9",
     "@react-google-maps/api": "^2.20.6",
     "@tailwindcss/vite": "^4.0.12",
     "@types/axios": "^0.14.4",

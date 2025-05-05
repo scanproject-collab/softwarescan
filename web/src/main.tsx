@@ -22,6 +22,7 @@ import ProfileManagerPage from './pages/manager/ProfileManager';
 import PolygonManagementPage from './pages/PolygonManagementPage';
 import OperatorManagementPage from './pages/OperatorManagementPage';
 import NotFoundPage from './pages/NotFoundPage';
+import UserProfilePage from './pages/UserProfilePage';
 
 // Features
 import { ProtectedRoute } from './shared/components/ProtectedRoute';
@@ -123,7 +124,7 @@ createRoot(document.getElementById('root')!).render(
           path="/user/:userId"
           element={
             <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
-              <div>User Profile Page</div>
+              <UserProfilePage />
             </ProtectedRoute>
           }
         />
