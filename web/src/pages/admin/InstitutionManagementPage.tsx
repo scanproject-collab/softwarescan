@@ -4,7 +4,7 @@ import { InstitutionDialog } from '../../features/institutions/components/Instit
 import Navbar from '../../features/common/components/Navbar';
 import { Institution } from '../../features/institutions/types/institutions';
 import LoadingSpinner from '../../shared/components/ui/LoadingSpinner';
-import { Trash2, Pencil, Plus, RefreshCw, Search, FileDown, Users, UserPlus, UserMinus, ArrowLeftRight, Briefcase, ChevronLeft, ChevronRight, Menu, HelpCircle } from 'lucide-react';
+import { Trash2, Pencil, Plus, RefreshCw, Search, FileDown, Users, UserPlus, UserMinus, ArrowLeftRight, Briefcase, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import api from '../../shared/services/api';
 import { useAuth } from '../../hooks/useAuth';
