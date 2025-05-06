@@ -176,6 +176,7 @@ export default function RootLayout() {
         <Stack.Screen name="pages/auth/PasswordResetCodeVerificationScreen" options={{ title: 'Verificar Código' }} />
         <Stack.Screen name="pages/auth/PasswordResetScreen" options={{ title: 'Redefinir Senha' }} />
         <Stack.Screen name="pages/posts/[id]" options={{ title: 'Local' }} />
+        <Stack.Screen name="pages/posts/EditPost" options={{ title: 'Editar Postagem' }} />
         <Stack.Screen name="pages/users/ProfileUser" options={{ title: 'Perfil' }} />
         <Stack.Screen name="pages/users/ProfileEditUser" options={{ title: 'Editar Perfil' }} />
       </Stack>

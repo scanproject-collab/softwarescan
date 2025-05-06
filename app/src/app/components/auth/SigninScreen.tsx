@@ -61,6 +61,10 @@ const LoginScreen = () => {
 
       const { token } = response.data;
       try {
+        // Limpa cache de posts ao logar
+        await AsyncStorage.removeItem('cachedPosts');
+        await AsyncStorage.removeItem('offlinePosts');
+        await AsyncStorage.removeItem('lastPostsFetch');
         await AsyncStorage.setItem('userToken', token);
         console.log('Token saved to AsyncStorage:', token);
 

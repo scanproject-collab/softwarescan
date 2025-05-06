@@ -10,6 +10,7 @@ import TagFilter from '../components/home/TagFilter';
 import OfflineMessage from '../components/home/OfflineMessage';
 import UpdateNotification from '../components/home/UpdateNotification';
 import { checkAppVersion } from '../utils/VersionCheck';
+import Toast from 'react-native-toast-message';
 
 // Define constant for storage keys
 const STORAGE_KEYS = {
@@ -124,7 +125,7 @@ export default function Home() {
       }
 
       const token = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
-      const response = await fetch(`${API_URL}/posts/my-posts`, {
+      const response = await fetch(`${API_URL}/posts/my`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Cache-Control': 'no-cache',
@@ -213,7 +214,11 @@ export default function Home() {
       let offlinePostsArray = JSON.parse(offlinePostsStr);
       if (offlinePostsArray.length === 0) return;
 
+      console.log(`Tentando enviar ${offlinePostsArray.length} posts offline para o servidor`);
       const token = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
+
+      // Lista para armazenar postagens com localização incerta
+      const postsWithUncertainLocation = [];
 
       // Process posts in chunks for better performance
       const chunkSize = 2;
@@ -228,16 +233,19 @@ export default function Home() {
           const formData = new FormData();
           Object.entries({
             title: post.title || 'Interação sem título',
-            content: post.description || '',
-            tags: (post.tags || []).join(','),
+            content: post.content || post.description || '',
+            tags: Array.isArray(post.tags) ? post.tags.join(',') : post.tags || '',
             location: post.location || '',
             latitude: post.latitude?.toString() || '',
             longitude: post.longitude?.toString() || '',
             weight: post.weight || '0',
             ranking: post.ranking || 'Baixo',
             offlineId: post.offlineId || `${post.id || Date.now().toString()}_${Math.random().toString(36).substring(2, 10)}`,
+            createdAt: post.createdAt || new Date().toISOString()
           }).forEach(([key, value]) => {
-            formData.append(key, value as string);
+            if (value !== undefined && value !== null) {
+              formData.append(key, value as string);
+            }
           });
 
           if (post.image) {
@@ -250,21 +258,37 @@ export default function Home() {
           }
 
           try {
-            const response = await fetch(`${API_URL}/posts/create`, {
+            console.log(`Enviando post offline ${actualIndex + 1}/${offlinePostsArray.length}`);
+            const response = await fetch(`${API_URL}/posts`, {
               method: 'POST',
               headers: { Authorization: `Bearer ${token}` },
               body: formData,
             });
 
             if (response.ok) {
+              // Verificar se a localização era incerta
+              if (post.isLocationUncertain) {
+                const responseData = await response.json();
+                if (responseData && responseData.post && responseData.post.id) {
+                  postsWithUncertainLocation.push({
+                    id: responseData.post.id,
+                    title: post.title
+                  });
+                }
+              }
               // Mark for removal
               return actualIndex;
             } else {
+              // Log response for debugging
+              const errorText = await response.text();
+              console.error(`Erro ao sincronizar post offline: Status ${response.status}, Resposta:`, errorText);
+
               // Mark as failed
               offlinePostsArray[actualIndex].syncFailed = true;
               return null;
             }
           } catch (error) {
+            console.error(`Erro ao sincronizar post offline:`, error);
             offlinePostsArray[actualIndex].syncFailed = true;
             return null;
           }
@@ -284,6 +308,18 @@ export default function Home() {
         // Update storage after each chunk
         await AsyncStorage.setItem(STORAGE_KEYS.OFFLINE_POSTS, JSON.stringify(offlinePostsArray));
         setOfflinePosts([...offlinePostsArray]);
+      }
+
+      // Mostrar aviso sobre postagens com localização incerta
+      if (postsWithUncertainLocation.length > 0) {
+        const postCount = postsWithUncertainLocation.length;
+        Toast.show({
+          type: 'info',
+          text1: `${postCount} ${postCount === 1 ? 'postagem precisa' : 'postagens precisam'} de revisão`,
+          text2: 'Edite as postagens criadas offline para atualizar a localização',
+          position: 'bottom',
+          visibilityTime: 6000,
+        });
       }
 
       // Refresh posts after syncing
@@ -464,7 +500,8 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      {isOffline && <OfflineMessage />}
+      {isOffline && <OfflineMessage isOffline={isOffline} />}
+      <Toast />
 
       {updateAvailable && (
         <UpdateNotification
@@ -497,6 +534,7 @@ export default function Home() {
           onRefresh={handleRefresh}
         />
       )}
+
     </View>
   );
 }

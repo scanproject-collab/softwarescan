@@ -4,8 +4,11 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Toast from 'react-native-toast-message';
-import { reverseGeocode } from '@/src/app/utils/GoogleMaps';
+import { reverseGeocode, geocodeAddress, getPlaceSuggestions } from '@/src/app/utils/GoogleMaps';
 import * as Location from 'expo-location';
+import MapViewComponent from '@/src/app/components/posts/MapViewComponent';
+import LocationPicker from '@/src/app/components/posts/LocationPicker';
+import NetInfo from "@react-native-community/netinfo";
 
 interface Tag {
   name: string;
@@ -30,6 +33,24 @@ export default function EditPost() {
   const [selectedTime, setSelectedTime] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const [isManualLocation, setIsManualLocation] = useState(false);
+
+  // Verificar conectividade
+  useEffect(() => {
+    const checkConnectivity = async () => {
+      const netInfo = await NetInfo.fetch();
+      setIsOffline(!netInfo.isConnected);
+    };
+
+    checkConnectivity();
+
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOffline(!state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Carregar dados da postagem ao abrir
   useEffect(() => {
@@ -104,6 +125,17 @@ export default function EditPost() {
     }
   };
 
+  // Handler para cliques no mapa
+  const handleMapPress = useCallback((event: any) => {
+    if (event?.nativeEvent?.coordinate) {
+      const { latitude, longitude } = event.nativeEvent.coordinate;
+      setCoords({ latitude, longitude });
+      reverseGeocode(latitude, longitude).then(address => {
+        setLocation(address);
+      });
+    }
+  }, []);
+
   // Função para salvar edição
   const handleSave = useCallback(async () => {
     if (!title.trim() || !description.trim()) {
@@ -147,7 +179,27 @@ export default function EditPost() {
       });
       const data = await res.json();
       if (res.ok) {
-        Toast.show({ type: 'success', text1: 'Postagem atualizada!' });
+        // Preparar mensagem dos campos atualizados
+        const camposAtualizados = [];
+        if (title) camposAtualizados.push('título');
+        if (description) camposAtualizados.push('descrição');
+        if (selectedTags.length > 0) camposAtualizados.push('tags');
+        if (location) camposAtualizados.push('localização');
+        if (selectedDate) camposAtualizados.push('data');
+        if (selectedTime) camposAtualizados.push('hora');
+        if (image && !image.startsWith('http')) camposAtualizados.push('imagem');
+
+        const mensagem = camposAtualizados.length > 0
+          ? `Campos atualizados: ${camposAtualizados.join(', ')}`
+          : 'Postagem atualizada!';
+
+        Toast.show({
+          type: 'success',
+          text1: 'Sucesso!',
+          text2: mensagem,
+          position: 'bottom',
+          visibilityTime: 3000
+        });
         router.back();
       } else {
         throw new Error(data.message || 'Erro ao atualizar');
@@ -169,8 +221,10 @@ export default function EditPost() {
       <View style={styles.card}>
         <Text style={styles.label}>Título</Text>
         <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Título" />
+
         <Text style={styles.label}>Descrição</Text>
         <TextInput style={[styles.input, { height: 80 }]} value={description} onChangeText={setDescription} placeholder="Descrição" multiline />
+
         <Text style={styles.label}>Tags</Text>
         <View style={styles.tagsContainer}>
           {availableTags.map((tag) => (
@@ -183,17 +237,35 @@ export default function EditPost() {
             </TouchableOpacity>
           ))}
         </View>
+
         <Text style={styles.label}>Localização</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TextInput style={[styles.input, { flex: 1 }]} value={location} onChangeText={setLocation} placeholder="Endereço" />
-          <TouchableOpacity style={styles.locButton} onPress={getCurrentLocation}>
-            <Text style={{ color: '#fff' }}>GPS</Text>
-          </TouchableOpacity>
-        </View>
+        <LocationPicker
+          location={location}
+          setLocation={setLocation}
+          isManualLocation={isManualLocation}
+          setIsManualLocation={setIsManualLocation}
+          isOffline={isOffline}
+          setCoords={setCoords}
+        />
+
+        {coords && (
+          <View style={styles.mapContainer}>
+            <Text style={styles.mapLabel}>Visualização no mapa</Text>
+            <MapViewComponent
+              coords={coords}
+              handleMapPress={handleMapPress}
+              isManualLocation={isManualLocation}
+              isOffline={isOffline}
+            />
+          </View>
+        )}
+
         <Text style={styles.label}>Data</Text>
         <TextInput style={styles.input} value={selectedDate} onChangeText={setSelectedDate} placeholder="AAAA-MM-DD" />
+
         <Text style={styles.label}>Hora</Text>
         <TextInput style={styles.input} value={selectedTime} onChangeText={setSelectedTime} placeholder="HH:MM" />
+
         <Text style={styles.label}>Imagem</Text>
         {image ? (
           <Image source={{ uri: image }} style={styles.image} />
@@ -201,6 +273,7 @@ export default function EditPost() {
         <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
           <Text style={{ color: '#fff' }}>{image ? 'Trocar Imagem' : 'Selecionar Imagem'}</Text>
         </TouchableOpacity>
+
         <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Salvar Alterações</Text>}
         </TouchableOpacity>
@@ -211,7 +284,7 @@ export default function EditPost() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, backgroundColor: '#F7F8FA', minHeight: '100%' },
+  container: { padding: 16, backgroundColor: '#F7F8FA', minHeight: '100%' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
   header: { fontSize: 26, fontWeight: 'bold', color: '#007AFF', marginBottom: 18, alignSelf: 'center' },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 18, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, marginBottom: 24 },
@@ -227,4 +300,6 @@ const styles = StyleSheet.create({
   imageButton: { backgroundColor: '#007AFF', borderRadius: 8, padding: 12, alignItems: 'center', marginVertical: 8 },
   saveButton: { backgroundColor: '#34C759', borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 18 },
   saveButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
+  mapContainer: { marginBottom: 16 },
+  mapLabel: { fontSize: 14, color: '#555', marginBottom: 8 },
 }); 

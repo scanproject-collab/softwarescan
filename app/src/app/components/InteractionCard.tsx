@@ -78,39 +78,46 @@ const InteractionCard: React.FC<InteractionCardProps> = ({
   >
     <View>
       <View style={styles.header}>
-        <Text style={styles.locationText} numberOfLines={2}>{title}</Text>
-        {isOffline && (
-          <View style={styles.offlineBadge}>
-            <Text style={styles.offlineBadgeText}>Pendente</Text>
-          </View>
-        )}
-        {isRecent && !isOffline && (
-          <View style={styles.recentBadge}>
-            <Text style={styles.recentBadgeText}>Recente</Text>
-          </View>
-        )}
-        {onDelete && (
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            style={styles.deleteButton}
-          >
-            <Ionicons name="trash-outline" size={20} color="#fff" />
-          </Pressable>
-        )}
-        {onEdit && (
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-            style={styles.editButton}
-          >
-            <Ionicons name="pencil-outline" size={20} color="#fff" />
-          </Pressable>
-        )}
+        {/* Container de título com destaque */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.titleText} numberOfLines={2}>{title}</Text>
+        </View>
+
+        {/* Container de ícones e badges à direita */}
+        <View style={styles.actionsContainer}>
+          {isRecent && !isOffline && (
+            <View style={styles.recentBadge}>
+              <Text style={styles.recentBadgeText}>Recente</Text>
+            </View>
+          )}
+          {isOffline && (
+            <View style={styles.offlineBadge}>
+              <Text style={styles.offlineBadgeText}>Pendente</Text>
+            </View>
+          )}
+          {onEdit && (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              style={styles.editButton}
+            >
+              <Ionicons name="pencil-outline" size={20} color="#fff" />
+            </Pressable>
+          )}
+          {onDelete && (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              style={styles.deleteButton}
+            >
+              <Ionicons name="trash-outline" size={20} color="#fff" />
+            </Pressable>
+          )}
+        </View>
       </View>
       {hasImage && imageUrl ? (
         <OptimizedImage uri={imageUrl} style={styles.interactionImage} />
@@ -158,8 +165,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  titleContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
+  titleText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#222',
+    letterSpacing: 0.3,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
+    justifyContent: 'flex-end',
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -177,13 +200,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
     maxWidth: 150,
-  },
-  locationText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    flexShrink: 1,
-    marginRight: 8,
   },
   interactionImage: {
     width: '100%',
@@ -218,20 +234,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30',
     borderRadius: 16,
     padding: 6,
-    marginLeft: 8,
+    marginLeft: 6,
   },
   editButton: {
     backgroundColor: '#007AFF',
     borderRadius: 16,
     padding: 6,
-    marginLeft: 8,
+    marginLeft: 6,
   },
   offlineBadge: {
     backgroundColor: '#FF4D4F',
     borderRadius: 12,
     paddingVertical: 4,
     paddingHorizontal: 8,
-    marginLeft: 8,
+    marginLeft: 6,
   },
   offlineBadgeText: {
     color: '#fff',
@@ -243,7 +259,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 4,
     paddingHorizontal: 8,
-    marginLeft: 8,
+    marginLeft: 6,
   },
   recentBadgeText: {
     color: '#fff',
@@ -252,11 +268,15 @@ const styles = StyleSheet.create({
   },
   locationContainer: {
     marginTop: 8,
-    marginBottom: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 4,
   },
   locationValue: {
     fontSize: 14,
     color: '#555',
+    lineHeight: 18,
   },
   detailsButtonContainer: {
     marginTop: 8,

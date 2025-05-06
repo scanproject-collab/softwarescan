@@ -52,6 +52,8 @@ export default function NewInteraction() {
   const [isLocationLoading, setIsLocationLoading] = useState(true);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isImageLoading, setIsImageLoading] = useState(false);
+  const [offlineAlertShown, setOfflineAlertShown] = useState(false);
+  const [locationUncertain, setLocationUncertain] = useState(false);
   const isMounted = useRef(true);
 
   const router = useRouter();
@@ -129,7 +131,8 @@ export default function NewInteraction() {
 
       setIsOffline(!isConnected);
 
-      if (!isConnected) {
+      if (!isConnected && !offlineAlertShown) {
+        setOfflineAlertShown(true);
         setIsManualLocation(true);
         Alert.alert("Você está offline", "A localização será inserida manualmente.");
       }
@@ -140,11 +143,12 @@ export default function NewInteraction() {
         setIsManualLocation(true);
       }
     }
-  }, [checkActualConnectivity]);
+  }, [checkActualConnectivity, offlineAlertShown]);
 
   // Efeito principal de inicialização
   useEffect(() => {
     isMounted.current = true;
+    setOfflineAlertShown(false);
 
     const initialize = async () => {
       try {
@@ -217,6 +221,7 @@ export default function NewInteraction() {
                 setCoords(cachedLocation);
                 setLocation(cachedAddress);
                 setIsLocationLoading(false);
+                setLocationUncertain(false);
 
                 if (!isOffline) {
                   updateLocationInBackground();
@@ -235,12 +240,17 @@ export default function NewInteraction() {
                   const cachedLocation = JSON.parse(cachedLocationJson);
                   setCoords(cachedLocation);
                   setLocation(cachedAddress);
+                  setLocationUncertain(true);
                   console.log("Usando dados de localização em cache (possivelmente desatualizados) no modo offline");
                   setIsLocationLoading(false);
                   return;
                 } catch (error) {
                   console.error("Erro ao processar localização offline:", error);
+                  setLocationUncertain(true);
                 }
+              } else {
+                // Não há cache de localização
+                setLocationUncertain(true);
               }
             }
 
@@ -249,6 +259,7 @@ export default function NewInteraction() {
             console.error("Erro na inicialização da localização:", error);
             if (isMounted.current) {
               setIsLocationLoading(false);
+              setLocationUncertain(true);
             }
           }
         }
@@ -256,6 +267,7 @@ export default function NewInteraction() {
         console.error("Erro na inicialização:", error);
         if (isMounted.current) {
           setIsLocationLoading(false);
+          setLocationUncertain(true);
         }
       }
     };
@@ -266,8 +278,14 @@ export default function NewInteraction() {
       if (!isMounted.current) return;
       const isConnected = state.isConnected && (await checkActualConnectivity());
       if (isMounted.current) {
+        const wasOffline = isOffline;
         setIsOffline(!isConnected);
-        if (!isConnected) setIsManualLocation(true);
+
+        if (!isConnected && !offlineAlertShown) {
+          setOfflineAlertShown(true);
+          setIsManualLocation(true);
+          Alert.alert("Você está offline", "A localização será inserida manualmente.");
+        }
       }
     });
 
@@ -276,7 +294,7 @@ export default function NewInteraction() {
       isMounted.current = false;
       unsubscribe();
     };
-  }, [isOffline, checkConnection, checkActualConnectivity, API_URL]);
+  }, [checkConnection, checkActualConnectivity, API_URL, isOffline, isLocationLoading, offlineAlertShown]);
 
   // Adicionar este useEffect após useEffect principal para monitorar mudanças nas coordenadas
   useEffect(() => {
@@ -326,7 +344,7 @@ export default function NewInteraction() {
         return;
       }
 
-      let locationData = null;
+      let locationData: Location.LocationObject | null = null;
 
       try {
         const locationPromise = Location.getCurrentPositionAsync({
@@ -337,7 +355,13 @@ export default function NewInteraction() {
           setTimeout(() => reject(new Error("Timeout getting location")), 5000)
         );
 
-        locationData = await Promise.race([locationPromise, timeoutPromise]);
+        const result = await Promise.race([locationPromise, timeoutPromise]);
+        // Checar se o resultado tem a propriedade 'coords'
+        if (result && typeof result === 'object' && 'coords' in result) {
+          locationData = result as Location.LocationObject;
+        } else {
+          locationData = null;
+        }
       } catch (error) {
         console.log("Timeout or error getting precise location, falling back to last known:", error);
         try {
@@ -471,15 +495,80 @@ export default function NewInteraction() {
         return;
       }
 
+      // Validar todos os campos obrigatórios com mensagens específicas
+      if (!title.trim()) {
+        Toast.show({
+          type: "error",
+          text1: "Erro",
+          text2: "O título é obrigatório",
+          position: "bottom",
+          visibilityTime: 3000,
+        });
+        setLoading(false);
+        setStatus("error");
+        return;
+      }
+
+      if (!description.trim()) {
+        Toast.show({
+          type: "error",
+          text1: "Erro",
+          text2: "A descrição é obrigatória",
+          position: "bottom",
+          visibilityTime: 3000,
+        });
+        setLoading(false);
+        setStatus("error");
+        return;
+      }
+
+      if (selectedTags.length === 0) {
+        Toast.show({
+          type: "error",
+          text1: "Erro",
+          text2: "Selecione pelo menos uma tag",
+          position: "bottom",
+          visibilityTime: 3000,
+        });
+        setLoading(false);
+        setStatus("error");
+        return;
+      }
+
       if (!image) {
-        Alert.alert("Erro", "Uma foto é obrigatória.");
+        Toast.show({
+          type: "error",
+          text1: "Erro",
+          text2: "Uma foto é obrigatória",
+          position: "bottom",
+          visibilityTime: 3000,
+        });
         setLoading(false);
         setStatus("error");
         return;
       }
 
       if (!location.trim()) {
-        Alert.alert("Erro", "A localização é obrigatória.");
+        Toast.show({
+          type: "error",
+          text1: "Erro",
+          text2: "A localização é obrigatória",
+          position: "bottom",
+          visibilityTime: 3000,
+        });
+        setLoading(false);
+        setStatus("error");
+        return;
+      }
+
+      if (!coords) {
+        Toast.show({
+          type: "error",
+          text1: "Erro",
+          text2: "Coordenadas são obrigatórias",
+          position: "bottom",
+          visibilityTime: 3000,
+        });
         setLoading(false);
         setStatus("error");
         return;
@@ -503,6 +592,7 @@ export default function NewInteraction() {
           const offlinePost = {
             id: Date.now().toString(),
             title,
+            description: description,
             content: description,
             tags: selectedTags,
             location,
@@ -511,18 +601,27 @@ export default function NewInteraction() {
             longitude: coords?.longitude || null,
             weight: totalWeight.toString(),
             ranking,
-            createdAt: new Date().toISOString(),
+            createdAt: `${selectedDate}T${selectedTime || '00:00'}`,
             offlineId: `${Date.now().toString()}_${Math.random().toString(36).substring(2, 15)}`,
+            isLocationUncertain: locationUncertain
           };
+
+          console.log("Salvando postagem offline:", JSON.stringify(offlinePost, null, 2));
 
           const offlinePostsJson = await AsyncStorage.getItem("offlinePosts");
           const offlinePosts = offlinePostsJson ? JSON.parse(offlinePostsJson) : [];
           offlinePosts.push(offlinePost);
           await AsyncStorage.setItem("offlinePosts", JSON.stringify(offlinePosts));
 
+          let message = "Postagem salva offline. Será enviada ao servidor quando a conexão for restabelecida.";
+
+          if (locationUncertain) {
+            message += "\n\nA localização atual pode não ser precisa. Recomendamos editar esta postagem quando estiver online para atualizar a localização correta.";
+          }
+
           Alert.alert(
             "Sucesso",
-            "Postagem salva offline. Será enviada ao servidor quando a conexão for restabelecida.",
+            message,
             [
               {
                 text: "OK",
@@ -555,7 +654,7 @@ export default function NewInteraction() {
           longitude: coords?.longitude || null,
           weight: totalWeight.toString(),
           ranking,
-          createdAt: new Date().toISOString(),
+          createdAt: `${selectedDate}T${selectedTime || '00:00'}`,
           offlineId: `online_${Date.now().toString()}_${Math.random().toString(36).substring(2, 15)}`,
         };
 
@@ -582,7 +681,7 @@ export default function NewInteraction() {
 
         console.log("Sending post data to API:", JSON.stringify(postData, null, 2));
 
-        const response = await fetch(`${API_URL}/posts/create`, {
+        const response = await fetch(`${API_URL}/posts`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -590,9 +689,25 @@ export default function NewInteraction() {
           body: formData,
         });
 
-        const responseData = await response.json();
+        let responseData;
+        let responseText = '';
+        try {
+          responseText = await response.text();
+          responseData = JSON.parse(responseText);
+        } catch (jsonErr) {
+          // Não era JSON, pode ser texto puro de erro
+          responseData = null;
+        }
 
         if (response.ok) {
+          Toast.show({
+            type: "success",
+            text1: "Sucesso",
+            text2: "Postagem criada com sucesso!",
+            position: "bottom",
+            visibilityTime: 3000,
+          });
+
           Alert.alert(
             "Sucesso",
             "Postagem criada com sucesso!",
@@ -607,7 +722,9 @@ export default function NewInteraction() {
             ]
           );
         } else {
-          Alert.alert("Erro", responseData.message || "Erro ao criar postagem.");
+          // Logar resposta do servidor para debug
+          console.error("Erro ao criar postagem. Status:", response.status, "Resposta:", responseText);
+          Alert.alert("Erro", (responseData && responseData.message) || responseText || "Erro ao criar postagem.");
         }
       } catch (error) {
         console.error("Erro ao enviar postagem:", error);
@@ -623,7 +740,7 @@ export default function NewInteraction() {
       }
     }
   }, [loading, isMounted, isImageLoading, image, location, selectedTags, availableTags,
-    coords, title, description, isOffline, router, resetForm, API_URL]);
+    coords, title, description, isOffline, router, resetForm, API_URL, selectedDate, selectedTime, locationUncertain]);
 
   // Renderização de componentes com tratamento de erros
   const renderItem = useCallback(({ item }: { item: string }) => {
