@@ -18,7 +18,6 @@ import { usePendingOperators } from "./features/operators/hooks/usePendingOperat
 
 import { showError } from "./shared/utils/errorHandler";
 
-
 const ExportButton = ({ interactions, disabled }: { interactions: any; disabled?: boolean }) => {
   const handleExport = () => {
     if (interactions.length === 0) return;
@@ -333,6 +332,8 @@ const App: React.FC = () => {
                   </option>
                 ))}
               </select>
+
+              {/* Institution and User filters - Admin only */}
               {user?.role === "ADMIN" && (
                 <>
                   <select
@@ -341,13 +342,13 @@ const App: React.FC = () => {
                     className="rounded-md border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
                   >
                     <option value="">Todas as Instituições</option>
-
                     {uniqueInstitutions.map((institution: any) => (
                       <option key={institution.id} value={institution.id}>
                         {institution.title}
                       </option>
                     ))}
                   </select>
+
                   {selectedInstitution && (
                     <select
                       value={selectedUser || ""}
@@ -362,12 +363,16 @@ const App: React.FC = () => {
                       ))}
                     </select>
                   )}
-                  <TagFilterDropdown
-                    uniqueTags={uniqueTags}
-                    selectedTags={selectedTags}
-                    toggleTagSelection={toggleTagSelection}
-                  />
                 </>
+              )}
+
+              {/* Tag filter - Available for both Admin and Manager */}
+              {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
+                <TagFilterDropdown
+                  uniqueTags={uniqueTags}
+                  selectedTags={selectedTags}
+                  toggleTagSelection={toggleTagSelection}
+                />
               )}
             </div>
             <div className="space-y-6">
@@ -429,7 +434,9 @@ const App: React.FC = () => {
                               Autor: {interaction.author?.name || "Unnamed"} ({interaction.author?.email || "Sem email"})
                             </p>
                             <p className="text-sm text-gray-600">
-                              Instituição: {interaction.author?.institution?.title || "Sem instituição"}
+                              Instituição: {typeof interaction.author?.institution === 'object'
+                                ? interaction.author.institution.title
+                                : interaction.author?.institution || "Sem instituição"}
                             </p>
                             {interaction.latitude && interaction.longitude && (
                               <button

@@ -22,7 +22,10 @@ export const useInstitutions = () => {
     try {
       setLoading(true);
       const response = await api.get('/institutions', {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        params: {
+          countActiveOperatorsOnly: true
+        }
       });
       const institutionList = response.data.institutions || [];
       setInstitutions(institutionList);

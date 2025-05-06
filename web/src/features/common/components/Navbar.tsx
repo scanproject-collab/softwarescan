@@ -18,6 +18,7 @@ const Navbar: React.FC = () => {
 
   const handleLogout = () => {
     setAuthToken(null);
+    navigate('/login');
   };
 
   const handleHomeClick = () => {
@@ -61,12 +62,7 @@ const Navbar: React.FC = () => {
               >
                 Gerenciar Tags
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigate('/institutions')}
-                className="cursor-pointer hover:bg-gray-100"
-              >
-                Gerenciar Instituições
-              </DropdownMenuItem>
+
               <DropdownMenuItem
                 onClick={() => navigate('/operators')}
                 className="cursor-pointer hover:bg-gray-100"
@@ -76,12 +72,22 @@ const Navbar: React.FC = () => {
             </>
           )}
           {user?.role === "ADMIN" && (
-            <DropdownMenuItem
-              onClick={() => navigate('/managers')}
-              className="cursor-pointer hover:bg-gray-100"
-            >
-              Gerenciar Gerentes
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem
+                onClick={() => navigate('/managers')}
+                className="cursor-pointer hover:bg-gray-100"
+              >
+                Gerenciar Gerentes
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate('/institutions')}
+                className="cursor-pointer hover:bg-gray-100"
+              >
+                Gerenciar Instituições
+              </DropdownMenuItem>
+            </>
+
+
           )}
           <DropdownMenuItem
             onClick={() => navigate('/polygons')}

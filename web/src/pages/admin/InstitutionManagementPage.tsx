@@ -4,7 +4,7 @@ import { InstitutionDialog } from '../../features/institutions/components/Instit
 import Navbar from '../../features/common/components/Navbar';
 import { Institution } from '../../features/institutions/types/institutions';
 import LoadingSpinner from '../../shared/components/ui/LoadingSpinner';
-import { Trash2, Pencil, Plus, RefreshCw, Search, FileDown, Users, UserPlus, UserMinus, ArrowLeftRight, Briefcase, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, Pencil, Plus, RefreshCw, Search, FileDown, Users, UserPlus, UserMinus, ArrowLeftRight, Briefcase, ChevronLeft, ChevronRight, Menu, HelpCircle } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import api from '../../shared/services/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -91,7 +91,10 @@ const InstitutionManagement: React.FC = () => {
         params: {
           institutionId,
           page,
-          limit
+          limit,
+          role: 'OPERATOR',
+          isActive: true, // Only get approved operators
+          isPending: false // Ensure we only get non-pending operators
         }
       });
 
@@ -443,13 +446,21 @@ const InstitutionManagement: React.FC = () => {
                           {institution.title}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
-                          <button
-                            onClick={() => openUsersDialog(institution)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition"
-                          >
-                            <Users className="h-3.5 w-3.5" />
-                            {institution.userCount || 0} usuários
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => openUsersDialog(institution)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition"
+                            >
+                              <Users className="h-3.5 w-3.5" />
+                              {institution.userCount || 0} operadores ativos
+                            </button>
+                            <div className="relative group">
+                              <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap">
+                                Clique para ver os operadores ativos desta instituição
+                              </div>
+                            </div>
+                          </div>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
                           {formatDate(institution.createdAt)}
