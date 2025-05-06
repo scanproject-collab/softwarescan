@@ -78,8 +78,10 @@ export const deleteInstitution = async (req: CustomRequest, res: Response) => {
   }
 };
 
-export const listInstitutions = async (_req: Request, res: Response) => {
+export const listInstitutions = async (req: Request, res: Response) => {
   try {
+    const countActiveOperatorsOnly = req.query.countActiveOperatorsOnly === 'true';
+
     const institutions = await prisma.institution.findMany({
       select: {
         id: true,
@@ -90,6 +92,10 @@ export const listInstitutions = async (_req: Request, res: Response) => {
           select: { id: true, name: true, email: true },
         },
         users: {
+          where: countActiveOperatorsOnly ? {
+            role: 'OPERATOR',
+            isPending: false
+          } : undefined,
           select: { id: true, name: true, email: true, role: true },
         },
       },
