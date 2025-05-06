@@ -13,7 +13,8 @@ import {
     updateManagerInstitution,
     deleteManager,
     getOperatorDetailsByAdmin,
-    updateOperatorByAdmin
+    updateOperatorByAdmin,
+    createOperatorByAdmin
 } from '../controllers/adminController';
 import { authMiddleware, roleMiddleware } from '../middlewares/authMiddleware';
 import { CustomRequest } from '../middlewares/authMiddleware';
@@ -257,6 +258,50 @@ router.get('/operators/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), 
  *         description: Operator not found
  */
 router.put('/operators/:operatorId', authMiddleware, roleMiddleware(['ADMIN']), updateOperatorByAdmin);
+
+/**
+ * @openapi
+ * /admin/operators/create:
+ *   post:
+ *     summary: Create a new operator
+ *     description: Create a new operator account (admin only)
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Name of the operator
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email of the operator
+ *               password:
+ *                 type: string
+ *                 description: Password for the operator
+ *               institutionId:
+ *                 type: string
+ *                 description: Optional ID of the institution to assign the operator to
+ *     responses:
+ *       201:
+ *         description: Operator created successfully
+ *       400:
+ *         description: Invalid input or missing required fields
+ *       401:
+ *         description: Unauthorized - Not an admin
+ */
+router.post('/operators/create', authMiddleware, roleMiddleware(['ADMIN']), createOperatorByAdmin);
 
 /**
  * @openapi

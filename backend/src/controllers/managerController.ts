@@ -528,7 +528,7 @@ export const updateOperator = async (req: RequestWithUser, res: Response) => {
     await prisma.notification.create({
       data: {
         type: 'profile_updated',
-        message: `O gerente ${req.user?.name || 'Gerente'} atualizou seu perfil.`,
+        message: `O gerente ${req.user?.name || 'Gerente'} atualizou o perfil ${operator.name}.`,
         userId: operatorId,
       },
     });
@@ -538,7 +538,7 @@ export const updateOperator = async (req: RequestWithUser, res: Response) => {
       await sendOneSignalNotification(
         operator.playerId,
         'Perfil Atualizado',
-        `O gerente ${req.user?.name || 'Gerente'} atualizou seu perfil.`,
+        `O gerente ${req.user?.name || 'Gerente'} atualizou o perfil ${operator.name}.`,
         { type: 'profile_updated' }
       );
     }
@@ -602,5 +602,88 @@ export const deleteOperator = async (req: RequestWithUser, res: Response) => {
     });
   } catch (error) {
     res.status(400).json({ message: 'Erro ao excluir operador: ' + (error as any).message });
+  }
+};
+
+export const createOperator = async (req: RequestWithUser, res: Response) => {
+  // Manager must have an institution
+  if (!req.user?.institutionId) {
+    return res.status(400).json({ message: 'Manager must belong to an institution to create operators' });
+  }
+
+  try {
+    const { name, email, password } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email, and password are required' });
+    }
+
+    // Check if user with this email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create the operator user (always in the manager's institution)
+    const newOperator = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: 'OPERATOR',
+        isPending: false, // Operators created by manager are automatically approved
+        institution: { connect: { id: req.user.institutionId } }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isPending: true,
+        createdAt: true,
+        institutionId: true,
+        institution: {
+          select: {
+            title: true
+          }
+        }
+      }
+    });
+
+    // Create notification
+    await prisma.notification.create({
+      data: {
+        type: 'created',
+        message: `Operador ${name} foi criado pelo gerente.`,
+        userId: newOperator.id,
+      },
+    });
+
+    // Send welcome email
+    await sendWelcomeEmail(email, name);
+
+    res.status(201).json({
+      message: 'Operator created successfully',
+      operator: {
+        id: newOperator.id,
+        name: newOperator.name,
+        email: newOperator.email,
+        role: newOperator.role,
+        isPending: newOperator.isPending,
+        createdAt: newOperator.createdAt?.toISOString() ?? new Date().toISOString(),
+        institution: newOperator.institution?.title || null,
+        institutionId: newOperator.institutionId
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'Error creating operator: ' + (error as any).message });
   }
 };

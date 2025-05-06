@@ -10,6 +10,7 @@ import {
     getOperatorDetails,
     updateOperator,
     deleteOperator,
+    createOperator
 } from '../controllers/managerController';
 import { authMiddleware, roleMiddleware } from '../middlewares/authMiddleware';
 
@@ -280,5 +281,46 @@ router.put('/operators/:operatorId', authMiddleware, roleMiddleware(['MANAGER'])
  *         description: Operator not found
  */
 router.delete('/operators/:operatorId', authMiddleware, roleMiddleware(['MANAGER']), deleteOperator);
+
+/**
+ * @swagger
+ * /managers/operators/create:
+ *   post:
+ *     summary: Create a new operator
+ *     description: Create a new operator account for the manager's institution
+ *     tags:
+ *       - Managers
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Name of the operator
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email of the operator
+ *               password:
+ *                 type: string
+ *                 description: Password for the operator
+ *     responses:
+ *       201:
+ *         description: Operator created successfully
+ *       400:
+ *         description: Invalid input or missing required fields
+ *       401:
+ *         description: Unauthorized - Not a manager
+ */
+router.post('/operators/create', authMiddleware, roleMiddleware(['MANAGER']), createOperator);
 
 export default router;
