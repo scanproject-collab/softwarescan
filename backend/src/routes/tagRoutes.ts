@@ -113,7 +113,7 @@ router.post("/", authMiddleware, roleMiddleware(['ADMIN', 'MANAGER']), async (re
  *           schema:
  *             type: object
  *             properties:
- *               color:
+ *               newName:
  *                 type: string
  *               weight:
  *                 type: number

@@ -1,6 +1,6 @@
 // polygonsRoutes.ts
 import { Router } from "express";
-import { createPolygon, deletePolygon, listPolygons, updatePolygon } from "../controllers/polygnosController";
+import { createPolygon, deletePolygon, listPolygons, updatePolygon } from "../controllers/polygonsController";
 import { authMiddleware, roleMiddleware } from "../middlewares/authMiddleware";
 
 const router = Router();

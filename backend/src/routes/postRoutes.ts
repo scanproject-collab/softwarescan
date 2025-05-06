@@ -158,8 +158,8 @@ router.delete('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', '
  * @openapi
  * /posts/{postId}:
  *   put:
- *     summary: Editar uma postagem
- *     description: Atualiza os dados de uma postagem existente
+ *     summary: Update a post
+ *     description: Updates an existing post with optional image upload
  *     tags:
  *       - Posts
  *     security:
@@ -170,7 +170,7 @@ router.delete('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', '
  *         required: true
  *         schema:
  *           type: string
- *         description: ID da postagem a ser editada
+ *         description: ID of the post to edit
  *     requestBody:
  *       required: true
  *       content:
@@ -187,6 +187,7 @@ router.delete('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', '
  *                 format: binary
  *               tags:
  *                 type: string
+ *                 description: Comma-separated list of tags
  *               location:
  *                 type: string
  *               latitude:
@@ -197,15 +198,18 @@ router.delete('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', '
  *                 type: string
  *               weight:
  *                 type: string
+ *               createdAt:
+ *                 type: string
+ *                 format: date-time
  *     responses:
  *       200:
- *         description: Postagem editada com sucesso
+ *         description: Post updated successfully
  *       401:
- *         description: Não autorizado
+ *         description: Unauthorized
  *       403:
- *         description: Proibido
+ *         description: Forbidden - Not authorized to edit this post
  *       404:
- *         description: Postagem não encontrada
+ *         description: Post not found
  */
 router.put('/:postId', authMiddleware, roleMiddleware(['OPERATOR', 'ADMIN', 'MANAGER']), uploadImage, async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
