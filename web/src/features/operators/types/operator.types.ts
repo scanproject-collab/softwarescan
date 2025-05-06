@@ -28,6 +28,7 @@ export interface FormData {
   email: string;
   password: string;
   isActive: boolean;
+  institutionId?: string;
 }
 
 export interface FormErrors {

@@ -40,6 +40,9 @@ const OperatorManagementPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedInstitution, setSelectedInstitution] = useState('');
 
+  // Nova variável para controlar a instituição selecionada no formulário de adição
+  const [formSelectedInstitution, setFormSelectedInstitution] = useState('');
+
   // Estados para edição
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddOperatorModalOpen, setIsAddOperatorModalOpen] = useState(false);
@@ -158,8 +161,17 @@ const OperatorManagementPage: React.FC = () => {
       password: '',
       isActive: true
     });
+
+    // Reset the institution selection when opening the modal
+    if (user?.role === 'ADMIN') {
+      setFormSelectedInstitution('');
+    } else if (user?.role === 'MANAGER' && user?.institutionId) {
+      // For managers, automatically set their institution
+      setFormSelectedInstitution(user.institutionId);
+    }
+
     setIsAddOperatorModalOpen(true);
-  }, []);
+  }, [user]);
 
   // Manipular alterações no formulário
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,6 +180,11 @@ const OperatorManagementPage: React.FC = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  }, []);
+
+  // Manipular alterações na seleção de instituição
+  const handleInstitutionChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFormSelectedInstitution(e.target.value);
   }, []);
 
   // Salvar edições
@@ -203,8 +220,11 @@ const OperatorManagementPage: React.FC = () => {
   const handleSubmitAddOperator = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!formData.password) {
-        toast.error('A senha é obrigatória para novos operadores.');
+      // Password validation is now handled via required attribute in form
+
+      // Verificar se o admin selecionou uma instituição
+      if (user?.role === 'ADMIN' && !formSelectedInstitution) {
+        toast.error('Selecione uma instituição para o operador.');
         return;
       }
 
@@ -212,7 +232,18 @@ const OperatorManagementPage: React.FC = () => {
         const basePath = user?.role === 'MANAGER' ? '/managers' : '/admin';
         const endpoint = `${basePath}/operators/create`;
 
-        await api.post(endpoint, formData, {
+        // Add institutionId to the form data for admin users
+        const postData = {
+          ...formData
+        };
+
+        // For admin users, include the selected institution
+        if (user?.role === 'ADMIN') {
+          postData.institutionId = formSelectedInstitution;
+        }
+        // For managers, the backend will automatically use their institution
+
+        await api.post(endpoint, postData, {
           headers: { Authorization: `Bearer ${(user as any)?.token || ''}` }
         });
 
@@ -231,7 +262,7 @@ const OperatorManagementPage: React.FC = () => {
         toast.error(error.response?.data?.message || 'Erro ao criar operador');
       }
     },
-    [formData, user, fetchOperators, searchQuery, selectedInstitution]
+    [formData, formSelectedInstitution, user, fetchOperators, searchQuery, selectedInstitution]
   );
 
   // Confirmar exclusão de operador
@@ -341,6 +372,7 @@ const OperatorManagementPage: React.FC = () => {
                 handleSubmit={handleSubmitEdit}
                 loading={loading}
                 onCancel={() => setIsEditModalOpen(false)}
+                isEditing={true}
               />
             </div>
           </DialogContent>
@@ -357,6 +389,11 @@ const OperatorManagementPage: React.FC = () => {
                 handleSubmit={handleSubmitAddOperator}
                 loading={loading}
                 onCancel={() => setIsAddOperatorModalOpen(false)}
+                institutions={institutions}
+                selectedInstitution={formSelectedInstitution}
+                handleInstitutionChange={handleInstitutionChange}
+                isAdmin={user?.role === 'ADMIN'}
+                isEditing={false}
               />
             </div>
           </DialogContent>
