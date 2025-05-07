@@ -1,10 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import axios, { AxiosError } from 'axios';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { checkAppVersion } from '../../utils/VersionCheck';
+import { getPlayerId } from '../../utils/OneSignalNotification';
 
 interface ToastParams {
   type: 'success' | 'error' | 'info';
@@ -25,6 +26,18 @@ const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [playerId, setPlayerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get the OneSignal playerId on component mount
+    const fetchPlayerId = async () => {
+      const id = await getPlayerId();
+      setPlayerId(id);
+      console.log('Retrieved OneSignal playerId for login:', id);
+    };
+
+    fetchPlayerId();
+  }, []);
 
   const showToast = useCallback(({ type, text1, text2 }: ToastParams) => {
     Toast.show({
@@ -53,9 +66,9 @@ const LoginScreen = () => {
     try {
       const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/auth/login`;
       console.log('API URL being used:', apiUrl);
-      console.log('Request payload:', { email, password });
+      console.log('Request payload:', { email, password, playerId });
 
-      const response = await axios.post(apiUrl, { email, password }, {
+      const response = await axios.post(apiUrl, { email, password, playerId }, {
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -94,7 +107,7 @@ const LoginScreen = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [email, password, showToast]);
+  }, [email, password, playerId, showToast]);
 
   return (
     <View style={styles.container}>

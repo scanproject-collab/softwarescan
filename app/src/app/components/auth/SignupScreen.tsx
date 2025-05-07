@@ -28,6 +28,7 @@ const RegisterScreen = () => {
   useEffect(() => {
     const fetchPushToken = async () => {
       const token = await getPlayerId();
+      console.log('OneSignal PlayerId obtido no registro:', token);
       setPushToken(token);
     };
     fetchPushToken();
@@ -94,15 +95,23 @@ const RegisterScreen = () => {
 
     setIsLoading(true);
     try {
-      console.log('Push Token antes de enviar:', pushToken);
-      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/register`, {
+      // Obter playerId mais uma vez para garantir que temos o valor mais recente
+      const currentPlayerId = await getPlayerId();
+      console.log('PlayerId atual no momento do registro:', currentPlayerId);
+      console.log('PlayerId no estado do componente:', pushToken);
+
+      const requestData = {
         name,
         email,
         password,
-        playerId: pushToken,
+        playerId: currentPlayerId || pushToken, // Usar o mais recente ou o do estado
         institutionId,
         verificationCode,
-      });
+      };
+
+      console.log('Enviando dados de registro:', JSON.stringify(requestData));
+
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/register`, requestData);
 
       showToast(
         'info',
