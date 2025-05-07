@@ -30,6 +30,7 @@ export const registerUser = async (
   verificationCode?: string
 ) => {
   try {
+    console.log('Register user called with playerId:', playerId);
 
     if (!password) {
       throw new Error('A senha é obrigatória para registrar o usuário');
@@ -58,29 +59,30 @@ export const registerUser = async (
     const expiresAt = userRole === 'OPERATOR' ? new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) : null;
 
     // Create the user if verification is successful
+    const userData = {
+      name,
+      password: hashedPassword,
+      role: userRole as Role,
+      isPending: userRole === 'OPERATOR',
+      expiresAt,
+      playerId: playerId || null,
+      institutionId,
+    };
+
+    console.log('Creating/updating user with data:', {
+      ...userData,
+      password: '[REDACTED]'  // Don't log the password
+    });
+
     const newUser = existingUser
       ? await prisma.user.update({
         where: { email },
-        data: {
-          name,
-          password: hashedPassword,
-          role: userRole as Role,
-          isPending: userRole === 'OPERATOR',
-          expiresAt,
-          playerId,
-          institutionId,
-        },
+        data: userData,
       })
       : await prisma.user.create({
         data: {
           email,
-          name,
-          password: hashedPassword,
-          role: userRole as Role,
-          isPending: userRole === 'OPERATOR',
-          expiresAt,
-          playerId,
-          institutionId,
+          ...userData,
         },
       });
 
@@ -107,6 +109,8 @@ export const registerUser = async (
           `Olá, ${name}! Sua conta foi registrada e está aguardando aprovação. Você será notificado quando for aprovada.`,
           { type: 'pending_account' }
         );
+      } else {
+        console.log('Não foi enviada notificação porque playerId é null ou undefined');
       }
     } else {
       await sendWelcomeEmail(email, name, userRole);

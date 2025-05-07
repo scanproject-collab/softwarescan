@@ -19,10 +19,20 @@ export const registerController = async (req: Request, res: Response) => {
 };
 
 export const loginController = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password, playerId } = req.body;
 
   try {
     const { user, token } = await loginUser(email, password);
+
+    // Update playerId if provided
+    if (playerId && playerId !== user.playerId) {
+      console.log(`Updating playerId for user ${user.id} from ${user.playerId || 'null'} to ${playerId}`);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { playerId }
+      });
+    }
+
     res.status(200).json({
       message: 'Login successful',
       user: {
@@ -104,9 +114,9 @@ export const updateUserProfileController = async (req: Request & { user?: any },
 
     // Dados para atualizar
     const updateData: any = {};
-    
+
     if (name) updateData.name = name;
-    
+
     // Verificar se o email está sendo alterado e se não está em uso
     if (email && email !== user.email) {
       const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -115,7 +125,7 @@ export const updateUserProfileController = async (req: Request & { user?: any },
       }
       updateData.email = email;
     }
-    
+
     // Se uma nova senha foi fornecida e a senha atual estava correta
     if (newPassword && currentPassword) {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
