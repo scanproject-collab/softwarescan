@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { TextInput, Text, View, Pressable, FlatList, StyleSheet, Alert } from "react-native";
-import { getPlaceSuggestions, geocodeAddress } from "@/src/app/utils/GoogleMaps";
+import { getPlaceSuggestions, geocodeAddress, reverseGeocode } from "@/src/app/utils/GoogleMaps";
 
 interface LocationPickerProps {
   location: string;
@@ -29,6 +29,26 @@ const LocationPicker = ({
       );
     }
   }, [isOffline, isManualLocation]);
+
+  useEffect(() => {
+    // Atualiza o endereço automaticamente quando as coordenadas mudam
+    const updateAddressFromCoords = async () => {
+      if (!isManualLocation && !isOffline && typeof setCoords === 'function' && location !== undefined) {
+        try {
+          if (typeof coords === 'object' && coords?.latitude && coords?.longitude) {
+            const address = await reverseGeocode(coords.latitude, coords.longitude);
+            if (address && typeof address === 'string' && !address.includes("Erro")) {
+              setLocation(address);
+            }
+          }
+        } catch (error) {
+          // Não faz nada se falhar
+        }
+      }
+    };
+    updateAddressFromCoords();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isManualLocation, isOffline, setCoords, location]);
 
   const handleAddressChange = async (text: string) => {
     setLocation(text);
@@ -86,8 +106,8 @@ const LocationPicker = ({
           isManualLocation && isOffline
             ? "Digite o endereço completo, ex: Rua Exemplo, 123, Cidade - UF, 57348-345"
             : isManualLocation
-            ? "Digite a localização manualmente, digite o endereço completo: ex: Rua Exemplo, 123, Cidade - UF, 57348-345"
-            : "Digite um endereço (ex: Rua Exemplo, 123, Cidade - UF, 57348-345) ou selecione no mapa"
+              ? "Digite a localização manualmente, digite o endereço completo: ex: Rua Exemplo, 123, Cidade - UF, 57348-345"
+              : "Digite um endereço (ex: Rua Exemplo, 123, Cidade - UF, 57348-345) ou selecione no mapa"
         }
         value={location}
         onChangeText={handleAddressChange}
