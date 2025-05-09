@@ -30,7 +30,7 @@ const EditProfileScreen = () => {
   const [institutionTitle, setInstitutionTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  
+
   // Email verification states
   const [isEmailChanged, setIsEmailChanged] = useState(false);
   const [isVerificationSent, setIsVerificationSent] = useState(false);
@@ -75,14 +75,24 @@ const EditProfileScreen = () => {
       return;
     }
 
+    // Don't allow sending code if email hasn't changed
+    if (email === originalEmail) {
+      showToast('info', 'Informação', 'O e-mail não foi alterado');
+      return;
+    }
+
+    // Check if the email already exists
+    // Send the code to the NEW email, not the current email
     setLoading(true);
     try {
       console.log(`Enviando solicitação de código para: ${email}`);
-      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/send-verification-code`, { email });
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/send-verification-code`, {
+        email: email.trim()
+      });
       console.log('Resposta do envio de código:', response.data);
       setIsVerificationSent(true);
       setShowVerificationInput(true);
-      showToast('info', 'Código Enviado', 'Um código de verificação foi enviado para o seu email.');
+      showToast('info', 'Código Enviado', 'Um código de verificação foi enviado para o novo email.');
     } catch (error: any) {
       console.error('Erro ao enviar código de verificação:', error?.response?.data || error.message);
       const errorMessage = error?.response?.data?.message || 'Erro ao enviar código de verificação.';
@@ -103,11 +113,11 @@ const EditProfileScreen = () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       const response = await axios.put(
-        `${process.env.EXPO_PUBLIC_API_URL}/operator/update`,
+        `${process.env.EXPO_PUBLIC_API_URL}/operators/update`,
         { name },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (response.status === 200) {
         // Update token with the new one
         if (response.data.token) {
@@ -150,32 +160,32 @@ const EditProfileScreen = () => {
       showToast('error', 'Erro', 'Código de verificação é obrigatório');
       return;
     }
-    
+
     // Second step: verify code and update email
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
-      
+
       // Log request details for debugging
       console.log('Enviando verificação para atualização de email:');
       console.log('- Email:', email);
       console.log('- Código de verificação:', verificationCode);
-      
-      const updateData = { 
+
+      const updateData = {
         email: email.trim(),
         verificationCode: verificationCode.trim()
       };
-      
+
       console.log('Dados da requisição:', updateData);
-      
+
       const response = await axios.put(
-        `${process.env.EXPO_PUBLIC_API_URL}/operator/update`,
+        `${process.env.EXPO_PUBLIC_API_URL}/operators/update`,
         updateData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       console.log('Resposta da atualização de email:', response.data);
-      
+
       if (response.status === 200) {
         // Update token with the new one
         if (response.data.token) {
@@ -185,7 +195,7 @@ const EditProfileScreen = () => {
             throw new Error('Falha ao atualizar o token');
           }
         }
-        
+
         showToast('success', 'Sucesso', 'E-mail atualizado com sucesso!');
         setIsVerificationSent(false);
         setShowVerificationInput(false);
@@ -231,28 +241,28 @@ const EditProfileScreen = () => {
           style: "cancel"
         },
         {
-          text: "Continuar", 
+          text: "Continuar",
           onPress: async () => {
             // Proceed with password update
             setLoading(true);
             try {
               const token = await AsyncStorage.getItem('userToken');
               const response = await axios.put(
-                `${process.env.EXPO_PUBLIC_API_URL}/operator/update`,
+                `${process.env.EXPO_PUBLIC_API_URL}/operators/update`,
                 {
                   currentPassword,
                   newPassword
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
               );
-              
+
               if (response.status === 200) {
                 // For password changes, we still want to force a logout
                 await AsyncStorage.removeItem('userToken');
                 await AsyncStorage.removeItem('tokenLastUpdated');
-                
+
                 showToast('success', 'Sucesso', 'Senha atualizada com sucesso! Você será redirecionado para o login.');
-                
+
                 // Redirect to login after a brief delay
                 setTimeout(() => {
                   router.replace('/pages/auth');
@@ -275,13 +285,13 @@ const EditProfileScreen = () => {
       handleEmailUpdate();
       return;
     }
-    
+
     // Check if password is being updated
     if (newPassword) {
       handlePasswordUpdate();
       return;
     }
-    
+
     // If only name is being updated
     handleNameUpdate();
   };
@@ -296,8 +306,9 @@ const EditProfileScreen = () => {
         onChangeText={setName}
         autoCapitalize="words"
       />
+
       <TextInput
-        style={styles.input}
+        style={[styles.input, isEmailChanged && { borderColor: '#F56C2E' }]}
         placeholder="E-mail"
         value={email}
         onChangeText={(text) => {
@@ -313,35 +324,46 @@ const EditProfileScreen = () => {
         keyboardType="email-address"
         autoCapitalize="none"
       />
-      
+
+      {isEmailChanged && (
+        <Text style={styles.infoText}>
+          Alteração de e-mail requer verificação. Um código será enviado para o novo e-mail.
+        </Text>
+      )}
+
       {isEmailChanged && !isVerificationSent && (
-        <TouchableOpacity 
-          style={[styles.submitButton, { marginBottom: 15 }]} 
+        <TouchableOpacity
+          style={styles.verificationButton}
           onPress={handleSendVerificationCode}
           disabled={loading}
         >
-          <Text style={styles.submitButtonText}>
+          <Text style={styles.verificationButtonText}>
             {loading ? 'Enviando...' : 'Enviar Código de Verificação'}
           </Text>
         </TouchableOpacity>
       )}
-      
+
       {showVerificationInput && (
-        <TextInput
-          style={styles.input}
-          placeholder="Código de Verificação (letras e números)"
-          value={verificationCode}
-          onChangeText={(text) => {
-            // Allow only alphanumeric characters but maintain original case
-            const alphanumericText = text.replace(/[^a-zA-Z0-9]/g, '');
-            setVerificationCode(alphanumericText);
-          }}
-          autoCapitalize="none"
-          maxLength={6}
-          keyboardType="visible-password"
-        />
+        <>
+          <TextInput
+            style={[styles.input, { borderColor: '#F56C2E' }]}
+            placeholder="Código de Verificação (letras e números)"
+            value={verificationCode}
+            onChangeText={(text) => {
+              // Allow only alphanumeric characters but maintain original case
+              const alphanumericText = text.replace(/[^a-zA-Z0-9]/g, '');
+              setVerificationCode(alphanumericText);
+            }}
+            autoCapitalize="none"
+            maxLength={6}
+            keyboardType="visible-password"
+          />
+          <Text style={styles.infoText}>
+            Digite o código de 6 caracteres enviado para {email}
+          </Text>
+        </>
       )}
-      
+
       <TextInput
         style={styles.input}
         placeholder="Senha atual (obrigatória para alterar a senha)"
@@ -413,6 +435,27 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingLeft: 15,
     marginBottom: 15,
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#F56C2E',
+    marginTop: -10,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    paddingLeft: 5,
+  },
+  verificationButton: {
+    width: '100%',
+    backgroundColor: '#4e9af1',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  verificationButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   submitButton: {
     width: '100%',
