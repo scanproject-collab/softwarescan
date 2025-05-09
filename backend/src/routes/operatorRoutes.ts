@@ -6,7 +6,7 @@ const router = Router();
 
 /**
  * @openapi
- * /operators/profile:
+ * /operators/update:
  *   put:
  *     summary: Update operator account
  *     description: Update the current operator's account information
@@ -26,6 +26,13 @@ const router = Router();
  *               email:
  *                 type: string
  *                 format: email
+ *               currentPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *               verificationCode:
+ *                 type: string
+ *                 description: Required when changing email
  *     responses:
  *       200:
  *         description: Account updated successfully
@@ -34,11 +41,11 @@ const router = Router();
  *       403:
  *         description: Forbidden - Not an operator
  */
-router.put('/profile', authMiddleware, roleMiddleware(['OPERATOR']), updateOperatorAccount as RequestHandler);
+router.put('/update', authMiddleware, roleMiddleware(['OPERATOR']), updateOperatorAccount as RequestHandler);
 
 /**
  * @openapi
- * /operators/profile:
+ * /operators/delete:
  *   delete:
  *     summary: Delete operator account
  *     description: Delete the current operator's account
@@ -54,6 +61,6 @@ router.put('/profile', authMiddleware, roleMiddleware(['OPERATOR']), updateOpera
  *       403:
  *         description: Forbidden
  */
-router.delete('/profile', authMiddleware, deleteOperatorAccount as RequestHandler);
+router.delete('/delete', authMiddleware, roleMiddleware(['OPERATOR']), deleteOperatorAccount as RequestHandler);
 
 export default router;

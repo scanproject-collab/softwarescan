@@ -121,7 +121,7 @@ router.post('/login', loginController);
  *       400:
  *         description: Email is already in use or is missing
  */
-// Send verification code for new users
+// Send verification code for new users or updating email
 router.post('/send-verification-code', async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
@@ -129,13 +129,20 @@ router.post('/send-verification-code', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Email é obrigatório' });
     }
 
+    // Basic email validation
+    if (!email.includes('@') || !email.includes('.')) {
+      return res.status(400).json({ message: 'Formato de email inválido' });
+    }
+
+    // For updating emails, we allow sending codes even if the email exists
+    // but only block if the user is fully active (has password)
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser && existingUser.password) {
-      return res.status(400).json({ message: 'Email já está em uso' });
+      return res.status(400).json({ message: 'Este email já está em uso por outro usuário' });
     }
 
     const code = crypto.randomBytes(3).toString('hex');
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // Extending to 30 minutes
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes validity
 
     // Instead of creating a user, store the verification info in a separate table
     await prisma.verificationCode.upsert({
@@ -154,6 +161,7 @@ router.post('/send-verification-code', async (req: Request, res: Response) => {
     await sendVerificationEmail(email, code);
     return res.status(200).json({ message: 'Código de verificação enviado para o seu email' });
   } catch (error) {
+    console.error('Erro ao enviar código de verificação:', error);
     return res.status(400).json({ message: (error as Error).message });
   }
 });

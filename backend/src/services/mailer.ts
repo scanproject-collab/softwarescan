@@ -17,12 +17,17 @@ export const sendVerificationEmail = async (email: string, code: string) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'Código de Verificação para Registro - Plataforma Scan',
+      subject: 'Código de Verificação - Plataforma Scan',
       html: `
         <p>Olá,</p>
-        <p>Você está tentando se registrar na Plataforma Scan. Use o código abaixo para verificar seu email:</p>
+        <p>Você está recebendo este código de verificação para o email <strong>${email}</strong> na Plataforma Scan.</p>
+        <p>Este email pode ter sido enviado para:</p>
+        <ul>
+          <li>Verificar seu email para registro de uma nova conta</li>
+          <li>Atualizar o email da sua conta existente</li>
+        </ul>
         <p><strong>Código de verificação:</strong> ${code}</p>
-        <p>Este código foi gerado em: ${now} e expira em 15 minutos.</p>
+        <p>Este código foi gerado em: ${now} e expira em 30 minutos.</p>
         <p>Se você não solicitou este código, ignore este email.</p>
         <p>Atenciosamente, <br/>Equipe da Plataforma Scan</p>
       `,

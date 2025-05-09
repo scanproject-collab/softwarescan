@@ -10,7 +10,7 @@ interface RequestWithUser extends Request {
 }
 
 export const updateOperatorAccount = async (req: RequestWithUser, res: Response) => {
-  const { email, name, currentPassword, newPassword } = req.body;
+  const { email, name, currentPassword, newPassword, verificationCode } = req.body;
 
   if (!req.user?.id) {
     return res.status(401).json({ message: 'Unauthorized' });
@@ -32,8 +32,52 @@ export const updateOperatorAccount = async (req: RequestWithUser, res: Response)
     if (name) {
       data.name = name;
     }
-    if (email) {
+
+    // Handle email update with verification
+    if (email && email !== user.email) {
+      // If changing email, verification code is required
+      if (!verificationCode) {
+        return res.status(400).json({ message: 'Código de verificação é obrigatório para alterar o email' });
+      }
+
+      // Verify the code
+      const verification = await prisma.verificationCode.findFirst({
+        where: {
+          email: email,
+          code: verificationCode,
+          expiresAt: {
+            gt: new Date()
+          }
+        }
+      });
+
+      if (!verification) {
+        return res.status(400).json({ message: 'Código de verificação inválido ou expirado' });
+      }
+
+      // Check if the new email is already in use by another user
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email: email,
+          id: {
+            not: user.id
+          }
+        }
+      });
+
+      if (existingUser) {
+        return res.status(400).json({ message: 'Este email já está em uso por outro usuário' });
+      }
+
+      // Email verification successful, update the email
       data.email = email;
+
+      // Delete the verification code
+      await prisma.verificationCode.delete({
+        where: {
+          id: verification.id
+        }
+      });
     }
 
     if (newPassword) {
